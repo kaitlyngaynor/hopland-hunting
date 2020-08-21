@@ -18,10 +18,6 @@ editor_options:
 Code adopted from Tristan's iGotU code on the GitHub:
 
 ```{r igotu manipulation, message = F, warning = F}
-rm(list=ls())
-# set working directory
-setwd("C:/Users/Alex/Dropbox/Berkeley_Classes/Dissertation/Hunting/R/R_for_Alex")
-
 # load libraries
 library(tidyverse)
 library(readr)
@@ -60,13 +56,15 @@ no.hunt.area <- spTransform(no.hunt.area.orig, "+proj=utm
 
 # create polygon with huntable area only (subtract no hunt from entire boundary)
 huntable <- hrec.boundary - no.hunt.area
-#Alex: make this in original proj for other spatial needs:
-#huntable.wgs <- hrec.boundary.orig - no.hunt.area.orig
-#huntable.wgs <- spTransform(huntable, "+proj=longlat +ellps=WGS84")
-#plot(huntable.wgs, col = "red")
 
 # make sure that worked
 plot(huntable, col = "blue") # it did
+
+#Alex: make this in original proj for other spatial needs:
+huntable.wgs <- hrec.boundary.orig - no.hunt.area.orig
+huntable.wgs <- spTransform(huntable, "+proj=longlat +ellps=WGS84")
+plot(huntable.wgs, col = "red")
+
 ```
 
 #### Load in the iGotU data csv files.
@@ -74,23 +72,18 @@ plot(huntable, col = "blue") # it did
 Note that once I opened a few of them in Excel, the date was converted to a character. Ugh. So I went through and set them all to be characters, and also got rid of the spaces in the column headings, and added a column for the track (note: column for track is empty for about half of them; see notes). 
 
 ```{r setup igotu}
-# get collar files
-wd <- getwd()
-collarfiles <- paste(wd, "/Data/Hunting/igotu_raw/", dir("./Data/Hunting/igotu_raw"), sep="")
-
 # read in the igotU files
 options(digits=15) # this ensures that all the decimal places are read in from lat/long readings
 
 #Alex: later, for converting to spdf, we will need the ID to come from the filenames. This code adds a column called "source" with the filename that can be used below
-filenames <- list.files(path = "C:/Users/Alex/Dropbox/Berkeley_Classes/Dissertation/Hunting/R/R_for_Alex/Data/Hunting/igotu_raw/", pattern = NULL, all.files = FALSE, full.names = TRUE, recursive = FALSE, ignore.case = FALSE)
+wd <- getwd()
+filenames <- list.files(path = paste(wd, "/Data/Hunting/igotu_raw/", sep=""), pattern = NULL, all.files = FALSE, full.names = TRUE, recursive = FALSE, ignore.case = FALSE)
 read_csv_filename <- function(filename){
     ret <- read.csv(filename)
     ret$Source <- filename #EDIT
     ret
 }
 hunter.csvs <- lapply(filenames, FUN=read_csv_filename)
-#Alex: use above code instead of this line
-#hunter.csvs <- lapply(collarfiles, FUN=read.csv)
 
 ExtractCollarData <- function (X){
   id <- X[,"Source"]
@@ -106,27 +99,8 @@ ExtractCollarData <- function (X){
   data.frame(id=id, da=da, lat=lat, lon=lon)
 }
 
-# an alternative function that will also subset to points every 10 minutes
-# points are every 5 seconds, so 20 per min, or 200 per 10 min
-#ExtractCollarData2 <- function (X){
-#  X <- X[seq(1, NROW(X), by = 200),] # take every 200th row
-#  id <- X[,"Source"]
-#  unit.time <- X[,"Time"]
-#  unit.date <- X[,"Date"]
-#  unit.datetime <- paste(unit.date, unit.time, sep="")
-#  # translates into POSIXct times
-#  da <- as.POSIXct(strptime(unit.datetime, "%m/%d/%y %H:%M:%S"), tz="America/Los_Angeles")
-  # rename lat and long
-#  lat <-X[,"Latitude"]
-#  lon <-X[,"Longitude"]
-  # spit out as a dataframe
-#  data.frame(id=id, da=da, lat=lat, lon=lon)
-#}
-
-
 # generate list of extracted collar data
 extracted.list <- lapply(hunter.csvs, FUN=ExtractCollarData)
-#extracted.list.10min <- lapply(hunter.csvs, FUN=ExtractCollarData2)
 
 # define function for creating spatial data frame, transforming to UTM, and cropping to HREC huntable zone
 SPDFTransform <- function (X) {
@@ -152,22 +126,18 @@ SPDFTransformWGS <- function (X) {
 spdf.list <- lapply(extracted.list, FUN=SPDFTransform)
 spdf.list.wgs <- lapply(extracted.list, FUN=SPDFTransformWGS)
 
-
-#spdf.list.10min <- lapply(extracted.list.10min, FUN=SPDFTransform)
-
 # combine list into single SPDF 
 spdf <- do.call("rbind", spdf.list)
 spdf.wgs <- do.call("rbind", spdf.list.wgs)
-
-#spdf.10min <- do.call("rbind", spdf.list.10min)
-#plot(spdf.10min)
 
 #Alex: Trying the redisltraj function from the adehabitatLT package. From Briana: "It lets you 'rediscretize' your data into any sampling rate you want. You'll need to convert the data into an ltraj object in this package" 
 hunter.ltraj <- as.ltraj(coordinates(spdf), spdf$da, id = spdf$id, typeII = TRUE)
 hunter.ltraj.wgs <- as.ltraj(coordinates(spdf.wgs), spdf.wgs$da, id = spdf.wgs$id, typeII = TRUE)
 #Alex: show the time lag before rediscretization
-plotltr(hunter.ltraj, "dt")
-#Alex: hm lots of errors with above line. Ignoring for now. Line below rediscretizes by time to 10min intervals, up from 5s
+
+# plotltr(hunter.ltraj, "dt") # not working, fig margins too large
+
+# Line below rediscretizes by time to 10min intervals, up from 5s
 hunter.ltraj.10 <- redisltraj(l = hunter.ltraj, u = 10, type = "time")
 hunter.ltraj.30 <- redisltraj(l = hunter.ltraj, u = 30, type = "time")
 hunter.ltraj.60 <- redisltraj(l = hunter.ltraj, u = 60, type = "time")
@@ -177,9 +147,10 @@ hunter.ltraj.10.wgs <- redisltraj(l = hunter.ltraj.wgs, u = 10, type = "time")
 
 #make sure it looks right
 head(single.df)
-#copy for making spdf
+
+# copy for making spdf
 df.spdf <- single.df
-coordinates(df.spdf) <- ~lon+lat # creat spdf
+coordinates(df.spdf) <- ~lon+lat # create spdf
 proj4string(df.spdf) <- CRS("+proj=utm +north +zone=10 +ellps=WGS84 +units=m") #define projection
 df.spdf <- df.spdf[huntable,] #use only huntable area
 df.ltraj <- df.spdf #copy for making ltraj
@@ -189,13 +160,14 @@ df.ltraj <- as.ltraj(coordinates(df.ltraj), df.ltraj$da, id = df.ltraj$id, typeI
             redisltraj(l = df_ltraj, u = 60, type = "time")
 
 
-
-
 # a note: cropping to huntable zone should also *mostly* take care of cropping to start and end time
 # when the iGotU units were not in use, they were in non-huntable zone 
 #(however, there was at least one night when I drove from dorms home via Amy's with functioning iGotU units, 
 #and my drive out of the property should be cut off. Ignoring for now)
 ```
+
+
+CODE BELOW IS UNUSED:
 
 Determine times of day of activity associated with the points in the huntable area. (Using the 10 min independent points for this).
 ```{r huntable times of day}
@@ -289,11 +261,6 @@ correlation.matrix <- subset(correlation.matrix, select = "density.all.10min")
 correlation.matrix
 
 write.csv(correlation.matrix, "Results/correlation_matrix_hunter_activity.csv")
-
-
-
-
-
 ```
 
 Another approach is to generate random points, extract raster values, and then do a GLM. Ideally, the number of random points would be chosen to minimize spatial autocorrelation. I'm just using the same 2000 random points from the hunter risk model for now.
