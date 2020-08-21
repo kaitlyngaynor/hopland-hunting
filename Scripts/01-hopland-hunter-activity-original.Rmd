@@ -145,11 +145,13 @@ hunter.ltraj.600 <- redisltraj(l = hunter.ltraj, u = 600, type = "time")
 hunter.ltraj.10.wgs <- redisltraj(l = hunter.ltraj.wgs, u = 10, type = "time")
 
 
+# kg - not totally sure what code below is doing
+
 #make sure it looks right
-head(single.df)
+head(spdf) 
 
 # copy for making spdf
-df.spdf <- single.df
+df.spdf <- spdf
 coordinates(df.spdf) <- ~lon+lat # create spdf
 proj4string(df.spdf) <- CRS("+proj=utm +north +zone=10 +ellps=WGS84 +units=m") #define projection
 df.spdf <- df.spdf[huntable,] #use only huntable area
