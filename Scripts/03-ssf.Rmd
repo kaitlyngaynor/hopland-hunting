@@ -586,3 +586,309 @@ AIC(m1$model)
 AIC(m2$model)
 ```
 
+
+
+## Example from Taal Levi
+```{r}
+##############################################X
+#--------WILD 6900 -- Space-use Ecology-------X
+#--Lab 9: Integrated Step Selection Analysis--X
+##############################################X
+
+#In this lab we will perform an integrated step selection
+  #analysis (iSSA). As we saw in class, the iSSA is a 
+  #mechanistic model of habitat selection and movement.
+
+#The iSSA was introduced in Avgar et al. 2016, and 
+  #Appendix 4 of that paper is an iSSA practical user guide.
+  #In this lab, we'll follow that guide to make it clear which
+  #functions from 'amt' correspond to which steps of the iSSA.
+
+#After fitting the iSSF, we'll use log-RSS to quantify habitat 
+ #selection.
+
+#For this lab, make sure you have the latest version of 'amt'
+  #from CRAN, which is currently version 0.0.9.
+
+# install.packages("amt")
+
+#You'll also need the package "patchwork" for the very last
+  #plot we'll make
+
+# install.packages("patchwork")
+
+#Set options----
+options(stringsAsFactors = FALSE)
+
+#Load packages----
+library(tidyverse)
+library(raster)
+library(amt)
+library(patchwork)
+
+#The code sections that follow are from Appendix S4 of Avgar et al. 2016
+
+#1. Collect animal positional data----
+#Here, we'll load our unicorn data. Each iSSF will be fit to a
+  #single individual's location data. We could fit the model for
+  #all of our individuals and then summarize if we are interested
+  #in population-level inference, but for now, a mixed-effects 
+  #approach is not easy for an iSSA (but see Muff et al. 2019).
+
+#For that reason, we'll just work with a single individual here.
+  #You could use a for loop, an lapply(), or a nested data.frame
+  #to repeat this for every individual, but for clarity, we'll 
+  #focus on just one.
+
+unicorn <- readRDS("../data/unicorn_gps_data.rds")
+
+#Let's arbitrarily pick unicorn #2 for this
+uni <- unicorn %>% 
+  filter(id == 2)
+
+#We also need our landscape covariates!
+landscape <- brick("../data/GIS/unicorn_landscape_data.grd")
+
+#2. Tabulate observed steps----
+#Here is where you would likely want to clean your data to remove
+  #erroneous fixes. Our unicorn data is already clean, so we
+  #can move on.
+
+#We've already seen the function make_track() in 'amt' to prep our 
+  #data. From there, we can make our points into steps with the
+  #function steps(). This does all the tabulation we need!
+uni_steps <- uni %>% 
+  make_track(.x = x, .y = y, .t = dt, crs = CRS("+init=epsg:32612")) %>% 
+  steps()
+
+#Let's check the result:
+head(uni_steps)
+
+#You can see that the function did all the tabulation we need.
+  #We have the starting (x1_, y1_) and ending (x2_, y2_) points
+  #of each step, the step length (sl_), the turning angle (ta_),
+  #the start and end times (t1_ and t2_), and the duration
+  #of the step (dt_).
+
+#Remember, all steps should have the same duration. If they do not,
+  #'amt' has functions you can use to resample your track before
+  #moving on.
+
+#3 - 5. Sample available steps----
+
+#For each observed step, we'll sample 15 available steps.
+
+#You can choose which distributions you want to use to generate your
+  #available steps, but here will we use the gamma (step lengths) and 
+  #von Mises (turning angles).
+
+#You have to "guess" the parameters of these distributions to sample
+  #your steps. Remember, we'll adjust this guess with the fitted
+  #model parameters. But a good starting point is to simply fit
+  #the distributions to your observed data. 'amt' will do this for
+  #you automatically when you sample random steps (it's the default),
+  #but we'll write it out here to be clear where those numbers came from.
+
+set.seed(123456)
+uni_rand <- uni_steps %>% 
+  random_steps(n_control = 15,
+               sl_distr = fit_distr(uni_steps$sl_, "gamma"),
+               ta_distr = fit_distr(uni_steps$ta_, "vonmises"))
+
+#6. Attach step attributes----
+#Now we attach our covariates to each step. We've already seen 
+  #the 'amt' function 'extract_covariates()', but when applied
+  #to steps, we have extra options. We can get the values of
+  #the raster at the end point (the default) or the start point
+  #of the step... or both! There is also a function that will
+  #extract the covariate along the step 'extract_covariates_along()',
+  #which generally needs more processing.
+
+#Here, we'll just use the endpoint.
+uni_hab <- uni_rand %>% 
+  extract_covariates(landscape, where = "end")
+
+#We also need the movement parameters to include in our model.
+  #We already have 'sl_' and 'ta_', but remember, for the gamma
+  #distribution, we also need the log of the step length. For the
+  #von Mises distribution, we also need the cosine of the turn
+  #angle.
+uni_hab <- uni_hab %>% 
+  mutate(log_sl_ = log(sl_),
+         cos_ta_ = cos(ta_))
+
+#Let's see what we have so far
+View(uni_hab)
+
+#7. Fit conditional logistic regression----
+#We're ready to fit our model. Don't forget to include the
+  #movement parameters! And don't forget to include the
+  #step IDs as the strata!
+
+issf <- uni_hab %>% 
+  fit_issf(case_ ~ habitat + elevation + I(elevation^2) +
+             sl_ + log_sl_ + cos_ta_ + 
+             strata(step_id_),
+           model = TRUE)
+
+#Note the argument 'model = TRUE'. We need this option to be 
+  #passed to survival::clogit in order for predict() to work
+  #later (when we calculate log-RSS)
+
+#View summary
+summary(issf)
+
+#8. Adjust movement coefficients----
+#Now we can take the movement coefficients from the model and 
+  #update our original distributions. See the "cheatsheet" fro
+  #the lecture with how to do this in general. 
+
+#We have a function in 'amt' that will give us the original parameters
+sl_distr_params(issf)
+
+#Store them for convenience
+old_shape <- sl_distr_params(issf)$shape
+old_scale <- sl_distr_params(issf)$scale
+
+#Let's also grab the betas
+beta_log_sl_ <- coef(issf)["log_sl_"]
+beta_sl_ <- coef(issf)["sl_"]
+
+#Now update
+new_shape <- old_shape + beta_log_sl_
+new_scale <- 1/(1/old_scale - beta_sl_)
+
+#Same idea for turning angle (a little more concise)
+new_conc <- ta_distr_params(issf)$kappa + coef(issf)["cos_ta_"]
+
+#This is likely negative because we fixed the mean to 0. We don't need to
+  #worry about this right now.
+
+#9. Simulate space use----
+#This last step is very complex. There are functions in 'amt'
+  #that Johannes Signer is developing to help you do this,
+  #but they are still experimental and are tricky to use.
+
+#If you're interested, you can start by looking here and playing
+  #with these functions. Expect more updates in the near future.
+?simulate_ud
+?dispersal_kernel
+
+#log-RSS----
+#We've already seen how to calculate relative selection strength
+  #from a fitted RSF. We also saw in our last lecture that the
+  #approach is exactly the same for an iSSF, the interpretation
+  #is just different. Remember, all of our steps in a stratum
+  #have the same starting location, so we're now comparing the
+  #ratio of two steps with the same starting point that differ
+  #only in their endpoint.
+
+#Also recall, that log-RSS is the correct interpretation of
+  #our beta parameters. That is, the log-RSS for a two steps
+  #that are identical except that one ends at elevation 1 and
+  #the other ends at elevation 0 (i.e., delta(elevation) = 1)
+  #is just beta_elevation:
+coef(issf)["elevation"]
+
+#For a more complex change, we can use the predict() function
+  #to get our log-RSS, just as we saw for the RSF case.
+
+#Check the class of our model
+class(issf) #This is an 'amt' class
+
+#Turns out, hiding inside is the actual model fit
+class(issf$model)
+
+#There is our actual conditional logistic regression model,
+  #which was actual fit by a "trick" using a cox proportional
+  #hazards model (class "coxph"). So if you need help, the
+  #predict function is 
+?survival::predict.coxph
+
+#While it's useful to know how to do this yourself, we now
+  #have a function in 'amt' that will calculate log-RSS for
+  #you using this method.
+?log_rss
+
+#In the help file, you can see an example for a fitted SSF.
+  #As with RSFs, we still have to define x1 and x2. Since
+  #we're taking advantage of the predict() method, we need to
+  #define all model variables for x1 and x2 (including the
+  #movement parameters). Remember, the covariates we aren't
+  #trying to draw inference from will cancel out if they are
+  #equal in x1 and x2, so it doesn't matter what they are.
+
+#We will define x1 as a range of hypothetical locations, and 
+  #we'll use x2 as a single reference location.
+x1 <- data.frame(elevation = rep(seq(0, 1, length.out = 50), 2),
+                 habitat = rep(c(0, 1), each = 50),
+                 sl_ = 1, log_sl_ = log(1), cos_ta_ = cos(0))
+x2 <- data.frame(elevation = 0.5,
+                 habitat = 0,
+                 sl_ = 1, log_sl_ = log(1), cos_ta_ = cos(0))
+
+#Calculate log-RSS
+logRSS <- log_rss(issf, x1, x2)
+
+#There's a default plot() method for a simple figure
+plot(logRSS)
+
+#If we take a closer look, we can see how to plot using ggplot
+
+#Inspect the object
+str(logRSS)
+
+#Here's what we want to plot
+logRSS$df
+
+#Plot it!
+rss_plot2 <- ggplot(logRSS$df, aes(x = elevation_x1, y = log_rss, color = factor(habitat_x1))) +
+  geom_hline(yintercept = 0) +
+  geom_line(size = 1) +
+  xlab("Elevation (x1)") +
+  ylab("log-RSS") +
+  ggtitle("Unicorn 2") +
+  scale_color_discrete(name = "Habitat (x1)") + 
+  theme_bw()
+rss_plot2
+
+#Piped workflow----
+#The package 'amt' was meant to make this sort of thing easy to do
+  #in a piped workflow. Let's fit a model for unicorn #3 to demonstrate.
+
+set.seed(654321)
+issf3 <- unicorn %>% 
+  filter(id == 3) %>% 
+  make_track(.x = x, .y = y, .t = dt, crs = CRS("+init=epsg:32612")) %>% 
+  steps() %>% 
+  random_steps(n_control = 15) %>% 
+  extract_covariates(landscape, where = "end") %>% 
+  mutate(log_sl_ = log(sl_),
+         cos_ta_ = cos(ta_)) %>% 
+  fit_issf(case_ ~ habitat + elevation + I(elevation^2) +
+             sl_ + log_sl_ + cos_ta_ + 
+             strata(step_id_),
+           model = TRUE)
+
+#Summary
+summary(issf3)
+
+#log-RSS
+logRSS3 <- log_rss(issf3, x1, x2)
+
+#Plot
+rss_plot3 <- ggplot(logRSS3$df, aes(x = elevation_x1, y = log_rss, color = factor(habitat_x1))) +
+  geom_hline(yintercept = 0) +
+  geom_line(size = 1) +
+  xlab("Elevation (x1)") +
+  ylab("log-RSS") +
+  ggtitle("Unicorn 3") +
+  scale_color_discrete(name = "Habitat (x1)") + 
+  theme_bw()
+rss_plot3
+
+#Combine (using package patchwork: https://github.com/thomasp85/patchwork)
+rss_plot2 / rss_plot3
+
+```
+
