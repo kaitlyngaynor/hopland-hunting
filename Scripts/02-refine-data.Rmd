@@ -1,0 +1,154 @@
+---
+title: "Explore the data in hand"
+author: "Kaitlyn"
+date: "8/21/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+For further analyses, I think it makes sense to only pick a single track from a given hunting party, to avoid pseudoreplication. I also think it makes sense to divide up the successful and unsuccessful hunting parties (and choose the track from the successful hunter). Here, I explore a bit...
+
+```{r}
+library(dplyr)
+library(rgdal)
+```
+
+Bring in the metadata that I made.
+```{r}
+metadata <- read.csv("Data/Hunting/igotu_metadata.csv")
+names(metadata)
+
+# how many hunting parties?
+length(unique(metadata$Party_ID)) # 137
+
+# how many individuals successfully harvested?
+count(metadata, Harvest) # 36
+
+# how many parties had more than one harvest? (answer = 7)
+(multipleharvests <- metadata %>% 
+    filter(Harvest == "Y") %>% 
+    count(Party_ID) %>% 
+    filter(n > 1) %>% 
+    mutate(Party_ID = droplevels(Party_ID)))
+```
+
+There are 7 parties in which two individuals harvested animals. 
+
+For early files, we know whether or not the data were successfully recovered. Looks like 6 tags didn't work (plus there are 70 that we don't have any more information about)
+```{r}
+count(metadata, Data_recovered) 
+
+# remove the ones that didn't work
+metadata_work <- filter(metadata, Data_recovered != "N")
+
+length(unique(metadata_hunter$Party_ID)) == length(unique(metadata$Party_ID)) 
+```
+
+Try removing the non-hunters from this list.
+```{r}
+# need to fix the "H_Y" records in the "Hunter_nonhunter" category (originally I had H_Y and H_N)
+for(i in 1:nrow(metadata)) {
+    if(metadata$Hunter_nonhunter[[i]] == "H_Y") {
+        metadata$Hunter_nonhunter[[i]] <- "H"
+    }
+}
+
+# how many nonhunters?
+count(metadata, Hunter_nonhunter)
+
+# start by removing those
+metadata_hunter <- filter(metadata, Hunter_nonhunter == "H")
+
+# were there any parties for which that was the ONLY tag that we successfully collected?
+length(unique(metadata_hunter$Party_ID)) == length(unique(metadata$Party_ID)) 
+# nope
+```
+
+Import the shapefile of HREC. We'll consider this the huntable area for generating random points and mapping risk. Of course, there are some pastures that need to be masked. 
+```{r import hrec shapefile, message = F, results ='hide', warning = F}
+# read hrec boundary layer
+hrec.boundary.orig <- readOGR("Data/Spatial data/Raw from Alex", "HREC_boundary")
+
+# change projection to UTM
+hrec.boundary <- spTransform(hrec.boundary.orig, "+proj=utm 
+                             +north +zone=10 +ellps=WGS84 +units=m")
+
+###Import shape file with mask of areas that do not allow hunting. 
+no.hunt.area.orig <- readOGR("Data/Spatial data/Raw from Alex", "hunt_zone")
+
+# change projection to UTM
+no.hunt.area <- spTransform(no.hunt.area.orig, "+proj=utm 
+                             +north +zone=10 +ellps=WGS84 +units=m")
+
+# create polygon with huntable area only (subtract no hunt from entire boundary)
+huntable <- hrec.boundary - no.hunt.area
+
+# make sure that worked
+plot(huntable, col = "blue") # it did
+
+#Alex: make this in original proj for other spatial needs:
+huntable.wgs <- hrec.boundary.orig - no.hunt.area.orig
+huntable.wgs <- spTransform(huntable, "+proj=longlat +ellps=WGS84")
+plot(huntable.wgs, col = "red")
+```
+
+
+Bring in tracks
+```{r}
+wd <- getwd()
+filenames <- list.files(path = paste(wd, "/Data/Hunting/igotu_raw/", sep=""), pattern = NULL, all.files = FALSE, full.names = TRUE, recursive = FALSE, ignore.case = FALSE)
+read_csv_filename <- function(filename){
+    ret <- read.csv(filename)
+    ret$Source <- filename #EDIT
+    ret
+}
+hunter.csvs <- lapply(filenames, FUN=read_csv_filename)
+
+ExtractCollarData <- function (X){
+  ID <- X[,"Track"]
+  unit.time <- X[,"Time"]
+  unit.date <- X[,"Date"]
+  unit.datetime <- paste(unit.date, unit.time, sep="")
+  # translates into POSIXct times
+  date_time <- as.POSIXct(strptime(unit.datetime, "%m/%d/%y %H:%M:%S"), tz="America/Los_Angeles")
+  # rename lat and long
+  lat <-X[,"Latitude"]
+  lon <-X[,"Longitude"]
+  # spit out as a dataframe
+  data.frame(ID=ID, date_time=date_time, lat=lat, lon=lon)
+}
+
+# generate list of extracted collar data
+extracted.list <- lapply(hunter.csvs, FUN=ExtractCollarData)
+
+# combine into one
+collar_data_all <- do.call("rbind", extracted.list) 
+
+# add the metadata
+collar_data_all <- left_join(collar_data_all, metadata)
+
+# create spatial data frame, transform to UTM, and crop to HREC huntable zone
+igotu_spdf <- collar_data_all # copy
+coordinates(igotu_spdf) <- ~lon+lat # create spdf
+proj4string(igotu_spdf) <- CRS("+proj=longlat +ellps=WGS84")
+igotu_spdf <- spTransform(igotu_spdf, CRS("+proj=utm +north +zone=10 +ellps=WGS84 +units=m"))
+igotu_spdf <- igotu_spdf[huntable,]
+
+# convert back to dataframe
+collar_data_huntable <- as.data.frame(igotu_spdf)
+```
+
+Plot the individual tracks for each of the parties that had multiple kills
+```{r}
+collar_data_huntable %>% 
+    filter(Party_ID %in% levels(multipleharvests$Party_ID)) %>% 
+    ggplot(aes(x = lon, y = lat, col = ID)) +
+    geom_point() +
+    facet_wrap(~Party_ID)
+```
+
+
+
+
+
