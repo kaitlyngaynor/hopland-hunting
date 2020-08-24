@@ -3,6 +3,8 @@ title: "Clean up igotu data"
 author: "Kaitlyn"
 date: "8/24/2020"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r}
@@ -12,6 +14,37 @@ library(rgdal)
 library(raster)
 library(tidyr)
 ```
+
+### Import shapefile for masking
+
+Import the shapefile of HREC. We'll consider this the huntable area for generating random points and mapping risk. Of course, there are some pastures that need to be masked. 
+```{r import hrec shapefile, message = F, results ='hide', warning = F}
+# read hrec boundary layer
+hrec.boundary.orig <- readOGR(here::here("Data/Spatial data/Raw from Alex"), "HREC_boundary")
+
+# change projection to UTM
+hrec.boundary <- spTransform(hrec.boundary.orig, "+proj=utm 
+                             +north +zone=10 +ellps=WGS84 +units=m")
+
+###Import shape file with mask of areas that do not allow hunting. 
+no.hunt.area.orig <- readOGR(here::here("Data/Spatial data/Raw from Alex"), "hunt_zone")
+
+# change projection to UTM
+no.hunt.area <- spTransform(no.hunt.area.orig, "+proj=utm 
+                             +north +zone=10 +ellps=WGS84 +units=m")
+
+# create polygon with huntable area only (subtract no hunt from entire boundary)
+huntable <- hrec.boundary - no.hunt.area
+
+# make sure that worked
+plot(huntable, col = "blue") # it did
+
+#Alex: make this in original proj for other spatial needs:
+huntable.wgs <- hrec.boundary.orig - no.hunt.area.orig
+huntable.wgs <- spTransform(huntable, "+proj=longlat +ellps=WGS84")
+plot(huntable.wgs, col = "red")
+```
+
 
 ### Import and clean tracks
 
@@ -53,6 +86,7 @@ extracted.list <- lapply(hunter.csvs, FUN=ExtractIgotuData)
 igotu_data_all <- do.call("rbind", extracted.list) 
 
 # add the metadata
+metadata <- read.csv(here::here("Data/Hunting/igotu_metadata.csv"))
 igotu_data_all <- left_join(igotu_data_all, metadata)
 ```
 
@@ -79,5 +113,13 @@ Make version with 10 minute fix rate
 ```{r}
 # now make version with 10 min fix rate
 hunter.ltraj <- as.ltraj(coordinates(igotu_spdf), igotu_spdf$date_time, id = igotu_spdf$ID, typeII = TRUE)
-hunter.ltraj.10min <- redisltraj(hunter.ltraj, u = 10, type = "time")
+hunter.ltraj.10min <- redisltraj(hunter.ltraj, u = 600, type = "time")
+
+# get back into data frame, copy metadata in again and format column names
+igotu_data_huntable_10min <- ld(hunter.ltraj.10min) %>% 
+    rename(date_time = date, lon = x, lat = y, ID = id) %>% 
+    left_join(metadata)
+
+# write for later
+write.csv(igotu_data_huntable_10min, "Data/igotu_data_huntable_10min.csv", row.names=F)
 ```
