@@ -1,0 +1,83 @@
+---
+title: "Clean up igotu data"
+author: "Kaitlyn"
+date: "8/24/2020"
+output: html_document
+---
+
+```{r}
+library(here)
+library(dplyr)
+library(rgdal)
+library(raster)
+library(tidyr)
+```
+
+### Import and clean tracks
+
+Bring in tracks
+```{r}
+wd <- getwd()
+filenames <- list.files(path = paste(wd, "/Data/Hunting/igotu_raw/", sep=""), pattern = NULL, all.files = FALSE, full.names = TRUE, recursive = FALSE, ignore.case = FALSE)
+read_csv_filename <- function(filename){
+    ret <- read.csv(filename)
+    ret$Source <- filename
+    ret
+}
+hunter.csvs <- lapply(filenames, FUN=read_csv_filename)
+```
+
+Write function for extracting data from CSVs
+```{r}
+ExtractIgotuData <- function (X){
+  ID <- X[,"Track"]
+  unit.time <- X[,"Time"]
+  unit.date <- X[,"Date"]
+  unit.datetime <- paste(unit.date, unit.time, sep="")
+  # translates into POSIXct times
+  date_time <- as.POSIXct(strptime(unit.datetime, "%m/%d/%y %H:%M:%S"), tz="America/Los_Angeles")
+  # rename lat and long
+  lat <-X[,"Latitude"]
+  lon <-X[,"Longitude"]
+  # spit out as a dataframe
+  data.frame(ID=ID, date_time=date_time, lat=lat, lon=lon)
+}
+```
+
+Download and clean data
+```{r}
+# generate list of extracted igotu data
+extracted.list <- lapply(hunter.csvs, FUN=ExtractIgotuData)
+
+# combine into one
+igotu_data_all <- do.call("rbind", extracted.list) 
+
+# add the metadata
+igotu_data_all <- left_join(igotu_data_all, metadata)
+```
+
+Crop to huntable zone
+```{r}
+# create spatial data frame, transform to UTM, and crop to HREC huntable zone
+igotu_spdf <- igotu_data_all # copy
+coordinates(igotu_spdf) <- ~lon+lat # create spdf
+proj4string(igotu_spdf) <- CRS("+proj=longlat +ellps=WGS84")
+igotu_spdf <- spTransform(igotu_spdf, CRS("+proj=utm +north +zone=10 +ellps=WGS84 +units=m"))
+igotu_spdf <- igotu_spdf[huntable,]
+```
+
+Export data
+```{r}
+# convert back to dataframe
+igotu_data_huntable <- as.data.frame(igotu_spdf)
+
+# write for later
+write.csv(igotu_data_huntable, "Data/igotu_data_huntable.csv", row.names=F)
+```
+
+Make version with 10 minute fix rate
+```{r}
+# now make version with 10 min fix rate
+hunter.ltraj <- as.ltraj(coordinates(igotu_spdf), igotu_spdf$date_time, id = igotu_spdf$ID, typeII = TRUE)
+hunter.ltraj.10min <- redisltraj(hunter.ltraj, u = 10, type = "time")
+```
