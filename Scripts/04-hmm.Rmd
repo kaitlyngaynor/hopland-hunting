@@ -34,12 +34,14 @@ Prep data for modeling
 
 ```{r}
 # subset to just a few IDs just to make this manageable for proof of concept
-igotu_data_huntable <- filter(igotu_data_huntable, ID %in% c("081416_19", "080815_01", "081317_36", "081316_17"))
+#igotu_data_huntable <- filter(igotu_data_huntable, ID %in% c("081416_19", "080815_01", "081317_36", "081316_17"))
 
 data <- moveHMM::prepData(igotu_data_huntable, type="UTM", coordNames=c("lon","lat"))
 
 hist(data$step)
 hist(data$angle)
+
+plot(data[data$ID == "081416_19",])
 ```
 
 Prep & run model
@@ -53,12 +55,16 @@ angleMean0 <- c(pi,0) # angle mean
 kappa0 <- c(1,1) # angle concentration
 anglePar0 <- c(angleMean0,kappa0)
 
-m <- fitHMM(data=data, nbStates=2, stepPar0=stepPar0, anglePar0=anglePar0, formula=~elev+chap_edge)
+m <- fitHMM(data=data, 
+            nbStates=2, 
+            stepPar0=stepPar0, 
+            anglePar0=anglePar0,
+            formula=~elev+chap_edge)
 
-plot(data[data$ID == "081416_19",])
-```
+m
 
-```{r}
+plot(m)
+
 states <- viterbi(m)
 states
 
@@ -68,6 +74,23 @@ prop.table(table(states))
 # plot states for a given individual
 plotStates(m, animals="081416_19")
 ```
+
+Now try separating successful vs unsuccessful hunters
+```{r}
+successful <- igotu_data_huntable %>% 
+  filter(Harvest == "Y")
+unsuccessful <- igotu_data_huntable %>% 
+  filter(Harvest == "N")
+
+data.successful <- moveHMM::prepData(successful, type="UTM", coordNames=c("lon","lat"))
+data.unsuccessful <- moveHMM::prepData(unsuccessful, type="UTM", coordNames=c("lon","lat"))
+
+hist(data.successful$step, col= 'red', breaks = 50, freq = F); hist(data.unsuccessful$step, col = 'blue', add=T, breaks = 50, freq = F)
+
+hist(data.successful$angle, col= 'red', breaks = 50, freq = F); hist(data.unsuccessful$angle, col = 'blue', add=T, breaks = 50, freq = F)
+```
+
+
 
 #### Three state model
 ```{r}
@@ -81,7 +104,7 @@ angleMean0 <- c(pi,pi,0)
 kappa0 <- c(1,1,1)
 anglePar3 <- c(angleMean0,kappa0)
 
-m3 <- fitHMM(data=data, nbStates=3, stepPar0=stepPar3, anglePar0=anglePar3, formula=~elev+chap_edge)
+m3 <- fitHMM(data=data, nbStates=3, stepPar0=stepPar3, anglePar0=anglePar3)
 
 plot(m3)
   
