@@ -12,6 +12,7 @@ editor_options:
 For further analyses, I think it makes sense to only pick a single track from a given hunting party, to avoid pseudoreplication. I also think it makes sense to divide up the successful and unsuccessful hunting parties (and choose the track from the successful hunter). Here, I explore a bit...
 
 ```{r}
+library(here)
 library(dplyr)
 library(rgdal)
 library(raster)
@@ -20,7 +21,7 @@ library(tidyr)
 
 Bring in the metadata that I made.
 ```{r}
-metadata <- read.csv("Data/Hunting/igotu_metadata.csv")
+metadata <- read.csv(here::here("Data/Hunting/igotu_metadata.csv"))
 names(metadata)
 
 # how many hunting parties?
@@ -45,8 +46,6 @@ count(metadata, Data_recovered)
 
 # remove the ones that didn't work
 metadata_work <- filter(metadata, Data_recovered != "N")
-
-length(unique(metadata_hunter$Party_ID)) == length(unique(metadata$Party_ID)) 
 ```
 
 Try removing the non-hunters from this list.
@@ -94,14 +93,14 @@ summary <- full_join(summary_hunters, summary_harvest) %>%
 Import the shapefile of HREC. We'll consider this the huntable area for generating random points and mapping risk. Of course, there are some pastures that need to be masked. 
 ```{r import hrec shapefile, message = F, results ='hide', warning = F}
 # read hrec boundary layer
-hrec.boundary.orig <- readOGR("Data/Spatial data/Raw from Alex", "HREC_boundary")
+hrec.boundary.orig <- readOGR(here::here("Data/Spatial data/Raw from Alex"), "HREC_boundary")
 
 # change projection to UTM
 hrec.boundary <- spTransform(hrec.boundary.orig, "+proj=utm 
                              +north +zone=10 +ellps=WGS84 +units=m")
 
 ###Import shape file with mask of areas that do not allow hunting. 
-no.hunt.area.orig <- readOGR("Data/Spatial data/Raw from Alex", "hunt_zone")
+no.hunt.area.orig <- readOGR(here::here("Data/Spatial data/Raw from Alex"), "hunt_zone")
 
 # change projection to UTM
 no.hunt.area <- spTransform(no.hunt.area.orig, "+proj=utm 
@@ -185,10 +184,35 @@ igotu_data_huntable %>%
 ```
 
 
-##### 080815_01
 ```{r}
-
+party_summary <- function(party) {
+  
+  print(party)
+  
+  # metadata for all igotus in this party
+  metadata %>% 
+    filter(Party_ID == party)
+  
+  # summary
+  summary %>% 
+    filter(Party_ID == party)
+  
+  # plot of each igotu
+  igotu_data_huntable %>% 
+    filter(Party_ID == party) %>% 
+    ggplot(aes(x = lon, y = lat, col = ID)) +
+    geom_point() +
+    facet_wrap(~ID)
+  
+  # plot of all igotus  
+  igotu_data_huntable %>% 
+    filter(Party_ID == party) %>% 
+    ggplot(aes(x = lon, y = lat, col = ID)) +
+    geom_point()
+}
 ```
 
-
+```{r}
+lapply(levels(metadata$Party_ID), party_summary)
+```
 
