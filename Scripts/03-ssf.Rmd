@@ -640,14 +640,14 @@ library(patchwork)
   #to repeat this for every individual, but for clarity, we'll 
   #focus on just one.
 
-unicorn <- readRDS("../data/unicorn_gps_data.rds")
+unicorn <- readRDS("Data/from tutorial/unicorn_gps_data.rds")
 
 #Let's arbitrarily pick unicorn #2 for this
 uni <- unicorn %>% 
   filter(id == 2)
 
 #We also need our landscape covariates!
-landscape <- brick("../data/GIS/unicorn_landscape_data.grd")
+landscape <- brick("Data/from tutorial/unicorn_landscape_data.grd")
 
 #2. Tabulate observed steps----
 #Here is where you would likely want to clean your data to remove
@@ -689,11 +689,17 @@ head(uni_steps)
   #you automatically when you sample random steps (it's the default),
   #but we'll write it out here to be clear where those numbers came from.
 
+# original code gives error... ntried removing fit_distr from in there
 set.seed(123456)
+#uni_rand <- uni_steps %>% 
+#  random_steps(n_control = 15,
+#               sl_distr = fit_distr(uni_steps$sl_, "gamma"),
+#               ta_distr = fit_distr(uni_steps$ta_, "vonmises"))
+
 uni_rand <- uni_steps %>% 
   random_steps(n_control = 15,
-               sl_distr = fit_distr(uni_steps$sl_, "gamma"),
-               ta_distr = fit_distr(uni_steps$ta_, "vonmises"))
+               sl_distr = "gamma",
+               ta_distr = "vonmises")
 
 #6. Attach step attributes----
 #Now we attach our covariates to each step. We've already seen 
@@ -744,7 +750,7 @@ summary(issf)
   #the lecture with how to do this in general. 
 
 #We have a function in 'amt' that will give us the original parameters
-sl_distr_params(issf)
+sl_distr_params(issf) # doesn't work...
 
 #Store them for convenience
 old_shape <- sl_distr_params(issf)$shape
