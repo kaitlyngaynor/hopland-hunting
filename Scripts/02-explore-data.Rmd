@@ -17,13 +17,26 @@ library(dplyr)
 library(rgdal)
 library(raster)
 library(tidyr)
+library(ggplot2)
 ```
 
-Bring in the metadata that I made.
+Bring in the metadata that I made manually back in early 2019 (consolidated from field sheets.
 ```{r}
 metadata <- read.csv(here::here("Data/Hunting/igotu_metadata.csv"))
 names(metadata)
+```
 
+Need to fix the "H_Y" records in the "Hunter_nonhunter" category (originally I had H_Y and H_N)
+```{r}
+for(i in 1:nrow(metadata)) {
+    if(metadata$Hunter_nonhunter[[i]] == "H_Y") {
+        metadata$Hunter_nonhunter[[i]] <- "H"
+    }
+}
+```
+
+#### Some simple explorations
+```{r}
 # how many hunting parties?
 length(unique(metadata$Party_ID)) # 137
 
@@ -40,23 +53,23 @@ count(metadata, Harvest) # 36
 
 There are 7 parties in which two individuals harvested animals. 
 
-For early files, we know whether or not the data were successfully recovered. Looks like 6 tags didn't work (plus there are 70 that we don't have any more information about)
+#### Unsuccessful recovery
+
+For early files, we know whether or not the data were successfully recovered. Looks like 6 tags didn't work (plus there are 70 that we don't have any more information about).
 ```{r}
 count(metadata, Data_recovered) 
+
+filter(metadata, Data_recovered == "N") 
 
 # remove the ones that didn't work
 metadata_work <- filter(metadata, Data_recovered != "N")
 ```
 
-Try removing the non-hunters from this list.
-```{r}
-# need to fix the "H_Y" records in the "Hunter_nonhunter" category (originally I had H_Y and H_N)
-for(i in 1:nrow(metadata)) {
-    if(metadata$Hunter_nonhunter[[i]] == "H_Y") {
-        metadata$Hunter_nonhunter[[i]] <- "H"
-    }
-}
+Unfortunately, 080815_17 from party 080815_G harvested a deer but had a failed tag. Could potentially use the other tag from that party.
 
+
+#### Explore non-hunters
+```{r}
 # how many nonhunters?
 count(metadata, Hunter_nonhunter)
 
@@ -68,7 +81,7 @@ length(unique(metadata_hunter$Party_ID)) == length(unique(metadata$Party_ID))
 # true; all good
 ```
 
-Summarize what's going on in each party
+#### Summarize what's going on in each party
 ```{r}
 summary_hunters <- metadata %>% 
   count(Party_ID, Hunter_nonhunter) %>% 
@@ -88,35 +101,14 @@ summary <- full_join(summary_hunters, summary_harvest) %>%
 ```
 
 
-### Import shapefile for masking
+### Bring in iGotU tracks
 
-Import the shapefile of HREC. We'll consider this the huntable area for generating random points and mapping risk. Of course, there are some pastures that need to be masked. 
-```{r import hrec shapefile, message = F, results ='hide', warning = F}
-# read hrec boundary layer
-hrec.boundary.orig <- readOGR(here::here("Data/Spatial data/Raw from Alex"), "HREC_boundary")
+Cleaned on 01-clean-data.Rmd file
 
-# change projection to UTM
-hrec.boundary <- spTransform(hrec.boundary.orig, "+proj=utm 
-                             +north +zone=10 +ellps=WGS84 +units=m")
-
-###Import shape file with mask of areas that do not allow hunting. 
-no.hunt.area.orig <- readOGR(here::here("Data/Spatial data/Raw from Alex"), "hunt_zone")
-
-# change projection to UTM
-no.hunt.area <- spTransform(no.hunt.area.orig, "+proj=utm 
-                             +north +zone=10 +ellps=WGS84 +units=m")
-
-# create polygon with huntable area only (subtract no hunt from entire boundary)
-huntable <- hrec.boundary - no.hunt.area
-
-# make sure that worked
-plot(huntable, col = "blue") # it did
-
-#Alex: make this in original proj for other spatial needs:
-huntable.wgs <- hrec.boundary.orig - no.hunt.area.orig
-huntable.wgs <- spTransform(huntable, "+proj=longlat +ellps=WGS84")
-plot(huntable.wgs, col = "red")
+```{r}
+igotu_data_huntable <- read.csv(here::here("Data/igotu_data_huntable.csv"))
 ```
+
 
 
 
@@ -135,23 +127,14 @@ igotu_data_huntable %>%
 ```{r}
 party_summary <- function(party) {
   
-  print(party)
-  
   # metadata for all igotus in this party
-  metadata %>% 
-    filter(Party_ID == party)
+  print(metadata %>% 
+    filter(Party_ID == party))
   
   # summary
-  summary %>% 
-    filter(Party_ID == party)
-  
-  # plot of each igotu
-  igotu_data_huntable %>% 
-    filter(Party_ID == party) %>% 
-    ggplot(aes(x = lon, y = lat, col = ID)) +
-    geom_point() +
-    facet_wrap(~ID)
-  
+  print(summary %>% 
+    filter(Party_ID == party))
+
   # plot of all igotus  
   igotu_data_huntable %>% 
     filter(Party_ID == party) %>% 
