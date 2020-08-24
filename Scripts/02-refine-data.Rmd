@@ -7,11 +7,15 @@ editor_options:
   chunk_output_type: console
 ---
 
+### Investigate metadata for parties and tracks
+
 For further analyses, I think it makes sense to only pick a single track from a given hunting party, to avoid pseudoreplication. I also think it makes sense to divide up the successful and unsuccessful hunting parties (and choose the track from the successful hunter). Here, I explore a bit...
 
 ```{r}
 library(dplyr)
 library(rgdal)
+library(raster)
+library(tidyr)
 ```
 
 Bring in the metadata that I made.
@@ -60,10 +64,32 @@ count(metadata, Hunter_nonhunter)
 # start by removing those
 metadata_hunter <- filter(metadata, Hunter_nonhunter == "H")
 
-# were there any parties for which that was the ONLY tag that we successfully collected?
+# were there any parties for which that was the ONLY tag that we successfully collected? (no)
 length(unique(metadata_hunter$Party_ID)) == length(unique(metadata$Party_ID)) 
-# nope
+# true; all good
 ```
+
+Summarize what's going on in each party
+```{r}
+summary_hunters <- metadata %>% 
+  count(Party_ID, Hunter_nonhunter) %>% 
+  pivot_wider(id_cols = Party_ID,
+              names_from = Hunter_nonhunter,
+              values_from = n)
+
+summary_harvest <- metadata %>% 
+  count(Party_ID, Harvest) %>% 
+  pivot_wider(id_cols = Party_ID,
+              names_from = Harvest,
+              values_from = n) 
+
+summary <- full_join(summary_hunters, summary_harvest) %>% 
+  replace_na(replace = list(NH = 0, N = 0, Y = 0)) %>% 
+  rename(No_Harvest = N, Harvest = Y, Hunters = H, NonHunters = NH)
+```
+
+
+### Import shapefile for masking
 
 Import the shapefile of HREC. We'll consider this the huntable area for generating random points and mapping risk. Of course, there are some pastures that need to be masked. 
 ```{r import hrec shapefile, message = F, results ='hide', warning = F}
@@ -93,6 +119,7 @@ huntable.wgs <- spTransform(huntable, "+proj=longlat +ellps=WGS84")
 plot(huntable.wgs, col = "red")
 ```
 
+### Import and clean tracks
 
 Bring in tracks
 ```{r}
@@ -140,6 +167,9 @@ igotu_data_huntable <- as.data.frame(igotu_spdf)
 
 # write for later
 write.csv(igotu_data_huntable, "Data/igotu_data_huntable.csv", row.names=F)
+
+# now make version with 10 min fix rate
+
 ```
 
 Plot the individual tracks for each of the parties that had multiple kills
