@@ -169,8 +169,11 @@ igotu_data_huntable <- as.data.frame(igotu_spdf)
 write.csv(igotu_data_huntable, "Data/igotu_data_huntable.csv", row.names=F)
 
 # now make version with 10 min fix rate
-
+hunter.ltraj <- as.ltraj(coordinates(igotu_spdf), igotu_spdf$date_time, id = igotu_spdf$ID, typeII = TRUE)
+hunter.ltraj.10min <- redisltraj(hunter.ltraj, u = 10, type = "time")
 ```
+
+### Deep dive into each party
 
 Plot the individual tracks for each of the parties that had multiple kills
 ```{r}
@@ -182,6 +185,10 @@ igotu_data_huntable %>%
 ```
 
 
+##### 080815_01
+```{r}
+
+```
 
 
 
