@@ -13,6 +13,7 @@ library(dplyr)
 library(rgdal)
 library(raster)
 library(tidyr)
+library(adehabitatLT)
 ```
 
 ### Import shapefile for masking
