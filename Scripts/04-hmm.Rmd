@@ -7,13 +7,57 @@ editor_options:
   chunk_output_type: console
 ---
 
-Explore Hidden Markov Models for Hopland hunter data
+## Explore Hidden Markov Models for Hopland hunter data
 
-See resources:
-https://github.com/orbidder/rstatsclass/blob/master/Seminar%206%20State%20Space/HMM%20Seminar.R
-https://www.danaseidel.com/MovEco-R-Workshop/Materials/Day6/Behavioral_Analysis/
+```{r}
+library(moveHMM)
+```
+
+
+Load all tracks (cropped to huntable area in 02-refine-data.Rmd)
+```{r}
+igotu_data_huntable <- read.csv("Data/igotu_data_huntable.csv")
+
+# convert UTM units into kilometers
+igotu_data_huntable$lon <- igotu_data_huntable$lon/1000
+igotu_data_huntable$lat <- igotu_data_huntable$lat/1000
+
+igotu_data_huntable %>% 
+  filter(ID == "081317_36") %>% 
+  ggplot(aes(x = lon, y = lat)) +
+  geom_point() 
+
+# subset to just a few IDs just to make this manageable
+igotu_data_huntable <- filter(igotu_data_huntable, ID %in% c("081416_19", "080815_01", "081317_36"))
+
+data <- moveHMM::prepData(igotu_data_huntable, type="UTM", coordNames=c("lon","lat"))
+
+hist(data$step)
+hist(data$angle)
+summary(data)
+```
+
+Prep & run model
+```{r}
+mu0 <- c(0.1,1) # step mean (two parameters: one for each state)
+sigma0 <- c(0.1,1) # step SD
+zeromass0 <- c(0.1,0.05) # step zero-mass
+stepPar0 <- c(mu0,sigma0,zeromass0)
+
+angleMean0 <- c(pi,0) # angle mean
+kappa0 <- c(1,1) # angle concentration
+anglePar0 <- c(angleMean0,kappa0)
+
+m <- fitHMM(data=data, nbStates=2, stepPar0=stepPar0, anglePar0=anglePar0, formula=~1)
+
+plot(data[data$ID == "081416_19",])
+```
+
+
 
 ## Dana & Eric Tutorial
+
+https://www.danaseidel.com/MovEco-R-Workshop/Materials/Day6/Behavioral_Analysis/
 
 ```{r}
 library(moveHMM)
@@ -149,6 +193,8 @@ plot(m3) # actually plots, but all animals are in same state all the time
 
 Seminar 6: Hidden Markov Models for Animal Movement Ecology
 O. R. Bidder, September 2019
+
+https://github.com/orbidder/rstatsclass/blob/master/Seminar%206%20State%20Space/HMM%20Seminar.R
 
 ```{r}
 library(ggplot2)
