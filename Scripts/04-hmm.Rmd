@@ -82,12 +82,36 @@ successful <- igotu_data_huntable %>%
 unsuccessful <- igotu_data_huntable %>% 
   filter(Harvest == "N")
 
+
+
 data.successful <- moveHMM::prepData(successful, type="UTM", coordNames=c("lon","lat"))
 data.unsuccessful <- moveHMM::prepData(unsuccessful, type="UTM", coordNames=c("lon","lat"))
 
 hist(data.successful$step, col= 'red', breaks = 50, freq = F); hist(data.unsuccessful$step, col = 'blue', add=T, breaks = 50, freq = F)
 
 hist(data.successful$angle, col= 'red', breaks = 50, freq = F); hist(data.unsuccessful$angle, col = 'blue', add=T, breaks = 50, freq = F)
+```
+
+#### Successful vs unsuccessful hunters model
+
+With no transition probabilities
+```{r}
+m.successful <- fitHMM(data=data.successful, 
+            nbStates=2, 
+            stepPar0=stepPar0, 
+            anglePar0=anglePar0)
+
+m.successful
+plot(m.successful)
+
+m.unsuccessful <- fitHMM(data=data.unsuccessful, 
+            nbStates=2, 
+            stepPar0=stepPar0, 
+            anglePar0=anglePar0)
+
+m.unsuccessful
+plot(m.unsuccessful)
+
 ```
 
 
