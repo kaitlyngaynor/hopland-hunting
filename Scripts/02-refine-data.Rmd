@@ -105,7 +105,7 @@ read_csv_filename <- function(filename){
 }
 hunter.csvs <- lapply(filenames, FUN=read_csv_filename)
 
-ExtractCollarData <- function (X){
+ExtractIgotuData <- function (X){
   ID <- X[,"Track"]
   unit.time <- X[,"Time"]
   unit.date <- X[,"Date"]
@@ -119,29 +119,32 @@ ExtractCollarData <- function (X){
   data.frame(ID=ID, date_time=date_time, lat=lat, lon=lon)
 }
 
-# generate list of extracted collar data
-extracted.list <- lapply(hunter.csvs, FUN=ExtractCollarData)
+# generate list of extracted igotu data
+extracted.list <- lapply(hunter.csvs, FUN=ExtractIgotuData)
 
 # combine into one
-collar_data_all <- do.call("rbind", extracted.list) 
+igotu_data_all <- do.call("rbind", extracted.list) 
 
 # add the metadata
-collar_data_all <- left_join(collar_data_all, metadata)
+igotu_data_all <- left_join(igotu_data_all, metadata)
 
 # create spatial data frame, transform to UTM, and crop to HREC huntable zone
-igotu_spdf <- collar_data_all # copy
+igotu_spdf <- igotu_data_all # copy
 coordinates(igotu_spdf) <- ~lon+lat # create spdf
 proj4string(igotu_spdf) <- CRS("+proj=longlat +ellps=WGS84")
 igotu_spdf <- spTransform(igotu_spdf, CRS("+proj=utm +north +zone=10 +ellps=WGS84 +units=m"))
 igotu_spdf <- igotu_spdf[huntable,]
 
 # convert back to dataframe
-collar_data_huntable <- as.data.frame(igotu_spdf)
+igotu_data_huntable <- as.data.frame(igotu_spdf)
+
+# write for later
+write.csv(igotu_data_huntable, "Data/igotu_data_huntable.csv", row.names=F)
 ```
 
 Plot the individual tracks for each of the parties that had multiple kills
 ```{r}
-collar_data_huntable %>% 
+igotu_data_huntable %>% 
     filter(Party_ID %in% levels(multipleharvests$Party_ID)) %>% 
     ggplot(aes(x = lon, y = lat, col = ID)) +
     geom_point() +
