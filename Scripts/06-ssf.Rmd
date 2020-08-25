@@ -215,51 +215,34 @@ As with RSFs, start by writing out your candidate models.
 
 Here are just a few examples of ways you can structure your models based on different hypotheses. Generally you will use a cluster() term any time you fit SSFs, particulalry if your data are autocorrelated. Therefore, these models below aren't really complete. Here we'll just check them out to get a rough idea of hypothesis testing and model fit
 
-m0 just has habitat covariates at the end
 note: amt has a wrapper for clogit called fit_issf. These commands should produce identical outcomes
 ```{r}
-m0 <- clogit(case_ ~ elev_s_end + tri_s_end + ndvi_s_end + 
-               strata(stepID),method = "efron", robust = TRUE, data = ssfdat.all, model = TRUE)
-m0.b <- fit_issf(case_ ~ elev_s_end + tri_s_end + ndvi_s_end + 
+m0 <- clogit(case_ ~ road.dist.clean_end + rugged25.clean_end + vegetation.coarser.clean2_end + 
                strata(stepID),method = "efron", robust = TRUE, data = ssfdat.all, model = TRUE)
 
 summary(m0)
-summary(m0.b)
 ```
 
-Do animals select for ndvi differently between day and night? 
-m1 has habitat covariates at the end with an interaction term between NDVI and time of day
-```{r}
-m1 <- clogit(case_ ~ elev_s_end + tri_s_end + ndvi_s_end + 
-               ndvi_s_end:tod_start_ +
-               strata(stepID), method = "efron", robust = TRUE, data = ssfdat.all, model = TRUE)
-
-```
 
 Do animals select rugged habitats depending on their speed of movement?
 m2 has habitat covariates the end with an interaction term between TRI at the start and movement rate
 ```{r}
-m2 <- clogit(case_ ~ elev_s_end + tri_s_end + ndvi_s_end + 
-               tri_s_end:log_sl +
+m2 <- clogit(case_ ~ road.dist.clean_end + rugged25.clean_end + vegetation.coarser.clean2_end + 
+               rugged25.clean_end:log(sl_) +
                strata(stepID), method = "efron", robust = TRUE, data = ssfdat.all, model = TRUE)
 
+summary(m2)
 ```
 
 Are animals more likely to stay in the same NDVI as where they started?
 ```{r}
-m3 <- clogit(case_ ~ elev_s_end + tri_s_end + ndvi_s_end + 
-               ndvi_s_end:ndvi_s_start +
-               strata(stepID), method = "efron", robust = TRUE, data = ssfdat.all, model = TRUE)
+#m3 <- clogit(case_ ~ elev_s_end + tri_s_end + ndvi_s_end + 
+#               ndvi_s_end:ndvi_s_start +
+#               strata(stepID), method = "efron", robust = TRUE, data = ssfdat.all, model = TRUE)
 ```
 
-Let's look at our models
-```{r}
-summary(m0)
-summary(m1)
-summary(m2)
-summary(m3)
-```
 
+LEFT OFF HERE
 
 Dealing with correlated data
 
