@@ -116,7 +116,6 @@ ssfdat <- ssfdat %>%
       amt::extract_covariates(envtrasters, where="both")}))
 ```
 
-
 We need to scale our covariates, but right now our data are in different tibbles by individual. 
 
 If we want to scale the covariates from all the data, we need to make a single dataframe. To make one dataframe, we need a column for ID to tell the animals apart. To do that, we'll pull the IDs and the number of rows from each component of our data list
@@ -168,8 +167,8 @@ Before we run our models, let's visualize our step lengths and turn angles
 
 Our turn angles are in radians.  For ease of vizualization, we'll turn them into degrees
 ```{r}
-ssfdat.all %>%
-  mutate(ta_degree = as_degree(ta_)) -> ssfdat.all
+ssfdat.all <- ssfdat.all %>%
+  mutate(ta_degree = as_degree(ta_))
 ```
 
 First, we can look at the distribution of our turning angles as a rose plot
@@ -180,8 +179,8 @@ ssfdat.all %>%
   coord_polar(start = 0) + theme_minimal() + 
   scale_fill_brewer() + ylab("Density") + ggtitle("Angles Direct") + 
   scale_x_continuous("", limits = c(-180, 180), breaks = seq(-180, 180, by=20), 
-                     labels = seq(-180, 180, by=20))+
-  facet_wrap(~ID)
+                     labels = seq(-180, 180, by=20)) #+
+ # facet_wrap(~ID) # too crowded when facet-wrapped
 ```
 
 Also check out the distribution of step lengths
@@ -189,19 +188,8 @@ Also check out the distribution of step lengths
 ssfdat.all %>% 
   filter(case_ == 1) %>% 
   ggplot(., aes(x = sl_)) +  geom_histogram() + theme_minimal() + 
-  scale_fill_brewer() + ylab("Count") + ggtitle("Step Lengths") +
-  facet_wrap(~ID, scales="free")
-```
-
-We can also look at how movement parameters might differ between day and night
-Here, we're looking at the log of step length
-Why do we take the log of the step length? Modify the plot code to see!
-```{r}
-ssfdat.all %>% 
-  filter(case_ == 1) %>% 
-  ggplot(., aes(x = tod_start_, y = log(sl_))) + 
-  geom_boxplot() + geom_smooth() + 
-  facet_wrap(~ID)
+  scale_fill_brewer() + ylab("Count") + ggtitle("Step Lengths")# +
+  #facet_wrap(~ID, scales="free")
 ```
 
 Let's also look at what used and available steps look like
