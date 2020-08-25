@@ -138,26 +138,30 @@ One issue we have with our new dataset is that there are the same step IDs for m
 ssfdat.all$stepID <- ssfdat.all$ID*100000 + ssfdat.all$step_id_
 ```
 
-We'll also remove any lines with NAs. Normally we shouldn't have NAs, but I cropped our raster layer too small, so this is just where we are!
+We'll also remove any lines with NAs so that it works. (This isn't great, though... there should be covariate values for all points since we already cropped to HREC boundary. Or are these random steps that are off of HREC property?)
 ```{r}
 ssfdat.all <- drop_na(ssfdat.all)
 ```
 
 Scale the covariates, turn "case" into a binary 1/0 variable, and add some movement parameters that we can use as covariates
 ```{r}
-ssfdat.all %>% mutate(elev_s_start = scale(dem_start), 
-                  slope_s_start = scale(slope_start),
-                  tri_s_start = scale(tri_start),
-                  ndvi_s_start = scale(max_ndvi_start),
-                  elev_s_end = scale(dem_end), 
-                  slope_s_end = scale(slope_end),
-                  tri_s_end = scale(tri_end),
-                  ndvi_s_end = scale(max_ndvi_end),
-                  case_ = as.numeric(case_),
+ssfdat.all <- ssfdat.all %>% mutate(case_ = as.numeric(case_),
                   cos_ta = cos(ta_), 
-                  log_sl = log(sl_)) -> ssfdat.all
+                  log_sl = log(sl_))
+
+# scale numeric covariates (vegetation should be a factor)
+covariates_scaled <- ssfdat.all[,13:54] %>% 
+  mutate_if(is.numeric, scale)
+
+# now replace them
+ssfdat.all <- ssfdat.all[,c(1:12, 55:56)] %>% 
+  cbind(covariates_scaled)
 ```
 
+Export for later
+```{r}
+write.csv(ssfdat.all, "Data/ssfdat.all.csv")
+```
 
 Data exploration
 
