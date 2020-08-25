@@ -116,7 +116,6 @@ ssfdat <- ssfdat %>%
       amt::extract_covariates(envtrasters, where="both")}))
 ```
 
-# LEFT OFF HERE 
 
 We need to scale our covariates, but right now our data are in different tibbles by individual. 
 
