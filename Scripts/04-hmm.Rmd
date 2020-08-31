@@ -73,6 +73,8 @@ prop.table(table(states))
 
 # plot states for a given individual
 plotStates(m, animals="081416_19")
+
+plotStates(m)
 ```
 
 Now try separating successful vs unsuccessful hunters
@@ -133,5 +135,32 @@ m3 <- fitHMM(data=data, nbStates=3, stepPar0=stepPar3, anglePar0=anglePar3)
 plot(m3)
   
 AIC(m, m3)
+```
+
+## BPCA
+
+abandoned this after some brief exploration
+
+```{r}
+igotu_data_huntable
+
+library(bcpa)
+
+X <- as.numeric(coords@coords[1:100,1])
+Y <- as.numeric(coords@coords[1:100,2])
+Time <- 1:100
+mytrack <- MakeTrack(X,Y,Time)
+plot(mytrack)
+
+test_igotu <- igotu_data_huntable %>% 
+  filter(ID == "081416_04")
+
+mytrack <- MakeTrack(test_igotu$lon, test_igotu$lat, 
+                     Time = test_igotu$date_time)
+
+plot(mytrack)
+
+igotu.VT <- GetVT(mytrack)
+head(igotu.VT)
 ```
 
