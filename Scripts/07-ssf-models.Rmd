@@ -22,146 +22,12 @@ library(devtools)
 library(hab)
 ```
 
-### Load in your environmental covariates
-
-Unlike last week, when all our rasters were already in a stack, today we have 4 individual files. So we list the files and then bring them in as a stack using paste0
+Import cleaned data file
 ```{r}
-# first import all files in a single folder as a list 
-rastlist <- list.files(path = here::here('Data', 'Spatial data', 'Cleaned rasters'),
-                       pattern='.tif$', all.files=TRUE, full.names=FALSE)
-
-# import rasters into raster stack
-envtrasters <- raster::stack(paste0("Data/Spatial data/Cleaned rasters/", rastlist))
+ssfdat.all <- read.csv("Data/ssfdat.all.csv")
 ```
 
-Next, we'll bring in our GPS data
-```{r}
-igotu_huntable <- read.csv("Data/igotu_data_huntable_10min.csv") %>% 
-  dplyr::select(ID, lon, lat, date_time) %>% # just take the columns we want
-  mutate(date_time = as.POSIXct(date_time))
-
-# revert to old versions of unest/unnest
-nest <- nest_legacy
-unnest <- unnest_legacy
-
-# To treat each animal differently, we will nest the data by animal ID
-igotu_huntable <- igotu_huntable %>% tidyr::nest(-ID) 
-# Check out the structure of the data
-igotu_huntable
-```
-
-Now we'll make a "track", which is used by package amt for movement analysis
-
-This format helps amt to manage with variable fix rates and fix success so you don't have to!
-
-```{r}
-igotu_huntable <- igotu_huntable %>% 
-  mutate(trk = map(data, function(d){
-    mk_track(d, .x = lon, .y = lat, .t = date_time, crs = CRS("+proj=utm +north +zone=10 +ellps=WGS84 +units=m")) 
-  }))
-```
-
-  
-### Correct non-normal fix rates
-
-Are our fix rates normal? We should have steps 10 min apart
-```{r}
-igotu_huntable %>%
-  mutate(sr = lapply(trk, summarize_sampling_rate)) %>% 
-  dplyr::select(ID, sr) %>% unnest
-```
-
-Seems like yes? But just in case, let's eliminate steps that are longer than 3 hours apart and filter out bursts that only have one point
-```{r}
-ssfdat <- igotu_huntable %>% 
-  mutate(steps = map(trk, function(x){
-    x %>% 
-      # Eliminate steps longer than 3 hours
-      track_resample(rate = minutes(10)) %>%
-      # Eliminate bursts with fewer than 2 points
-      filter_min_n_burst(min_n = 2)}))
-```
-
-Did we get rid of any locations? Compare the dimentions of our individual tracks in comparison to the steps we're keeping (no, seems like we already sorted that out)
-```{r}
-ssfdat
-```
-
-
-### Simulate steps & extract covariates
-
-Next we simulate steps from our distribution of step lengths and turn angles, and extract the covariates for each step. 
-
-A note on extracting covariates:
-Generally we extract covariates at the END points of each step. However, in some cases, it may make sense to extract covariates ALONG a step. So, rather than ask: "did the animal end up in forest habitat?" you can ask: "what proportion of forest did they move through on their movement path?"
-
-https://rdrr.io/cran/amt/man/extract_covariates.html
-
-In other cases, it might make sense to extract covariates at the BEGINNING of the step
-WHY??? 
-As an interaction term - to see if the start location influences the end location or a movement parameter
-  e.g. a habitat that is hard to move through
-  e.g. due to group/herd effects
-In the extract_covariates command, use where = "start", "end", or "both" depending on your goals
-
-Here we make a function that will apply a bunch of commands to each of our individual animals. In this one piped function, we can sample random points, make a day/night covariate, and extract covariates!
-```{r}
-ssfdat <- ssfdat %>%
-  mutate(moddata = map(steps, function (x){
-    x %>% 
-      steps_by_burst() %>% 
-      # Randomly sample 10 steps per real step
-      random_steps(n = 10) %>% 
-      # Extract covariates from our raster stack
-      amt::extract_covariates(envtrasters, where="both")}))
-```
-
-We need to scale our covariates, but right now our data are in different tibbles by individual. 
-
-If we want to scale the covariates from all the data, we need to make a single dataframe. To make one dataframe, we need a column for ID to tell the animals apart. To do that, we'll pull the IDs and the number of rows from each component of our data list
-```{r}
-ssfdat.all <- do.call(rbind,ssfdat$moddata)
-ID<-c()
-for (i in 1:length(ssfdat[[1]])) {
-   id <- rep(ssfdat[[i,1]],dim(ssfdat$moddata[[i]])[1])
-   ID<-c(ID,id)
-}
-ssfdat.all$ID <- ID
-
-ssfdat.all 
-```
-
-One issue we have with our new dataset is that there are the same step IDs for multiple individual pumas. To deal with that, we'll make a new step column
-```{r}
-ssfdat.all$stepID <- ssfdat.all$ID*100000 + ssfdat.all$step_id_
-```
-
-We'll also remove any lines with NAs so that it works. (This isn't great, though... there should be covariate values for all points since we already cropped to HREC boundary. Or are these random steps that are off of HREC property?)
-```{r}
-ssfdat.all <- drop_na(ssfdat.all)
-```
-
-Scale the covariates, turn "case" into a binary 1/0 variable, and add some movement parameters that we can use as covariates
-```{r}
-ssfdat.all <- ssfdat.all %>% mutate(case_ = as.numeric(case_),
-                  cos_ta = cos(ta_), 
-                  log_sl = log(sl_))
-
-# scale numeric covariates (vegetation should be a factor)
-covariates_scaled <- ssfdat.all[,13:54] %>% 
-  mutate_if(is.numeric, scale)
-
-# now replace them
-ssfdat.all <- ssfdat.all[,c(1:12, 55:56)] %>% 
-  cbind(covariates_scaled)
-```
-
-Export for later
-```{r}
-write.csv(ssfdat.all, "Data/ssfdat.all.csv")
-```
-
-Data exploration
+#### Data exploration
 
 Before we run our models, let's visualize our step lengths and turn angles
 
@@ -209,7 +75,7 @@ A note on behaviors: You might imagine that animals select habitat really differ
 You can determine the state of your animal in a few different ways. With just GPS data, you can fit a hidden markov model (HMM) to determine state with the moveHMM package. If you have fine-scale accelerometer data, you can also use that to determine state. 
 
 
-Run models
+#### Run models
 
 As with RSFs, start by writing out your candidate models.
 
@@ -234,17 +100,8 @@ m2 <- clogit(case_ ~ road.dist.clean_end + rugged25.clean_end + vegetation.coars
 summary(m2)
 ```
 
-Are animals more likely to stay in the same NDVI as where they started?
-```{r}
-#m3 <- clogit(case_ ~ elev_s_end + tri_s_end + ndvi_s_end + 
-#               ndvi_s_end:ndvi_s_start +
-#               strata(stepID), method = "efron", robust = TRUE, data = ssfdat.all, model = TRUE)
-```
 
-
-LEFT OFF HERE
-
-Dealing with correlated data
+#### Dealing with correlated data
 
 There are multiple ways to integrate correlated data into a single model. The first way is to build in a correlation structure in your model. We can do this by adding a cluster() parameter that seperates your data into clusters of correlated data.
 
@@ -283,25 +140,17 @@ table(ssfdat.all$clust_id_yr)
 
 Let's revisit our fixed effects models and add a cluster term
 ```{r}
-m0_c <- clogit(case_ ~ elev_s_end + tri_s_end + ndvi_s_end + cluster(clust_id_yr) +
+m0_c <- clogit(case_ ~ road.dist.clean_end + rugged25.clean_end + vegetation.coarser.clean2_end + cluster(clust_id_yr) + 
                strata(stepID),method = "efron", robust = TRUE, data = ssfdat.all, model = TRUE)
-m1_c <- clogit(case_ ~ elev_s_end + tri_s_end + ndvi_s_end + ndvi_s_end:tod_start_ + cluster(clust_id_yr) +
-               strata(stepID), method = "efron", robust = TRUE, data = ssfdat.all, model = TRUE)
-m2_c <- clogit(case_ ~ elev_s_end + tri_s_end + ndvi_s_end + 
-               tri_s_end:log_sl + cluster(clust_id_yr) +
-               strata(stepID), method = "efron", robust = TRUE, data = ssfdat.all, model = TRUE)
-m3_c <- clogit(case_ ~ elev_s_end + tri_s_end + ndvi_s_end + 
-               ndvi_s_end:ndvi_s_start + cluster(clust_id_yr) +
-               strata(stepID), method = "efron", robust = TRUE, data = ssfdat.all, model = TRUE)
 ```
 
-What is different about our model output in the model with clusters?
+What is different about our model output in the model with clusters? (Nothing, because we didnt have the same individuals over multiple years)
 ```{r}
 summary(m0)
 summary(m0_c)
 ```
 
-Model selection
+#### Model selection
 
 Time for model comparison!
 Instead of AIC, for conditional logistic regression models we use QIC
@@ -319,16 +168,15 @@ QIC.coxph <- function(mod, details = FALSE) {
 
 Which model is best supported?
 ```{r}
-QIC.coxph(m0_c)
-QIC.coxph(m1_c)
-QIC.coxph(m2_c)
-QIC.coxph(m3_c)
+QIC.coxph(m0)
+QIC.coxph(m2)
 ```
 
 Now we can assess model fit
 Normally we would want ~ 100 repetitions, but in the interest of time we'll use a smaller number in class today
+(Causing error... to troubleshoot)
 ```{r}
-kfold.CV <- kfold(m0_c, k = 5, nrepet = 2, jitter = FALSE,
+kfold.CV <- kfold(m0, k = 5, nrepet = 2, jitter = FALSE,
                   reproducible = TRUE, details = TRUE)
 ```
 
@@ -339,10 +187,12 @@ kfold.CV %>%
   summarize(mean_cor = mean(cor))
 ```
 
-Adding random effect
+#### Adding random effect
 
 The second way to deal with correlated data is using random effects (like we did with RSFs)
 The assumptions here are different! We don't need to have temporal autocorrelation within individuals but we expect that habitat selection varies among individuals. Unlike the GEE models that just correct your SEs, mixed-effects models will also change your coefficient estimates.
+
+DID NOT UPDATE/TEST THIS
 
 Random effects SSF with the coxme package
 ```{r}
