@@ -1,0 +1,216 @@
+---
+title: "Behavioral Change Point Analysis"
+author: "Kaitlyn"
+date: "8/21/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+Behavioral Change Point Analysis (BCPA)
+
+From:
+https://www.danaseidel.com/MovEco-R-Workshop/Materials/Day6/Behavioral_Analysis/
+
+## First run HMM
+
+One other cool feature of the `moveHMM` package is the ability to plot it on satelite data using the `moveHMM::plotSat` command. In order to do this, we need the coordinates to be in LatLong rather than UTM. Remember, we'll also need to multiply our UTM coordinates by 1000 to make sure the elk are plotted in the right place:
+
+```{r}
+library(rgdal)
+utmcoord <- SpatialPoints(cbind(data$x*1000, data$y*1000), proj4string=CRS("+proj=utm +zone=17"))
+llcoord <- spTransform(utmcoord, CRS("+proj=longlat"))
+lldata <- data.frame(ID=data$ID, x=attr(llcoord, "coords")[,1], y=attr(llcoord, "coords")[,2])
+
+#plotSat(lldata, zoom=8)
+```
+
+Now lets try to create our own HMM using empirical zebra data collected by the Getz Lab. We know how important time is when it comes to movement data, so rather than using a spatial covariate, let's use a temporal one to see if there is any effect on the transition probabilities.
+
+First, we will bring in the data on Zebra AG253:
+
+```{r}
+zeb253 <- read.csv('https://raw.githubusercontent.com/dpseidel/MovEco-R-Workshop/master/Materials/Day6/Zebra_AG253.csv')
+```
+
+As you can see, we have a lot more observations for this zebra than our elk example. For the sake of time, lets reduce this dataset to a smaller, but still substantial, subset of 500 points:
+
+```{r}
+zebra <- zeb253[10001:10500,]
+```
+
+Now we have some cleaning to do. We can see that we have LatLong rather than UTM, so we'll need to take care of that. We also need to derive our own temporal covariate using the time stamps.
+
+```{r}
+#Project and transform points into UTM
+coords <- SpatialPoints(zebra[,c("Longitude", "Latitude")], proj4string = CRS("+proj=longlat + datum=WGS84"))
+coords <- spTransform(coords, CRS("+proj=utm +south +zone=33 +ellps=WGS84"))
+
+#Create an object that splits apart the date from the time in our DateTime column
+TOD <- strsplit(as.character(zebra$DateTime), " ")
+#Make a data frame with only the hour (extracted from the time)
+TOD2 <- data.frame(matrix(0,length(TOD),1))
+for (i in 1:length(TOD)) {
+  TOD2[i,1] <- strsplit(TOD[[i]][2], ":")[[1]][1]
+}
+
+#Once again, we divide our units by 1000 to convert from meter to kilometers
+x <- as.numeric(coords@coords[,1]/1000)
+y <- as.numeric(coords@coords[,2]/1000)
+ID <- zebra[,c("Unit.ID")]
+TimeOfDay <- data.frame(TOD2)
+colnames(TimeOfDay) <- c("TimeOfDay")
+
+#Create one data frame with all of the necessary data for the rest of our analyses
+all.data <- data.frame("Easting" = x, "Northing" = y, "ID" = ID, "TimeOfDay" = TimeOfDay)
+all.data$TimeOfDay <- as.numeric(all.data$TimeOfDay)
+```
+
+Now we have a nice data frame with 500 observations and 4 columns that looks a lot like the elk_data we imported:
+
+```{r}
+head(all.data)
+```
+
+From here, we'll need to prep the data (i.e., calculate step size and turning angle), make some decisions about the model(s) we want to create and define various initial values to parameterize the model(s). Let's try two alternatives, just like before, one with 2 states and one with 3 states. Note that we are not including a zero-mass parameter here because there are no points with a step distance of 0, and we will get an error for over-parameterizing. In both models, we will use the time of day as a covariate:
+
+```{r}
+dataHMM <- prepData(all.data, type="UTM", coordNames=c("Easting","Northing"))
+summary(dataHMM)
+plot(dataHMM,compact=T)
+
+mu0 <- c(0.05, 0.5) # step mean (two parameters: one for each state)
+sigma0 <- c(0.05, 0.5) # step SD
+#zeromass0 <- c(0.1, 0.05) # step zero-mass
+stepPar2 <- c(mu0,sigma0)#,zeromass0)
+
+angleMean0 <- c(pi,0) # angle mean
+kappa0 <- c(1,1) # angle concentration
+anglePar2 <- c(angleMean0,kappa0)
+
+z <- fitHMM(data=dataHMM, nbStates=2, stepPar0=stepPar2, anglePar0=anglePar2,
+            formula=~TimeOfDay) # giving an error??
+
+
+mu0 <- c(0.01,0.1,1) # step mean (three parameters: one for each state)
+sigma0 <- c(.005,.05,.5) # step SD
+#zeromass0 <- c(0.01,0.05,0.1) 
+stepPar3 <- c(mu0,sigma0)#,zeromass0)
+
+angleMean0 <- c(0,0,0) # angle mean
+kappa0 <- c(0.01,0.5,1) # angle concentration
+anglePar3 <- c(angleMean0,kappa0)
+
+z3 <- fitHMM(data=dataHMM, nbStates=3, stepPar0=stepPar3, anglePar0=anglePar3,
+            formula=~TimeOfDay)
+```
+
+These took a bit longer than the elk example, but now we have two potential HMMs. Before we delve into either one, let's take a look at the AIC of each to decide which one we want to investigate in more detail:
+
+```{r}
+AIC(z, z3)
+```
+
+Well now we know that the three-state model performs better, so lets look at that in a bit more detail. We could also decode the states based on this model, but becasue there are so many points in the time series, it will be a little more difficult to see what is happening. Instead, let's see what kind of proportion of time our zebra spends in each of the behavioral states:
+
+```{r}
+z3
+plot(z3)
+plotStates(z3)
+
+states <- viterbi(z3)
+prop.table(table(states))
+```
+
+There we have it: over very own temporally-dependent HMM analysis! Based on the output of model z3, try to come up with some potential behaviors that we could associate with each of the three states.
+
+
+## Now BCPA
+
+The next method we're going to take a look at is the behavioral change point analysis (BCPA), which looks for the points in a time series during which there are notable shifts. In our case, we will be applying the method to a movement trajectory to see where an animal may transition between behavioral states, but technically change point analyses can be performed on any time series data (e.g., fluctuating stock values over time or carbon dioxide concentration in the atmosphere over time). Once we extract some change points, we can actually compare the results to the projected change points based on the HMM to see how closely they align.
+
+Just as with all other packages, `bcpa` has its own data format that it prefers, so we will use the `bcpa::MakeTrack` command to translate a set of 100 coordinates (from our 500 point zebra path, for the sake of readability in the outputs) into a usable format:
+
+```{r}
+library(bcpa)
+
+X <- as.numeric(coords@coords[1:100,1])
+Y <- as.numeric(coords@coords[1:100,2])
+Time <- 1:100
+mytrack <- MakeTrack(X,Y,Time)
+plot(mytrack)
+```
+
+To obtain the step length and turning angles, use the `bcpa::GetVT` command, which decomposes the data into single steps and calculates all the statistics:
+
+```{r}
+zebra.VT <- GetVT(mytrack)
+head(zebra.VT)
+```
+
+The essence of a change point analysis is a sweep across a time series in search of breaks. This sweep can be conducted in a number of ways, but we will focus here on the window sweep, whereby we identify an appropriate `windowsize` and sensitivity (`K`) and then the algorithm searches across the time series in search of break points. One can also input a function as the second argument (it can represent any combination of the elements of our `zebra.VT` dataframe), to serve as a response variable. In this case, we will define a very simple function that account for both the velocity of movement and the direction of movement becasue we dont really have any *a priori* conception of what exactly causes change points in this path.
+
+```{r}
+zebra.ws <- WindowSweep(zebra.VT, "V*cos(Theta)", windowsize=50, progress=FALSE, K=2)
+```
+
+The object that is returned by this function (which takes a little while to run, hence our reduction of the dataset to a smaller length) is a `ws` data frame whose final column indicates proposed break points should be and the parameter values associated with before and after those break point.
+
+```{r}
+head(zebra.ws$ws)
+```
+
+We can take a look at these suggested breakpoints by looking at the smoothed plot (i.e., the summary in which all the windows are averaged to obtain the “smooth” model). In this plot, the vertical lines represent the significant change points, the width of the lines is proportional to the number of time that change point was selected.
+
+```{r, warning=FALSE}
+plot(zebra.ws, type="smooth")
+```
+
+That doesnt offer the clearest picture. We can see that there are about 6 separate change points that have some support. We could, however, add a `threshold` parameter, which indicates how many of the windows that were swept over the data must have selected a particular changepoint for it to be considered significant. Here, we will use 5 and see what it looks like:
+
+```{r, warning=FALSE}
+plot(zebra.ws, type="smooth", threshold=5)
+```
+
+This reduces our number of change points from 6 to 4, and all of them appear to signify reasonable shifts in our response variable (which combines velocity and angle).
+
+An alternative way to search for change points is to use the 'flat' rather than 'smooth' method. This analysis first selects changepoints that it deems significant by clustering neighboring change points, and then estimates a homogeneous behavior that occurs between those changepoints.
+
+```{r, warning=FALSE}
+plot(zebra.ws, type="flat")
+```
+
+Once again, if we don't set an equivalent to the threshold parameter (in the case of the 'flat' approach, its called `clusterwidth`), we get quite a few change points. If we set this parameter to 5, we get the following:
+
+```{r, warning=FALSE}
+plot(zebra.ws, type="flat", clusterwidth=5)
+```
+
+This fairly conservative approach results in only two significant change points in our time series. A visual inspection suggests that these points lead to divisions that appear fairly homogenous within and heterogeneous between segments, so perhaps this is a reasonable set of change points. A summary of these change points can be obtained using the `bcpa::ChangePointSummary` command:
+
+```{r}
+ChangePointSummary(zebra.ws, clusterwidth=5)
+```
+
+This summmary suggests three phases, with each phase consisting progressively higher velocity (mu.hat). We can also visualize the path itself with the associated change points using the `bcpa::PathPlot` command or the `bcpa::PhasePlot` command:
+
+```{r}
+PathPlot(mytrack, zebra.ws, type="flat", clusterwidth = 5, main="Flat BCPA", xlim=c(580000,600000), ylim=c(7862000, 7870000))
+PhasePlot(zebra.ws, clusterwidth = 5)
+```
+
+Now, let's recall the first 100 values of our HMM predictions from the three-state model and see if they align with these results:
+
+```{r}
+states[1:100]
+```
+
+We can see a general pattern, but you can see that the HMM is very sensitive to changes (i.e., it doesn't have a threshold value associated to determine significant changes). We can, however, see that the there is a pretty notable shift from 2s interspersed with 1s to 3s interspersed with 1s at about t=56. This roughly aligns with the second change point we found with the BCPA method. 
+
+Is there anything else that you notice about the dataset based on these outputs?
+
+One important aspect that got lost when we artificially altered the time stamps in the second analysis is the fact that the points were not collected uniformly over time. In fact, state 1 in the HMM actually represents false short steps (for the most part), as these data were collected in a pattern of:
+
+- Point - 10 seconds - Point - 10 seconds - Point - 19 minutes and 40 seconds - Point -
+ 
+This results in the characteristic peaks and troughs that we see in the BCPA response variable and the pattern of state changes in the HMM. A little data management before beginning these analyses could have prevented this from affecting the results, but this serves as an important lesson in conducting such analyses that we must be careful about the structure of our data, as it will inevitably affect our outputs. It also illustrates some of the ways that we could check throughout the process.
