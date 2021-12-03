@@ -9,7 +9,7 @@ editor_options:
 
 ### Investigate metadata for parties and tracks
 
-For further analyses, I think it makes sense to only pick a single track from a given hunting party, to avoid pseudoreplication. I also think it makes sense to divide up the successful and unsuccessful hunting parties (and choose the track from the successful hunter). Here, I explore a bit...
+For further analyses, I think it makes sense to only pick a single track from a given hunting party, to avoid pseudoreplication (UPDATE: we decided to use hunting party as a random effect in the model). I also think it makes sense to divide up the successful and unsuccessful hunting parties (and choose the track from the successful hunter). Here, I explore a bit...
 
 ```{r}
 library(here)
