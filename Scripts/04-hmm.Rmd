@@ -13,19 +13,16 @@ editor_options:
 library(moveHMM)
 library(ggplot2)
 library(dplyr)
+library(sf)
 ```
 
 
 Load all tracks (cropped to huntable area in 02-refine-data.Rmd)
 ```{r}
-igotu_data_huntable <- read.csv("Data/igotu_data_huntable_10min_covariates.csv")
+igotu_data <- read.csv("Data/igotu_data_covariates.csv")
 
-# convert UTM units into kilometers
-igotu_data_huntable$lon <- igotu_data_huntable$lon/1000
-igotu_data_huntable$lat <- igotu_data_huntable$lat/1000
-
-igotu_data_huntable %>% 
-  filter(ID == "081317_36") %>% 
+igotu_data %>% 
+  filter(ID == "080815_01") %>% 
   ggplot(aes(x = lon, y = lat)) +
   geom_point() 
 ```
@@ -33,33 +30,71 @@ igotu_data_huntable %>%
 Prep data for modeling
 
 ```{r}
-# subset to just a few IDs just to make this manageable for proof of concept
-#igotu_data_huntable <- filter(igotu_data_huntable, ID %in% c("081416_19", "080815_01", "081317_36", "081316_17"))
+igotu_data_fewer <- igotu_data %>% 
+  dplyr::select(ID, lon, lat, date_time, Start_time, End_time, rugged49.clean, slope, hq_dist, vegetation.coarser.clean2, view)
 
-data <- moveHMM::prepData(igotu_data_huntable, type="UTM", coordNames=c("lon","lat"))
+data_hmm <- moveHMM::prepData(igotu_data_fewer, 
+                              type="LL", 
+                              coordNames=c("lon","lat"))
+head(data_hmm)
 
-hist(data$step)
-hist(data$angle)
+hist(data_hmm$step)
+hist(data_hmm$angle)
 
-plot(data[data$ID == "081416_19",])
+plot(data_hmm[data_hmm$ID == "080815_01",])
+
+summary(data_hmm)
 ```
+
+Have a look at the zero step lenghts
+```{r}
+# determine proportion of step lengths equal to 0
+whichzero <- which(data_hmm$step == 0)
+length(whichzero)/nrow(data_hmm)
+
+zeros <- data_hmm %>% 
+  filter(step == 0)
+
+ggplot(zeros, aes(x = x, y = y)) + geom_point()
+
+
+data_hmm_copy <- data_hmm
+data_hmm_copy[is.na(data_hmm_copy)] <- 0
+
+# determine which ones follow a zero
+data_hmm_copy$after_zero <- "NOT_AFTER_ZERO" 
+for(i in 2:nrow(data_hmm_copy)) {
+  if(data_hmm_copy$step[i] == 0) {
+    data_hmm_copy$after_zero[i] <- "ZERO"
+  } else if(data_hmm_copy$step[i-1] == 0) {
+    data_hmm_copy$after_zero[i] <- "AFTER_ZERO"
+  } else {
+    data_hmm_copy$after_zero[i] <- "NOT_AFTER_ZERO"
+  }
+}
+
+ggplot(data_hmm_copy, aes(x = step)) +
+  geom_histogram() +
+  facet_wrap(~after_zero)
+```
+
 
 Prep & run model
 ```{r}
-mu0 <- c(0.1,1) # step mean (two parameters: one for each state)
-sigma0 <- c(0.1,1) # step SD
-zeromass0 <- c(0.1,0.05) # step zero-mass
+mu0 <- c(0.01, 0.6) # step mean (two parameters: one for each state)
+sigma0 <- c(0.01, 0.6) # step SD
+zeromass0 <- c(0.50, 0.10) # step zero-mass
 stepPar0 <- c(mu0,sigma0,zeromass0)
 
 angleMean0 <- c(pi,0) # angle mean
 kappa0 <- c(1,1) # angle concentration
 anglePar0 <- c(angleMean0,kappa0)
 
-m <- fitHMM(data=data, 
+m <- fitHMM(data=data_hmm, 
             nbStates=2, 
             stepPar0=stepPar0, 
             anglePar0=anglePar0,
-            formula=~elev+chap_edge)
+            formula = ~view)
 
 m
 
@@ -72,22 +107,22 @@ states
 prop.table(table(states)) 
 
 # plot states for a given individual
-plotStates(m, animals="081416_19")
+plotStates(m, animals="080815_01")
 
 plotStates(m)
 ```
 
 Now try separating successful vs unsuccessful hunters
 ```{r}
-successful <- igotu_data_huntable %>% 
-  filter(Harvest == "Y")
-unsuccessful <- igotu_data_huntable %>% 
-  filter(Harvest == "N")
+successful <- igotu_data %>% 
+  filter(Harvest == "Y") %>% 
+  dplyr::select(ID, lon, lat, rugged49.clean, slope, hq_dist, vegetation.coarser.clean2, view)
+unsuccessful <- igotu_data %>% 
+  filter(Harvest == "N") %>% 
+  dplyr::select(ID, lon, lat, rugged49.clean, slope, hq_dist, vegetation.coarser.clean2, view)
 
-
-
-data.successful <- moveHMM::prepData(successful, type="UTM", coordNames=c("lon","lat"))
-data.unsuccessful <- moveHMM::prepData(unsuccessful, type="UTM", coordNames=c("lon","lat"))
+data.successful <- moveHMM::prepData(successful, type="LL", coordNames=c("lon","lat"))
+data.unsuccessful <- moveHMM::prepData(unsuccessful, type="LL", coordNames=c("lon","lat"))
 
 hist(data.successful$step, col= 'red', breaks = 50, freq = F); hist(data.unsuccessful$step, col = 'blue', add=T, breaks = 50, freq = F)
 
@@ -121,16 +156,22 @@ plot(m.unsuccessful)
 #### Three state model
 ```{r}
 # initial parameters
-mu0 <- c(0.1,0.5,3)
-sigma0 <- c(0.05,0.5,1)
-zeromass0 <- c(0.05,0.0001,0.0001)
+mu0 <- c(0.01, 0.5, 1.0)
+sigma0 <- c(0.01, 0.5, 1.0)
+zeromass0 <- c(0.40, 0.40, 0.10)
 stepPar3 <- c(mu0,sigma0,zeromass0)
 
 angleMean0 <- c(pi,pi,0)
 kappa0 <- c(1,1,1)
 anglePar3 <- c(angleMean0,kappa0)
 
-m3 <- fitHMM(data=data, nbStates=3, stepPar0=stepPar3, anglePar0=anglePar3)
+m3 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar3, anglePar0=anglePar3)
+
+states <- viterbi(m3)
+states
+
+# proportion of time spent in each state
+prop.table(table(states)) 
 
 plot(m3)
   
@@ -142,7 +183,7 @@ AIC(m, m3)
 abandoned this after some brief exploration
 
 ```{r}
-igotu_data_huntable
+igotu_data
 
 library(bcpa)
 
@@ -152,7 +193,7 @@ Time <- 1:100
 mytrack <- MakeTrack(X,Y,Time)
 plot(mytrack)
 
-test_igotu <- igotu_data_huntable %>% 
+test_igotu <- igotu_data %>% 
   filter(ID == "081416_04")
 
 mytrack <- MakeTrack(test_igotu$lon, test_igotu$lat, 
