@@ -14,36 +14,8 @@ library(rgdal)
 library(raster)
 library(tidyr)
 library(adehabitatLT)
-```
-
-### Import shapefile for masking
-
-Import the shapefile of HREC. We'll consider this the huntable area for generating random points and mapping risk. Of course, there are some pastures that need to be masked. 
-```{r import hrec shapefile, message = F, results ='hide', warning = F}
-# read hrec boundary layer
-hrec.boundary.orig <- readOGR(here::here("Data/Spatial data/Raw from Alex"), "HREC_boundary")
-
-# change projection to UTM
-hrec.boundary <- spTransform(hrec.boundary.orig, "+proj=utm 
-                             +north +zone=10 +ellps=WGS84 +units=m")
-
-###Import shape file with mask of areas that do not allow hunting. 
-no.hunt.area.orig <- readOGR(here::here("Data/Spatial data/Raw from Alex"), "hunt_zone")
-
-# change projection to UTM
-no.hunt.area <- spTransform(no.hunt.area.orig, "+proj=utm 
-                             +north +zone=10 +ellps=WGS84 +units=m")
-
-# create polygon with huntable area only (subtract no hunt from entire boundary)
-huntable <- hrec.boundary - no.hunt.area
-
-# make sure that worked
-plot(huntable, col = "blue") # it did
-
-#Alex: make this in original proj for other spatial needs:
-huntable.wgs <- hrec.boundary.orig - no.hunt.area.orig
-huntable.wgs <- spTransform(huntable, "+proj=longlat +ellps=WGS84")
-plot(huntable.wgs, col = "red")
+library(hms)
+library(amt)
 ```
 
 
@@ -87,40 +59,63 @@ extracted.list <- lapply(hunter.csvs, FUN=ExtractIgotuData)
 igotu_data_all <- do.call("rbind", extracted.list) 
 
 # add the metadata
-metadata <- read.csv(here::here("Data/Hunting/igotu_metadata.csv"))
+metadata <- read.csv(here::here("Data/Hunting/igotu_metadata_times_cleaned.csv")) %>% 
+  mutate(Start_time = paste0(Start_time, ":00"),
+         End_time = paste0(End_time, ":00"))
 igotu_data_all <- left_join(igotu_data_all, metadata)
+
+# strip time
+igotu_data_all$Time <- format(igotu_data_all$date_time, format = "%H:%M:%S")
 ```
 
-Crop to huntable zone
+
+filter to 2 individuals
 ```{r}
-# create spatial data frame, transform to UTM, and crop to HREC huntable zone
-igotu_spdf <- igotu_data_all # copy
-coordinates(igotu_spdf) <- ~lon+lat # create spdf
-proj4string(igotu_spdf) <- CRS("+proj=longlat +ellps=WGS84")
-igotu_spdf <- spTransform(igotu_spdf, CRS("+proj=utm +north +zone=10 +ellps=WGS84 +units=m"))
-igotu_spdf <- igotu_spdf[huntable,]
+igotu_data_all <- igotu_data_all %>% 
+  filter(ID %in% c("080815_01", "081917_29", "080915_11"))
 ```
 
-Export data
-```{r}
-# convert back to dataframe
-igotu_data_huntable <- as.data.frame(igotu_spdf)
 
-# write for later
-write.csv(igotu_data_huntable, "Data/igotu_data_huntable.csv", row.names=F)
+Remove points before start or after end
+```{r}
+igotu_data_all$Keep <- "NO"
+for(i in 1:nrow(igotu_data_all)) {
+  if(as_hms(igotu_data_all$Time[i]) > as_hms(igotu_data_all$Start_time[i]) &&
+     as_hms(igotu_data_all$Time[i]) < as_hms(igotu_data_all$End_time[i])) {
+    igotu_data_all$Keep[i] <- "YES"
+  }
+}
+
+igotu_data_cropped <- igotu_data_all %>% 
+  filter(Keep == "YES")
+
+write.csv(igotu_data_cropped, "Data/igotu_data_cropped.csv", row.names = F)
 ```
 
-Make version with 10 minute fix rate
+
+Subsample to 10 minutes
 ```{r}
-# now make version with 10 min fix rate
-hunter.ltraj <- as.ltraj(coordinates(igotu_spdf), igotu_spdf$date_time, id = igotu_spdf$ID, typeII = TRUE)
-hunter.ltraj.10min <- redisltraj(hunter.ltraj, u = 600, type = "time")
+hunter_tracks <- mk_track(tbl = igotu_data_cropped, 
+                              .x = lon, .y = lat,
+                              id = ID, 
+                              .t = date_time,
+                              crs = CRS("+proj=longlat +ellps=WGS84")) 
 
-# get back into data frame, copy metadata in again and format column names
-igotu_data_huntable_10min <- ld(hunter.ltraj.10min) %>% 
-    rename(date_time = date, lon = x, lat = y, ID = id) %>% 
-    left_join(metadata)
+hunter_resampled <- hunter_tracks %>%
+  nest(data = -"id") %>%
+  mutate(resampled_data = map(data, function(x)
+    x %>% track_resample(rate = minutes(10),
+                         tolerance = minutes(2)))) %>%
+  select(id, resampled_data) %>%
+  unnest(cols = resampled_data) %>%
+  rename(
+    lon = x_,
+    lat = y_,
+    date_time = t_,
+    ID = id
+  )
 
-# write for later
-write.csv(igotu_data_huntable_10min, "Data/igotu_data_huntable_10min.csv", row.names=F)
+igotu_data_10min <- left_join(hunter_resampled, igotu_data_cropped) 
+
+write.csv(igotu_data_10min, "Data/igotu_data_10min.csv", row.names=F)
 ```
