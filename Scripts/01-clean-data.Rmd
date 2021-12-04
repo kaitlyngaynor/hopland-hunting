@@ -68,16 +68,6 @@ igotu_data_all <- left_join(igotu_data_all, metadata)
 igotu_data_all$Time <- format(igotu_data_all$date_time, format = "%H:%M:%S")
 ```
 
-
-filter to 6 individuals arbitrarily (3 who were successful, 3 who were not)
-```{r}
-igotu_data_all %>% filter(Harvest == "Y") %>% select(ID) %>% unique
-
-igotu_data_all <- igotu_data_all %>% 
-  filter(ID %in% c("080815_01", "080915_19", "081917_29", "080915_11", "081317_32", "081515_21"))
-```
-
-
 Remove points before start or after end
 ```{r}
 igotu_data_all$Keep <- "NO"
