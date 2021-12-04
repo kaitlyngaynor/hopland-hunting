@@ -69,10 +69,12 @@ igotu_data_all$Time <- format(igotu_data_all$date_time, format = "%H:%M:%S")
 ```
 
 
-filter to 2 individuals
+filter to 6 individuals arbitrarily (3 who were successful, 3 who were not)
 ```{r}
+igotu_data_all %>% filter(Harvest == "Y") %>% select(ID) %>% unique
+
 igotu_data_all <- igotu_data_all %>% 
-  filter(ID %in% c("080815_01", "081917_29", "080915_11"))
+  filter(ID %in% c("080815_01", "080915_19", "081917_29", "080915_11", "081317_32", "081515_21"))
 ```
 
 
@@ -93,7 +95,7 @@ write.csv(igotu_data_cropped, "Data/igotu_data_cropped.csv", row.names = F)
 ```
 
 
-Subsample to 10 minutes
+Subsample to 1 minute
 ```{r}
 hunter_tracks <- mk_track(tbl = igotu_data_cropped, 
                               .x = lon, .y = lat,
@@ -104,8 +106,8 @@ hunter_tracks <- mk_track(tbl = igotu_data_cropped,
 hunter_resampled <- hunter_tracks %>%
   nest(data = -"id") %>%
   mutate(resampled_data = map(data, function(x)
-    x %>% track_resample(rate = minutes(10),
-                         tolerance = minutes(2)))) %>%
+    x %>% track_resample(rate = minutes(3),
+                         tolerance = seconds(0)))) %>%
   select(id, resampled_data) %>%
   unnest(cols = resampled_data) %>%
   rename(
@@ -115,7 +117,7 @@ hunter_resampled <- hunter_tracks %>%
     ID = id
   )
 
-igotu_data_10min <- left_join(hunter_resampled, igotu_data_cropped) 
+igotu_data_1min <- left_join(hunter_resampled, igotu_data_cropped) 
 
-write.csv(igotu_data_10min, "Data/igotu_data_10min.csv", row.names=F)
+write.csv(igotu_data_1min, "Data/igotu_data_1min.csv", row.names=F)
 ```
