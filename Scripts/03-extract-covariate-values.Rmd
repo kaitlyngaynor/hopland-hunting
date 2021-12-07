@@ -21,7 +21,7 @@ igotu_data <- read.csv("Data/igotu_data_1min.csv")
 
 # convert coordinates to spatial points
 igotu_data.sp <- igotu_data %>% 
-  dplyr::select(lon, lat) %>% 
+  dplyr::select(Longitude, Latitude) %>% 
   SpatialPoints(proj4string=CRS("+proj=longlat +ellps=WGS84")) %>% 
   spTransform(CRS = "+proj=utm +north +zone=10 +ellps=WGS84 +units=m")
 ```
@@ -41,11 +41,7 @@ raster.stack <- raster::stack(paste0("Data/Spatial data/Cleaned rasters/", rastl
 
 Also, convert vegetation to a factor and standardize covariates
 ```{r raster extract}
-igotu.raster <- as.data.frame(raster::extract(raster.stack, igotu_data.sp)) %>% 
-  mutate(vegetation.clean = as.factor(vegetation.clean),
-         vegetation.coarser.clean = as.factor(vegetation.coarser.clean),
-         vegetation.coarser.clean2 = as.factor(vegetation.coarser.clean2)) %>% 
-  mutate_if(is.numeric, scale) # scale covariates
+igotu.raster <- as.data.frame(raster::extract(raster.stack, igotu_data.sp)) 
 ```
 
 Combine raster metadata with the other data 
