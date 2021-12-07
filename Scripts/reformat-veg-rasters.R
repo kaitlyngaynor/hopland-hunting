@@ -22,7 +22,7 @@ grass <- raster::resample(grass, blm_dist, method = 'bilinear')
 test_stack <- raster::stack(blm_dist, chap, wood, grass)
 
 # export
-writeRaster(chap, 'chap_120m.tif', format="GTiff", overwrite=TRUE, options=c("INTERLEAVE=BAND","COMPRESS=LZW"))
-writeRaster(wood, 'wood_120m.tif', format="GTiff", overwrite=TRUE, options=c("INTERLEAVE=BAND","COMPRESS=LZW"))
-writeRaster(grass, 'grass_120m.tif', format="GTiff", overwrite=TRUE, options=c("INTERLEAVE=BAND","COMPRESS=LZW"))
+raster::writeRaster(chap, 'Data/Spatial data/Cleaned rasters/chap_120m.tif', format="GTiff", overwrite=TRUE, options=c("INTERLEAVE=BAND","COMPRESS=LZW"))
+raster::writeRaster(wood, 'Data/Spatial data/Cleaned rasters/wood_120m.tif', format="GTiff", overwrite=TRUE, options=c("INTERLEAVE=BAND","COMPRESS=LZW"))
+raster::writeRaster(grass, 'Data/Spatial data/Cleaned rasters/grass_120m.tif', format="GTiff", overwrite=TRUE, options=c("INTERLEAVE=BAND","COMPRESS=LZW"))
 
