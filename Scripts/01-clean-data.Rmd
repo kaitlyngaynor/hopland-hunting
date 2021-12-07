@@ -8,22 +8,11 @@ editor_options:
 ---
 
 ```{r}
-library(here)
 library(dplyr)
-library(rgdal)
-library(raster)
 library(tidyr)
-library(adehabitatLT)
 library(hms)
-library(amt)
 library(stringr)
-```
 
-
-### Import and clean tracks
-
-Bring in tracks
-```{r}
 # import all data and join into single dataframe
 igotu_file_names <- list.files(path = "Data/Hunting/igotu_raw/",
                                pattern = "*.csv", full.names = TRUE, recursive = TRUE) 
@@ -55,50 +44,32 @@ igotu_data_all <- left_join(igotu_data_all, metadata)
 
 # format time
 igotu_data_all$Time <- format(igotu_data_all$DateTime, format = "%H:%M:%S")
-```
 
-Remove points before start or after end
-```{r}
-# error in line 784023
-igotu_data_all$Keep <- "NO"
-for(i in 1:length(unique(igotu_data_all$ID)))
-for(i in 1:nrow(igotu_data_all)) {
-  if(as_hms(igotu_data_all$Time[i]) > as_hms(igotu_data_all$Start_time[i]) &&
-     as_hms(igotu_data_all$Time[i]) < as_hms(igotu_data_all$End_time[i])) {
-    igotu_data_all$Keep[i] <- "YES"
+
+# remove points before start or after end, export cleaned data
+
+for(i in unique(igotu_data_all$ID)) {
+  
+  # create temporary dataframe for each individual
+  temp_df <- filter(igotu_data_all, ID == i)
+  temp_df$Keep <- "NO"
+  
+  # filter to points within start and end
+  for(j in 1:nrow(temp_df)) {
+    if(as_hms(temp_df$Time[j]) > as_hms(temp_df$Start_time[j]) &&
+       as_hms(temp_df$Time[j]) < as_hms(temp_df$End_time[j])) {
+      temp_df$Keep[j] <- "YES"
+    }
   }
+    
+  temp_df <- temp_df %>% 
+    # remove dropped points
+    filter(Keep == "YES") %>% 
+    # only take columns of interest
+    select(ID, Latitude, Longitude, Date, Time, DateTime, Party_ID, Harvest)
+  
+  write.csv(temp_df, paste0("Data/Hunting/igotu_cleaned/", i, ".csv"), row.names = F)
+  
+  
 }
-
-igotu_data_cropped <- igotu_data_all %>% 
-  filter(Keep == "YES")
-
-write.csv(igotu_data_cropped, "Data/igotu_data_cropped.csv", row.names = F)
-```
-
-
-Subsample to 1 minute
-```{r}
-hunter_tracks <- mk_track(tbl = igotu_data_cropped, 
-                              .x = lon, .y = lat,
-                              id = ID, 
-                              .t = date_time,
-                              crs = CRS("+proj=longlat +ellps=WGS84")) 
-
-hunter_resampled <- hunter_tracks %>%
-  nest(data = -"id") %>%
-  mutate(resampled_data = map(data, function(x)
-    x %>% track_resample(rate = minutes(3),
-                         tolerance = seconds(0)))) %>%
-  select(id, resampled_data) %>%
-  unnest(cols = resampled_data) %>%
-  rename(
-    lon = x_,
-    lat = y_,
-    date_time = t_,
-    ID = id
-  )
-
-igotu_data_1min <- left_join(hunter_resampled, igotu_data_cropped) 
-
-write.csv(igotu_data_1min, "Data/igotu_data_1min.csv", row.names=F)
 ```
