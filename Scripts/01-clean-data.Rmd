@@ -45,10 +45,12 @@ igotu_data_all <- left_join(igotu_data_all, metadata)
 # format time
 igotu_data_all$Time <- format(igotu_data_all$DateTime, format = "%H:%M:%S")
 
-# remove track with GPS error, and track with wildly inaccurate time
+# remove tracks with issues
 igotu_data_all <- igotu_data_all %>% 
-  filter(ID != "081416_12") %>% 
-  filter(ID != "081316_12")
+  filter(ID != "081416_12") %>% # gps error
+  filter(ID != "081316_12") %>% # inaccurate time
+  filter(ID != "082016_21") %>% # no movement
+  filter(ID != "082016_22") # no movement
 
 # remove points before start or after end, export cleaned data
 
@@ -75,11 +77,6 @@ for(i in unique(igotu_data_all$ID)) {
     filter(Keep == "YES") %>% 
     # only take columns of interest
     select(ID, Latitude, Longitude, Date, Time, DateTime, Party_ID, Harvest)
-  
-  # don't write file if this excludes all points
-  if(nrow(temp_df == 0)) {
-    next
-  }
   
   write.csv(temp_df, paste0("Data/Hunting/igotu_cleaned/", i, ".csv"), row.names = F)
   
