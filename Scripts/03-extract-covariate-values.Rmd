@@ -14,13 +14,13 @@ library(raster)
 library(dplyr)
 ```
 
-#### Bring in points (10 min fix)
+#### Bring in points
 
 ```{r}
-igotu_data_cropped <- read.csv("Data/igotu_data_cropped.csv")
+igotu_data <- read.csv("Data/igotu_data_1min.csv")
 
 # convert coordinates to spatial points
-igotu_data_cropped.sp <- igotu_data_cropped %>% 
+igotu_data.sp <- igotu_data %>% 
   dplyr::select(lon, lat) %>% 
   SpatialPoints(proj4string=CRS("+proj=longlat +ellps=WGS84")) %>% 
   spTransform(CRS = "+proj=utm +north +zone=10 +ellps=WGS84 +units=m")
@@ -41,7 +41,7 @@ raster.stack <- raster::stack(paste0("Data/Spatial data/Cleaned rasters/", rastl
 
 Also, convert vegetation to a factor and standardize covariates
 ```{r raster extract}
-igotu.raster <- as.data.frame(raster::extract(raster.stack, igotu_data_cropped.sp)) %>% 
+igotu.raster <- as.data.frame(raster::extract(raster.stack, igotu_data.sp)) %>% 
   mutate(vegetation.clean = as.factor(vegetation.clean),
          vegetation.coarser.clean = as.factor(vegetation.coarser.clean),
          vegetation.coarser.clean2 = as.factor(vegetation.coarser.clean2)) %>% 
@@ -52,11 +52,11 @@ Combine raster metadata with the other data
 
 Note that I use cbind here, so it's important that the rows be in the same order (they should be...)
 ```{r combine metadata}
-igotu_data_cropped_covariates <- cbind(igotu_data_cropped, igotu.raster) 
+igotu_data_covariates <- cbind(igotu_data, igotu.raster) 
 ```
 
 Export
 ```{r}
-write.csv(igotu_data_cropped_covariates, "Data/igotu_data_cropped_covariates.csv")
+write.csv(igotu_data_covariates, "Data/igotu_data_1min_covariates.csv", row.names = F)
 ```
 
