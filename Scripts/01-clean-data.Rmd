@@ -45,6 +45,10 @@ igotu_data_all <- left_join(igotu_data_all, metadata)
 # format time
 igotu_data_all$Time <- format(igotu_data_all$DateTime, format = "%H:%M:%S")
 
+# remove track with GPS error, and track with wildly inaccurate time
+igotu_data_all <- igotu_data_all %>% 
+  filter(ID != "081416_12") %>% 
+  filter(ID != "081316_12")
 
 # remove points before start or after end, export cleaned data
 
