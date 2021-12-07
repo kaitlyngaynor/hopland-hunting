@@ -17,13 +17,14 @@ library(sf)
 ```
 
 
-Load all tracks (cropped to huntable area in 02-refine-data.Rmd)
+Load cleaned data.
 ```{r}
-igotu_data <- read.csv("Data/igotu_data_covariates.csv")
+igotu_data <- read.csv("Data/igotu_data_3min_covariates.csv")
 
+# plot one just to see what's up
 igotu_data %>% 
   filter(ID == "080815_01") %>% 
-  ggplot(aes(x = lon, y = lat)) +
+  ggplot(aes(x = Longitude, y = Latitude)) +
   geom_point() 
 ```
 
@@ -31,51 +32,56 @@ Prep data for modeling
 
 ```{r}
 igotu_data_fewer <- igotu_data %>% 
-  dplyr::select(ID, lon, lat, date_time, Start_time, End_time, rugged49.clean, slope, hq_dist, vegetation.coarser.clean2, view)
+  dplyr::select(ID, Longitude, Latitude, DateTime,
+                rugged49.clean, rugged25.clean, rugged9.clean,
+                hq_dist, vegetation.coarser.clean2, view,
+                veg.edges.dist.clean,
+                grass_120m, chap_120m, wood_120m)
 
 data_hmm <- moveHMM::prepData(igotu_data_fewer, 
                               type="LL", 
-                              coordNames=c("lon","lat"))
+                              coordNames=c("Longitude","Latitude"))
 head(data_hmm)
 
 hist(data_hmm$step)
 hist(data_hmm$angle)
 
-plot(data_hmm[data_hmm$ID == "080815_01",])
+plot(data_hmm[data_hmm$ID == "080915_02",])
 
 summary(data_hmm)
 ```
 
-Have a look at the zero step lenghts
+Have a look at the zero step lengths
 ```{r}
 # determine proportion of step lengths equal to 0
 whichzero <- which(data_hmm$step == 0)
 length(whichzero)/nrow(data_hmm)
+
+# 0.20 for 3 min
 
 zeros <- data_hmm %>% 
   filter(step == 0)
 
 ggplot(zeros, aes(x = x, y = y)) + geom_point()
 
-
-data_hmm_copy <- data_hmm
-data_hmm_copy[is.na(data_hmm_copy)] <- 0
-
-# determine which ones follow a zero
-data_hmm_copy$after_zero <- "NOT_AFTER_ZERO" 
-for(i in 2:nrow(data_hmm_copy)) {
-  if(data_hmm_copy$step[i] == 0) {
-    data_hmm_copy$after_zero[i] <- "ZERO"
-  } else if(data_hmm_copy$step[i-1] == 0) {
-    data_hmm_copy$after_zero[i] <- "AFTER_ZERO"
-  } else {
-    data_hmm_copy$after_zero[i] <- "NOT_AFTER_ZERO"
-  }
-}
-
-ggplot(data_hmm_copy, aes(x = step)) +
-  geom_histogram() +
-  facet_wrap(~after_zero)
+#  data_hmm_copy <- data_hmm
+#  data_hmm_copy[is.na(data_hmm_copy)] <- 0
+#  
+#  # determine which ones follow a zero
+#  data_hmm_copy$after_zero <- "NOT_AFTER_ZERO" 
+#  for(i in 2:nrow(data_hmm_copy)) {
+#    if(data_hmm_copy$step[i] == 0) {
+#      data_hmm_copy$after_zero[i] <- "ZERO"
+#    } else if(data_hmm_copy$step[i-1] == 0) {
+#      data_hmm_copy$after_zero[i] <- "AFTER_ZERO"
+#    } else {
+#      data_hmm_copy$after_zero[i] <- "NOT_AFTER_ZERO"
+#    }
+#  }
+#  
+#  ggplot(data_hmm_copy, aes(x = step)) +
+#    geom_histogram() +
+#    facet_wrap(~after_zero)
 ```
 
 
