@@ -16,6 +16,7 @@ library(tidyr)
 library(adehabitatLT)
 library(hms)
 library(amt)
+library(stringr)
 ```
 
 
@@ -23,54 +24,44 @@ library(amt)
 
 Bring in tracks
 ```{r}
-wd <- getwd()
-filenames <- list.files(path = paste(wd, "/Data/Hunting/igotu_raw/", sep=""), pattern = NULL, all.files = FALSE, full.names = TRUE, recursive = FALSE, ignore.case = FALSE)
-read_csv_filename <- function(filename){
-    ret <- read.csv(filename)
-    ret$Source <- filename
-    ret
-}
-hunter.csvs <- lapply(filenames, FUN=read_csv_filename)
-```
+# import all data and join into single dataframe
+igotu_file_names <- list.files(path = "Data/Hunting/igotu_raw/",
+                               pattern = "*.csv", full.names = TRUE, recursive = TRUE) 
 
-Write function for extracting data from CSVs
-```{r}
-ExtractIgotuData <- function (X){
-  ID <- X[,"Track"]
-  unit.time <- X[,"Time"]
-  unit.date <- X[,"Date"]
-  unit.datetime <- paste(unit.date, unit.time, sep="")
-  # translates into POSIXct times
-  date_time <- as.POSIXct(strptime(unit.datetime, "%m/%d/%y %H:%M:%S"), tz="America/Los_Angeles")
-  # rename lat and long
-  lat <-X[,"Latitude"]
-  lon <-X[,"Longitude"]
-  # spit out as a dataframe
-  data.frame(ID=ID, date_time=date_time, lat=lat, lon=lon)
-}
-```
+# read all individual csvs into a list
+igotu_raw_dfs <- lapply(igotu_file_names, read.csv) 
 
-Download and clean data
-```{r}
-# generate list of extracted igotu data
-extracted.list <- lapply(hunter.csvs, FUN=ExtractIgotuData)
+# make the file names into the object names in the list
+names(igotu_raw_dfs) <- igotu_file_names
 
-# combine into one
-igotu_data_all <- do.call("rbind", extracted.list) 
+# combine all collar files into one dataframe
+igotu_raw <- bind_rows(igotu_raw_dfs, .id = "FileName")
+
+# clean columns
+igotu_data_all <- igotu_raw %>% 
+  mutate(DateTime = as.POSIXct(paste(Date, Time, sep = ""), 
+                                    "%m/%d/%y %H:%M:%S",
+                                    tz = "America/Los_Angeles"),
+         ID = str_replace(FileName, "Data/Hunting/igotu_raw//", ""),
+         ID = str_replace(ID, ".csv", "")) %>% 
+  select(-c(FileName, Altitude, Speed, Distance, Essential, Track, Course, Type))
 
 # add the metadata
 metadata <- read.csv(here::here("Data/Hunting/igotu_metadata_times_cleaned.csv")) %>% 
   mutate(Start_time = paste0(Start_time, ":00"),
-         End_time = paste0(End_time, ":00"))
+         End_time = paste0(End_time, ":00")) %>% 
+  select(-Date)
 igotu_data_all <- left_join(igotu_data_all, metadata)
 
-# strip time
-igotu_data_all$Time <- format(igotu_data_all$date_time, format = "%H:%M:%S")
+# format time
+igotu_data_all$Time <- format(igotu_data_all$DateTime, format = "%H:%M:%S")
 ```
 
 Remove points before start or after end
 ```{r}
+# error in line 784023
 igotu_data_all$Keep <- "NO"
+for(i in 1:length(unique(igotu_data_all$ID)))
 for(i in 1:nrow(igotu_data_all)) {
   if(as_hms(igotu_data_all$Time[i]) > as_hms(igotu_data_all$Start_time[i]) &&
      as_hms(igotu_data_all$Time[i]) < as_hms(igotu_data_all$End_time[i])) {
