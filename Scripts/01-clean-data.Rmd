@@ -50,6 +50,10 @@ igotu_data_all$Time <- format(igotu_data_all$DateTime, format = "%H:%M:%S")
 
 for(i in unique(igotu_data_all$ID)) {
   
+  if(file.exists(paste0("Data/Hunting/igotu_cleaned/", i, ".csv"))) {
+    next
+  }
+  
   # create temporary dataframe for each individual
   temp_df <- filter(igotu_data_all, ID == i)
   temp_df$Keep <- "NO"
