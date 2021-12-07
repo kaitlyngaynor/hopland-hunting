@@ -17,7 +17,7 @@ library(dplyr)
 #### Bring in points
 
 ```{r}
-igotu_data <- read.csv("Data/igotu_data_1min.csv")
+igotu_data <- read.csv("Data/igotu_data_5min.csv")
 
 # convert coordinates to spatial points
 igotu_data.sp <- igotu_data %>% 
@@ -39,7 +39,6 @@ raster.stack <- raster::stack(paste0("Data/Spatial data/Cleaned rasters/", rastl
 
 #### Extract covariates from raster stack
 
-Also, convert vegetation to a factor and standardize covariates
 ```{r raster extract}
 igotu.raster <- as.data.frame(raster::extract(raster.stack, igotu_data.sp)) 
 ```
@@ -53,6 +52,6 @@ igotu_data_covariates <- cbind(igotu_data, igotu.raster)
 
 Export
 ```{r}
-write.csv(igotu_data_covariates, "Data/igotu_data_1min_covariates.csv", row.names = F)
+write.csv(igotu_data_covariates, "Data/igotu_data_5min_covariates.csv", row.names = F)
 ```
 
