@@ -3,6 +3,7 @@
 library(ggplot2)
 library(sf)
 library(dplyr)
+library(readr)
 
 igotu_cleaned <- list.files(path = "Data/Hunting/igotu_cleaned/",
                             pattern = "*.csv", full.names = TRUE, recursive = TRUE) %>% 
@@ -12,6 +13,9 @@ igotu_cleaned <- list.files(path = "Data/Hunting/igotu_cleaned/",
 igotu_sf <- st_as_sf(igotu_cleaned,
                      coords = c("Longitude", "Latitude"),
                      crs = "+proj=longlat +ellps=WGS84")
+
+# bring in shape file
+hrec_shp <- st_read("Data/Spatial data/Raw from Alex/HREC_boundary.shp") 
 
 ## Plots by individual animal
 igotu_cleaned$DateTime <- as.POSIXct(igotu_cleaned$DateTime)
@@ -23,8 +27,7 @@ igotu_plots <- lapply(sort(unique(igotu_sf$ID)), function(i) {
     date_labels <- format(date_breaks, "%Y-%m-%d %H:%M:%S")
     
     ggplot() + 
-        geom_sf(data = alaska) +
-        geom_sf(data = alaska_shp) +
+        geom_sf(data = hrec_shp) +
         geom_sf(data = data_to_plot, aes(col = as.numeric(DateTime))) +
         theme_bw() +
         ggtitle(i) +
@@ -39,4 +42,3 @@ for (i in 1:length(igotu_plots)) {
     print(igotu_plots[[i]])
 }
 dev.off()
-```
