@@ -72,6 +72,11 @@ for(i in unique(igotu_data_all$ID)) {
     # only take columns of interest
     select(ID, Latitude, Longitude, Date, Time, DateTime, Party_ID, Harvest)
   
+  # don't write file if this excludes all points
+  if(nrow(temp_df == 0)) {
+    next
+  }
+  
   write.csv(temp_df, paste0("Data/Hunting/igotu_cleaned/", i, ".csv"), row.names = F)
   
   
