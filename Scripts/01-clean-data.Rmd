@@ -50,7 +50,9 @@ igotu_data_all <- igotu_data_all %>%
   filter(ID != "081416_12") %>% # gps error
   filter(ID != "081316_12") %>% # inaccurate time
   filter(ID != "082016_21") %>% # no movement
-  filter(ID != "082016_22") # no movement
+  filter(ID != "082016_22") %>% # no movement
+  filter(ID != "080915_03") %>%  # no movement
+  filter(ID != "081416_18") # no movement
 
 # remove points before start or after end, export cleaned data
 
