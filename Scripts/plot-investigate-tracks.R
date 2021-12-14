@@ -4,14 +4,21 @@ library(ggplot2)
 library(sf)
 library(dplyr)
 library(readr)
+library(stringr)
 
 # RAW TRACKS ----------------------------------------------------------
 
-igotu_raw <- list.files(path = "Data/Hunting/igotu_raw/",
-                            pattern = "*.csv", full.names = TRUE, recursive = TRUE) %>% 
-    lapply(read_csv) %>% 
-    bind_rows()
-
+igotu_file_names <- list.files(path = "Data/Hunting/igotu_raw/",
+                               pattern = "*.csv", full.names = TRUE, recursive = TRUE) 
+igotu_raw_dfs <- lapply(igotu_file_names, read.csv) 
+names(igotu_raw_dfs) <- igotu_file_names
+igotu_raw <- bind_rows(igotu_raw_dfs, .id = "FileName") %>% 
+    mutate(DateTime = as.POSIXct(paste(Date, Time, sep = ""), 
+                                 "%m/%d/%y %H:%M:%S",
+                                 tz = "America/Los_Angeles"),
+           ID = str_replace(FileName, "Data/Hunting/igotu_raw//", ""),
+           ID = str_replace(ID, ".csv", "")) %>% 
+    select(-c(FileName, Altitude, Speed, Distance, Essential, Track, Course, Type))
 igotu_raw_sf <- st_as_sf(igotu_raw,
                      coords = c("Longitude", "Latitude"),
                      crs = "+proj=longlat +ellps=WGS84")
