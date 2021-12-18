@@ -52,7 +52,8 @@ igotu_data_all <- igotu_data_all %>%
   filter(ID != "082016_21") %>% # no movement
   filter(ID != "082016_22") %>% # no movement
   filter(ID != "080915_03") %>%  # no movement
-  filter(ID != "081416_18") # no movement
+  filter(ID != "081416_18") %>% # no movement
+  filter(ID != "081917_38") # incomplete track (see issue #22)
 
 # remove points before start or after end, export cleaned data
 
