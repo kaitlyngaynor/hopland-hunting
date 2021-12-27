@@ -14,6 +14,7 @@ library(moveHMM)
 library(ggplot2)
 library(dplyr)
 library(sf)
+library(tidyr)
 ```
 
 
@@ -42,6 +43,12 @@ data_hmm <- moveHMM::prepData(igotu_data_fewer,
                               type="LL", 
                               coordNames=c("Longitude","Latitude"))
 head(data_hmm)
+
+# remove outliers (step length in top 95th percentile) - indicative of GPS error or gaps in data collection
+data_hmm <- data_hmm %>% 
+  drop_na(step) 
+data_hmm <- data_hmm %>% 
+  filter(step < quantile(data_hmm$step, 0.95))
 
 hist(data_hmm$step)
 hist(data_hmm$angle)
