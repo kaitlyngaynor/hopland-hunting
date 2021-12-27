@@ -28,7 +28,7 @@ igotu_data_all <- igotu_raw %>%
     select(-c(FileName, Altitude, Speed, Distance, Essential, Track, Course, Type))
 
 # add the metadata
-metadata <- read.csv(here::here("Data/Hunting/igotu_metadata_times_cleaned.csv")) %>% 
+metadata <- read.csv(here::here("Data/Hunting/igotu_metadata_times_cleaned_17Dec2021.csv")) %>% 
     mutate(Start_time = paste0(Start_time, ":00"),
            End_time = paste0(End_time, ":00")) %>% 
     select(-Date)
@@ -46,6 +46,12 @@ igotu_data_all <- igotu_data_all %>%
     filter(ID != "080915_03") %>%  # no movement
     filter(ID != "081416_18") %>% # no movement
     filter(ID != "081917_38") # incomplete track (see issue #22)
+
+# remove points that are outside study area (clear outliers)
+# note this does NOT yet address issue of tracks that left the site, which need to be split into two
+igotu_data_all <- igotu_data_all %>% 
+    filter(Latitude < 39.05) %>% 
+    filter(Latitude > 38.98)
 
 # remove points before start or after end, export cleaned data
 
