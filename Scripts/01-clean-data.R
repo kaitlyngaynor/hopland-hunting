@@ -4,6 +4,7 @@ library(dplyr)
 library(tidyr)
 library(hms)
 library(stringr)
+library(sf)
 
 # import all data and join into single dataframe
 igotu_file_names <- list.files(path = "Data/Hunting/igotu_raw/",
@@ -47,14 +48,16 @@ igotu_data_all <- igotu_data_all %>%
     filter(ID != "081416_18") %>% # no movement
     filter(ID != "081917_38") # incomplete track (see issue #22)
 
-# remove points that are outside study area (clear outliers)
-# note this does NOT yet address issue of tracks that left the site, which need to be split into two
+# remove points outside of HREC boundary (just using bounding box)
+hrec_boundary <- read_sf("Data/Spatial data/Raw from Alex/HREC_boundary.shp") %>% 
+    st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 igotu_data_all <- igotu_data_all %>% 
-    filter(Latitude < 39.05) %>% 
-    filter(Latitude > 38.98)
+    filter(Latitude < st_bbox(hrec_boundary)$ymax) %>% 
+    filter(Latitude > st_bbox(hrec_boundary)$ymin) %>% 
+    filter(Longitude < st_bbox(hrec_boundary)$xmax) %>% 
+    filter(Longitude > st_bbox(hrec_boundary)$xmin)
 
 # remove points before start or after end, export cleaned data
-
 for(i in unique(igotu_data_all$ID)) {
     
     if(file.exists(paste0("Data/Hunting/igotu_cleaned/", i, ".csv"))) {
