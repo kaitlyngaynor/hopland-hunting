@@ -26,7 +26,7 @@ igotu_data_fewer <- igotu_data %>%
     dplyr::select(ID, Longitude, Latitude, DateTime,
                   rugged49.clean, rugged25.clean, rugged9.clean,
                   hq_dist, vegetation.coarser.clean2, view,
-                  veg.edges.dist.clean,
+                  veg.edges.dist.clean, road.dist.clean,
                   grass_120m, chap_120m, wood_120m)
 
 # prep data for HMM
@@ -48,64 +48,159 @@ Look at step lengths and turn angles.
 hist(data_hmm$step)
 hist(data_hmm$angle)
 
+# what about the small steps? zoom in
+data_hmm_small <- data_hmm %>% 
+  filter(step < 0.15)
+hist(data_hmm_small$step)
+
 # determine proportion of step lengths equal to 0
 whichzero <- which(data_hmm$step == 0)
 length(whichzero)/nrow(data_hmm)
 ```
 
-Ruggedness - need to try a few different resolutions (9, 25, 49) - can do AIC-based model selection to identify best ruggedness value
-Viewshed
-Distance to road - should predict when they switch from walking to driving
-Vegetation type
-Area of chaparral within 120 meters
-Distance to vegetation type boundary
-Distance to headquarters - would expect them to move from driving --> stopping
 
+## TWO STATE MODELS
 
-# TWO STATE MODEL
-
-Create a simple model with two states. Determine initial parameters for mu0 and sigma0 based on observation of histograms.
+Determine and set initial parameters for mu0 and sigma0 based on observation of histograms.
 ```{r}
-mu0 <- c(0.01, 0.5) # step mean (two parameters: one for each state)
-sigma0 <- c(0.01, 0.5) # step SD
-zeromass0 <- c(0.50, 0.10) # step zero-mass
-stepPar0 <- c(mu0,sigma0,zeromass0)
+mu0_2state <- c(0.01, 0.3) # step mean (two parameters: one for each state)
+sigma0_2state <- c(0.01, 0.3) # step SD
+zeromass0_2state <- c(0.50, 0.10) # step zero-mass
+stepPar0_2state <- c(mu0_2state,sigma0_2state,zeromass0_2state)
 
-angleMean0 <- c(pi,0) # angle mean
-kappa0 <- c(1,1) # angle concentration
-anglePar0 <- c(angleMean0,kappa0)
+angleMean0_2state <- c(pi,0) # angle mean
+kappa0_2state <- c(1,1) # angle concentration
+anglePar0_2state <- c(angleMean0_2state,kappa0_2state)
+```
 
-m <- fitHMM(data=data_hmm, 
-            nbStates=2, 
-            stepPar0=stepPar0, 
-            anglePar0=anglePar0,
-            formula = ~view)
+### Null model
+```{r}
+start <- Sys.time()
+model0 <- fitHMM(data=data_hmm, 
+                     nbStates=2, 
+                     stepPar0=stepPar0_2state, 
+                     anglePar0=anglePar0_2state)
+end <- Sys.time()
+end-start # takes about 9 minutes to run the model
 
-m
-
-plot(m)
+model0 # model summary
+plot(model0) # hit escape to get out of the long list
 
 # proportion of time spent in each state
-states <- viterbi(m)
+states <- viterbi(model0)
 prop.table(table(states)) 
 
 # plot states for a given individual
-plotStates(m, animals="080815_01")
+plotStates(model0, animals="080815_01")
 
-plotStates(m)
+AIC(model0) # AIC = 140,091
 ```
+
+### Ruggedness
+```{r}
+model1 <- fitHMM(data=data_hmm, 
+                 nbStates=2, 
+                 stepPar0=stepPar0_2state, 
+                 anglePar0=anglePar0_2state,
+                 formula = ~rugged25.clean)
+model1 # model summary
+AIC(model1) # AIC = 
+
+model2 <- fitHMM(data=data_hmm, 
+                 nbStates=2, 
+                 stepPar0=stepPar0_2state, 
+                 anglePar0=anglePar0_2state,
+                 formula = ~rugged49.clean)
+model2 # model summary
+AIC(model2) # AIC = 
+
+model3 <- fitHMM(data=data_hmm, 
+                 nbStates=2, 
+                 stepPar0=stepPar0_2state, 
+                 anglePar0=anglePar0_2state,
+                 formula = ~rugged9.clean)
+model3 # model summary
+AIC(model3) # AIC = 
+```
+
+### Viewshed
+```{r}
+model4 <- fitHMM(data=data_hmm, 
+                 nbStates=2, 
+                 stepPar0=stepPar0_2state, 
+                 anglePar0=anglePar0_2state,
+                 formula = ~view)
+model4 # model summary
+AIC(model4) # AIC = 
+```
+
+### Distance to road
+```{r}
+model5 <- fitHMM(data=data_hmm, 
+                 nbStates=2, 
+                 stepPar0=stepPar0_2state, 
+                 anglePar0=anglePar0_2state,
+                 formula = ~road.dist.clean)
+model5 # model summary
+AIC(model5) # AIC = 
+```
+
+### Vegetation type
+```{r}
+model6 <- fitHMM(data=data_hmm, 
+                 nbStates=2, 
+                 stepPar0=stepPar0_2state, 
+                 anglePar0=anglePar0_2state,
+                 formula = ~vegetation.coarser.clean2)
+model6 # model summary
+AIC(model6) # AIC = 
+```
+
+### Chaparral within 120 meters
+```{r}
+model7 <- fitHMM(data=data_hmm, 
+                 nbStates=2, 
+                 stepPar0=stepPar0_2state, 
+                 anglePar0=anglePar0_2state,
+                 formula = ~chap_120m)
+model7 # model summary
+AIC(model7) # AIC = 
+```
+
+### Distance to vegetation type boundary
+```{r}
+model8 <- fitHMM(data=data_hmm, 
+                 nbStates=2, 
+                 stepPar0=stepPar0_2state, 
+                 anglePar0=anglePar0_2state,
+                 formula = ~veg.edges.dist.clean)
+model8 # model summary
+AIC(model8) # AIC = 
+```
+
+### Distance to headquarters
+```{r}
+model9 <- fitHMM(data=data_hmm, 
+                 nbStates=2, 
+                 stepPar0=stepPar0_2state, 
+                 anglePar0=anglePar0_2state,
+                 formula = ~hq_dist)
+model9 # model summary
+AIC(model9) # AIC = 
+```
+
 
 #### Three state model
 ```{r}
 # initial parameters
-mu0 <- c(0.01, 0.5, 1.0)
-sigma0 <- c(0.01, 0.5, 1.0)
-zeromass0 <- c(0.40, 0.40, 0.10)
-stepPar3 <- c(mu0,sigma0,zeromass0)
+mu0_3state <- c(0.001, 0.10, 0.35)
+sigma0_3state <- c(0.001, 0.10, 0.35)
+zeromass0_3state <- c(0.40, 0.40, 0.10)
+stepPar0_3state <- c(mu0_3state,sigma0_3state,zeromass0_3state)
 
-angleMean0 <- c(pi,pi,0)
-kappa0 <- c(1,1,1)
-anglePar3 <- c(angleMean0,kappa0)
+angleMean0_3state <- c(pi,pi,0)
+kappa0_3state <- c(1,1,1)
+anglePar3_3state <- c(angleMean0_3state,kappa0_3state)
 
 m3 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar3, anglePar0=anglePar3)
 
