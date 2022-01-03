@@ -17,7 +17,8 @@ library(dplyr)
 
 Load cleaned data.
 ```{r}
-data_hmm <- read.csv("Data/igotu_data_3min_covariates_for_hmm.csv")
+data_hmm <- read.csv("Data/igotu_data_3min_covariates_for_hmm.csv") %>% 
+  moveHMM::prepData(type="LL", coordNames=c("x","y"))
 ```
 
 Look at step lengths and turn angles.
@@ -27,7 +28,9 @@ hist(data_hmm$angle)
 ```
 
 
-Create a simple model with two states.
+Create a simple model with two states. Determine initial parameters for mu0 and sigma0 based on observation of histograms.
+
+# TWO STATE MODEL
 ```{r}
 mu0 <- c(0.01, 0.5) # step mean (two parameters: one for each state)
 sigma0 <- c(0.01, 0.5) # step SD
