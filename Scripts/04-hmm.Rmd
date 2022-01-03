@@ -23,7 +23,7 @@ igotu_data <- read.csv("Data/igotu_data_3min_covariates.csv")
 
 # Select columns of interest
 igotu_data_fewer <- igotu_data %>% 
-    dplyr::select(ID, Longitude, Latitude, DateTime,
+    dplyr::select(ID, Party_ID, Longitude, Latitude, DateTime,
                   rugged49.clean, rugged25.clean, rugged9.clean,
                   hq_dist, vegetation.coarser.clean2, view,
                   veg.edges.dist.clean, road.dist.clean,
@@ -77,9 +77,9 @@ anglePar0_2state <- c(angleMean0_2state,kappa0_2state)
 ```{r}
 start <- Sys.time()
 model0 <- fitHMM(data=data_hmm, 
-                     nbStates=2, 
-                     stepPar0=stepPar0_2state, 
-                     anglePar0=anglePar0_2state)
+                 nbStates=2, 
+                 stepPar0=stepPar0_2state, 
+                 anglePar0=anglePar0_2state)
 end <- Sys.time()
 end-start # takes about 9 minutes to run the model
 
@@ -146,6 +146,7 @@ AIC(model5) # AIC =
 ```
 
 ### Vegetation type
+Probably shouldn't use—this is a numeric variable, but really should be treated as categorical (and model doesn't allow for categorical variables)
 ```{r}
 model6 <- fitHMM(data=data_hmm, 
                  nbStates=2, 
@@ -167,26 +168,48 @@ model7 # model summary
 AIC(model7) # AIC = 
 ```
 
-### Distance to vegetation type boundary
+### Grassland within 120 meters
 ```{r}
 model8 <- fitHMM(data=data_hmm, 
                  nbStates=2, 
                  stepPar0=stepPar0_2state, 
                  anglePar0=anglePar0_2state,
-                 formula = ~veg.edges.dist.clean)
+                 formula = ~grass_120m)
 model8 # model summary
 AIC(model8) # AIC = 
 ```
 
-### Distance to headquarters
+### Woodland within 120 meters
 ```{r}
 model9 <- fitHMM(data=data_hmm, 
                  nbStates=2, 
                  stepPar0=stepPar0_2state, 
                  anglePar0=anglePar0_2state,
-                 formula = ~hq_dist)
+                 formula = ~wood_120m)
 model9 # model summary
 AIC(model9) # AIC = 
+```
+
+### Distance to vegetation type boundary
+```{r}
+model10 <- fitHMM(data=data_hmm, 
+                 nbStates=2, 
+                 stepPar0=stepPar0_2state, 
+                 anglePar0=anglePar0_2state,
+                 formula = ~veg.edges.dist.clean)
+model10 # model summary
+AIC(model10) # AIC = 
+```
+
+### Distance to headquarters
+```{r}
+model11 <- fitHMM(data=data_hmm, 
+                 nbStates=2, 
+                 stepPar0=stepPar0_2state, 
+                 anglePar0=anglePar0_2state,
+                 formula = ~hq_dist)
+model11 # model summary
+AIC(model11) # AIC = 
 ```
 
 
