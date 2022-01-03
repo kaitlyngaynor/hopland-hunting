@@ -94,5 +94,8 @@ ggplot(zeros, aes(x = x, y = y)) + geom_point()
 #    geom_histogram() +
 #    facet_wrap(~after_zero)
 
+# remove step length & turn angle columns and explort
+data_hmm <- data_hmm %>% 
+    dplyr::select(-c("step", "angle"))
 write.csv(data_hmm, "Data/igotu_data_3min_covariates_for_hmm.csv", 
           row.names = FALSE)
