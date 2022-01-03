@@ -11,29 +11,24 @@ editor_options:
 
 ```{r}
 library(moveHMM)
-library(ggplot2)
 library(dplyr)
-library(sf)
-library(tidyr)
 ```
 
 
 Load cleaned data.
 ```{r}
-igotu_data <- read.csv("Data/igotu_data_3min_covariates.csv")
-
-# plot one just to see what's up
-igotu_data %>% 
-  filter(ID == "080815_01") %>% 
-  ggplot(aes(x = Longitude, y = Latitude)) +
-  geom_point() 
+data_hmm <- read.csv("Data/igotu_data_3min_covariates_for_hmm.csv")
 ```
 
-Prep & run model
+Look at step lengths and turn angles.
 ```{r}
 hist(data_hmm$step)
 hist(data_hmm$angle)
+```
 
+
+Create a simple model with two states.
+```{r}
 mu0 <- c(0.01, 0.5) # step mean (two parameters: one for each state)
 sigma0 <- c(0.01, 0.5) # step SD
 zeromass0 <- c(0.50, 0.10) # step zero-mass

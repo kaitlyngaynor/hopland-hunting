@@ -62,8 +62,6 @@ fast_steps <- data_hmm %>%
 data_hmm <- data_hmm %>% 
     filter(step < 1.207008)
 
-
-
 # Explore 0 step lengths --------------------------------------------------
 
 # determine proportion of step lengths equal to 0
@@ -95,3 +93,6 @@ ggplot(zeros, aes(x = x, y = y)) + geom_point()
 #  ggplot(data_hmm_copy, aes(x = step)) +
 #    geom_histogram() +
 #    facet_wrap(~after_zero)
+
+write.csv(data_hmm, "Data/igotu_data_3min_covariates_for_hmm.csv", 
+          row.names = FALSE)
