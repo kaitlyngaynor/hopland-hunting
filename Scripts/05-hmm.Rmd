@@ -123,31 +123,3 @@ plot(m3)
   
 AIC(m, m3)
 ```
-
-## BPCA
-
-abandoned this after some brief exploration
-
-```{r}
-igotu_data
-
-library(bcpa)
-
-X <- as.numeric(coords@coords[1:100,1])
-Y <- as.numeric(coords@coords[1:100,2])
-Time <- 1:100
-mytrack <- MakeTrack(X,Y,Time)
-plot(mytrack)
-
-test_igotu <- igotu_data %>% 
-  filter(ID == "081416_04")
-
-mytrack <- MakeTrack(test_igotu$lon, test_igotu$lat, 
-                     Time = test_igotu$date_time)
-
-plot(mytrack)
-
-igotu.VT <- GetVT(mytrack)
-head(igotu.VT)
-```
-
