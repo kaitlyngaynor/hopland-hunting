@@ -43,19 +43,51 @@ data_hmm <- moveHMM::prepData(igotu_data_fewer,
                               type="LL", 
                               coordNames=c("Longitude","Latitude"))
 head(data_hmm)
+```
 
+Remove outliers based on step length (this will remove GPS error & gaps in data collection)
+
+1 mile/hr = 0.0268224 km/min = 0.0804672 km step length (km/3 min)
+10 mile/hr = 0.268224 km/min, or 0.804672 km step length (km/3 min)
+15 mile/hr = 0.402336 km/min, or 1.207008 km step length (km/3 min)
+20 mile/hr = 0.536448 km/min, or 1.609344 km step length (km/3 min)
+25 mile/hr = 0.67056 km/min, or 2.01168 km step length (km/3 min)
+30 mile/hr = 0.804672 km/min, or 2.414016 km step length (km/3 min)
+```{r}
 # remove outliers (step length in top 95th percentile) - indicative of GPS error or gaps in data collection
+# step length is in km
 data_hmm <- data_hmm %>% 
-  drop_na(step) 
-data_hmm <- data_hmm %>% 
-  filter(step < quantile(data_hmm$step, 0.95))
-
+  drop_na(step) # remove 300 step lenghts of 'NA'
 hist(data_hmm$step)
-hist(data_hmm$angle)
+
+# 10mph cutoff - 2% of points (1,619 points)
+nrow(filter(data_hmm, step > 0.804672))/nrow(data_hmm)
+
+# 15mph cutoff - 0.4% of points (295 points)
+nrow(filter(data_hmm, step > 1.207008))/nrow(data_hmm)
+
+# 20mph cutoff - 0.17% of points (124 points)
+nrow(filter(data_hmm, step > 1.609344))/nrow(data_hmm)
+
+# 25mph cutoff - 0.10% of points (76 points)
+nrow(filter(data_hmm, step > 2.01168))/nrow(data_hmm)
+
+# 30mph cutoff - 0.06% of points (47 points)
+nrow(filter(data_hmm, step > 2.414016))/nrow(data_hmm)
+
+# histogram for only steps >= 10mph
+fast_steps <- data_hmm %>% 
+  filter(step > 0.804672) %>% 
+  mutate(speed = step/3 * 37.2823)
+hist(fast_steps$speed)
 
 plot(data_hmm[data_hmm$ID == "080915_02",])
 
 summary(data_hmm)
+
+# LET'S USE 15 mph cut-off since it seems like there is a big drop there
+data_hmm <- data_hmm %>% 
+  filter(step < 1.207008)
 ```
 
 Have a look at the zero step lengths
@@ -64,7 +96,7 @@ Have a look at the zero step lengths
 whichzero <- which(data_hmm$step == 0)
 length(whichzero)/nrow(data_hmm)
 
-# 0.20 for 3 min
+# 0.19 for 3 min
 
 zeros <- data_hmm %>% 
   filter(step == 0)
@@ -94,8 +126,11 @@ ggplot(zeros, aes(x = x, y = y)) + geom_point()
 
 Prep & run model
 ```{r}
-mu0 <- c(0.01, 0.6) # step mean (two parameters: one for each state)
-sigma0 <- c(0.01, 0.6) # step SD
+hist(data_hmm$step)
+hist(data_hmm$angle)
+
+mu0 <- c(0.01, 0.5) # step mean (two parameters: one for each state)
+sigma0 <- c(0.01, 0.5) # step SD
 zeromass0 <- c(0.50, 0.10) # step zero-mass
 stepPar0 <- c(mu0,sigma0,zeromass0)
 
@@ -113,10 +148,8 @@ m
 
 plot(m)
 
-states <- viterbi(m)
-states
-
 # proportion of time spent in each state
+states <- viterbi(m)
 prop.table(table(states)) 
 
 # plot states for a given individual
