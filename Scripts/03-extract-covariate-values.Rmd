@@ -17,8 +17,8 @@ library(dplyr)
 #### Bring in points
 
 ```{r}
-#igotu_data <- read.csv("Data/igotu_data_3min.csv")
-igotu_data <- read.csv("Data/igotu_data_5min.csv")
+igotu_data <- read.csv("Data/igotu_data_3min.csv")
+#igotu_data <- read.csv("Data/igotu_data_5min.csv")
 
 # convert coordinates to spatial points
 igotu_data.sp <- igotu_data %>% 
@@ -53,7 +53,7 @@ igotu_data_covariates <- cbind(igotu_data, igotu.raster)
 
 Export
 ```{r}
-#write.csv(igotu_data_covariates, "Data/igotu_data_3min_covariates.csv", row.names = F)
-write.csv(igotu_data_covariates, "Data/igotu_data_5min_covariates.csv", row.names = F)
+write.csv(igotu_data_covariates, "Data/igotu_data_3min_covariates.csv", row.names = F)
+#write.csv(igotu_data_covariates, "Data/igotu_data_5min_covariates.csv", row.names = F)
 ```
 
