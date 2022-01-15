@@ -51,6 +51,8 @@ igotu_data_all_sf <- st_as_sf(igotu_data_all,
                               remove = FALSE)
 igotu_data_all_sf_cropped <- igotu_data_all_sf[st_intersects(igotu_data_all_sf, hrec_boundary) %>% lengths > 0,]
 
+igotu_data_all <- st_drop_geometry(igotu_data_all_sf_cropped)
+
 # remove points before start or after end, export cleaned data
 for(i in unique(igotu_data_all$ID)) {
     
