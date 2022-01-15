@@ -29,7 +29,7 @@ igotu_data_all <- igotu_raw %>%
     select(-c(FileName, Altitude, Speed, Distance, Essential, Track, Course, Type))
 
 # add the metadata
-metadata <- read.csv(here::here("Data/Hunting/igotu_metadata_times_cleaned_17Dec2021.csv")) %>% 
+metadata <- read.csv(here::here("Data/Hunting/igotu_metadata_times_cleaned_15Jan2022.csv")) %>% 
     mutate(Start_time = paste0(Start_time, ":00"),
            End_time = paste0(End_time, ":00")) %>% 
     select(-Date)
@@ -38,15 +38,9 @@ igotu_data_all <- left_join(igotu_data_all, metadata)
 # format time
 igotu_data_all$Time <- format(igotu_data_all$DateTime, format = "%H:%M:%S")
 
-# remove tracks with issues
+# remove tracks with issues, or duplicates from same hunting party
 igotu_data_all <- igotu_data_all %>% 
-    filter(ID != "081416_12") %>% # gps error
-    filter(ID != "081316_12") %>% # inaccurate time
-    filter(ID != "082016_21") %>% # no movement
-    filter(ID != "082016_22") %>% # no movement
-    filter(ID != "080915_03") %>%  # no movement
-    filter(ID != "081416_18") %>% # no movement
-    filter(ID != "081917_38") # incomplete track (see issue #22)
+    filter(Use_track == "Y") 
 
 # remove points outside of HREC boundary (just using bounding box)
 hrec_boundary <- read_sf("Data/Spatial data/Raw from Alex/HREC_boundary.shp") %>% 
