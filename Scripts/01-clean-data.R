@@ -45,11 +45,11 @@ igotu_data_all <- igotu_data_all %>%
 # remove points outside of HREC boundary (just using bounding box)
 hrec_boundary <- read_sf("Data/Spatial data/Raw from Alex/HREC_boundary.shp") %>% 
     st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
-igotu_data_all <- igotu_data_all %>% 
-    filter(Latitude < st_bbox(hrec_boundary)$ymax) %>% 
-    filter(Latitude > st_bbox(hrec_boundary)$ymin) %>% 
-    filter(Longitude < st_bbox(hrec_boundary)$xmax) %>% 
-    filter(Longitude > st_bbox(hrec_boundary)$xmin)
+igotu_data_all_sf <- st_as_sf(igotu_data_all,
+                              coords = c("Longitude", "Latitude"),
+                              crs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs",
+                              remove = FALSE)
+igotu_data_all_sf_cropped <- igotu_data_all_sf[st_intersects(igotu_data_all_sf, hrec_boundary) %>% lengths > 0,]
 
 # remove points before start or after end, export cleaned data
 for(i in unique(igotu_data_all$ID)) {
