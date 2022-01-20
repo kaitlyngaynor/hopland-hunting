@@ -96,10 +96,10 @@ dev.off()
 
 # CLEANED FOR HMM 3 MIN ---------------------------------------------------
 
-igotu_cleaned <- read.csv("Data/igotu_data_3min_covariates_for_hmm.csv")
+igotu_cleaned <- read.csv("Data/igotu_data_3min_covariates.csv")
 
 igotu_sf <- st_as_sf(igotu_cleaned,
-                     coords = c("x", "y"),
+                     coords = c("Longitude", "Latitude"),
                      crs = "+proj=longlat +ellps=WGS84")
 
 # bring in shape file
