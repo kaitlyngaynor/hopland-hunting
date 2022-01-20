@@ -42,7 +42,7 @@ igotu_data_all$Time <- format(igotu_data_all$DateTime, format = "%H:%M:%S")
 igotu_data_all <- igotu_data_all %>% 
     filter(Use_track == "Y") 
 
-# remove points outside of HREC boundary (just using bounding box)
+# remove points outside of HREC boundary
 hrec_boundary <- read_sf("Data/Spatial data/Raw from Alex/HREC_boundary.shp") %>% 
     st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 igotu_data_all_sf <- st_as_sf(igotu_data_all,
