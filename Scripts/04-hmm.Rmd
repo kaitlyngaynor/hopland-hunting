@@ -93,7 +93,7 @@ prop.table(table(states))
 # plot states for a given individual
 plotStates(model0, animals="080815_01")
 
-AIC(model0) # AIC = 140,091
+AIC(model0) # AIC = 105,028
 ```
 
 ### Ruggedness
@@ -104,7 +104,7 @@ model1 <- fitHMM(data=data_hmm,
                  anglePar0=anglePar0_2state,
                  formula = ~rugged25.clean)
 model1 # model summary
-AIC(model1) # AIC = 
+AIC(model1) # AIC = 104937.6
 
 model2 <- fitHMM(data=data_hmm, 
                  nbStates=2, 
@@ -112,7 +112,7 @@ model2 <- fitHMM(data=data_hmm,
                  anglePar0=anglePar0_2state,
                  formula = ~rugged49.clean)
 model2 # model summary
-AIC(model2) # AIC = 
+AIC(model2) # AIC = 104971.9
 
 model3 <- fitHMM(data=data_hmm, 
                  nbStates=2, 
@@ -120,7 +120,7 @@ model3 <- fitHMM(data=data_hmm,
                  anglePar0=anglePar0_2state,
                  formula = ~rugged9.clean)
 model3 # model summary
-AIC(model3) # AIC = 
+AIC(model3) # AIC = 104893.4 - best with rugged9
 ```
 
 ### Viewshed
@@ -131,7 +131,7 @@ model4 <- fitHMM(data=data_hmm,
                  anglePar0=anglePar0_2state,
                  formula = ~view)
 model4 # model summary
-AIC(model4) # AIC = 
+AIC(model4) # AIC = 104864.9
 ```
 
 ### Distance to road
@@ -142,7 +142,7 @@ model5 <- fitHMM(data=data_hmm,
                  anglePar0=anglePar0_2state,
                  formula = ~road.dist.clean)
 model5 # model summary
-AIC(model5) # AIC = 
+AIC(model5) # AIC = 103029.9
 ```
 
 ### Vegetation type
@@ -154,7 +154,7 @@ model6 <- fitHMM(data=data_hmm,
                  anglePar0=anglePar0_2state,
                  formula = ~vegetation.coarser.clean2)
 model6 # model summary
-AIC(model6) # AIC = 
+AIC(model6) # AIC = 104875.3
 ```
 
 ### Chaparral within 120 meters
@@ -165,7 +165,7 @@ model7 <- fitHMM(data=data_hmm,
                  anglePar0=anglePar0_2state,
                  formula = ~chap_120m)
 model7 # model summary
-AIC(model7) # AIC = 
+AIC(model7) # AIC = 105027
 ```
 
 ### Grassland within 120 meters
@@ -176,7 +176,7 @@ model8 <- fitHMM(data=data_hmm,
                  anglePar0=anglePar0_2state,
                  formula = ~grass_120m)
 model8 # model summary
-AIC(model8) # AIC = 
+AIC(model8) # AIC = 104916.7
 ```
 
 ### Woodland within 120 meters
@@ -187,7 +187,7 @@ model9 <- fitHMM(data=data_hmm,
                  anglePar0=anglePar0_2state,
                  formula = ~wood_120m)
 model9 # model summary
-AIC(model9) # AIC = 
+AIC(model9) # AIC = 104898.5
 ```
 
 ### Distance to vegetation type boundary
@@ -198,7 +198,7 @@ model10 <- fitHMM(data=data_hmm,
                  anglePar0=anglePar0_2state,
                  formula = ~veg.edges.dist.clean)
 model10 # model summary
-AIC(model10) # AIC = 
+AIC(model10) # AIC = 104166.7
 ```
 
 ### Distance to headquarters
@@ -209,7 +209,13 @@ model11 <- fitHMM(data=data_hmm,
                  anglePar0=anglePar0_2state,
                  formula = ~hq_dist)
 model11 # model summary
-AIC(model11) # AIC = 
+AIC(model11) # AIC = 104948
+```
+
+Compare the two-state models
+```{r}
+AIC(model0, model1, model2, model3, model4, model5, model6, model7, model8, model9, model10, model11)
+# best is model 5 = road.dist.clean
 ```
 
 
@@ -225,7 +231,8 @@ angleMean0_3state <- c(pi,pi,0)
 kappa0_3state <- c(1,1,1)
 anglePar3_3state <- c(angleMean0_3state,kappa0_3state)
 
-m3 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar3, anglePar0=anglePar3)
+m3 <- fitHMM(data=data_hmm, nbStates=3, 
+             stepPar0=stepPar0_3state, anglePar0=anglePar3_3state)
 
 states <- viterbi(m3)
 states
@@ -235,5 +242,9 @@ prop.table(table(states))
 
 plot(m3)
   
-AIC(m, m3)
+AIC(m3)
 ```
+
+State 1 = hanging out
+State 2 = walking
+State 3 = driving
