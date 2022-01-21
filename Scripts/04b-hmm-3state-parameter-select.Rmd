@@ -1,0 +1,121 @@
+---
+title: "04b-hmm-3state-parameter-select"
+author: "Kaitlyn"
+date: "1/20/2022"
+output: html_document
+---
+
+Select the starting parameters for the 3-state HMM, as outlined here:
+https://cran.r-project.org/web/packages/moveHMM/vignettes/moveHMM-starting-values.pdf
+
+## Load and clean data
+
+```{r}
+library(dplyr)
+library(moveHMM)
+library(tidyr)
+library(ggplot2)
+```
+
+Load data & remove outliers.
+```{r}
+# Load cleaned data
+igotu_data <- read.csv("Data/igotu_data_3min_covariates.csv")
+
+# Select columns of interest
+igotu_data_fewer <- igotu_data %>% 
+    dplyr::select(ID, Party_ID, Longitude, Latitude, DateTime,
+                  rugged49.clean, rugged25.clean, rugged9.clean,
+                  hq_dist, vegetation.coarser.clean2, view,
+                  veg.edges.dist.clean, road.dist.clean,
+                  grass_120m, chap_120m, wood_120m)
+
+# prep data for HMM
+data_hmm <- moveHMM::prepData(igotu_data_fewer, 
+                              type="LL", 
+                              coordNames=c("Longitude","Latitude"))
+
+# remove 300 step lengths of 'NA'
+data_hmm <- data_hmm %>% 
+    drop_na(step) 
+
+# filter out all steps > 15mph
+data_hmm <- data_hmm %>% 
+    filter(step < 1.207008)
+```
+
+Scale covariates.
+```{r}
+head(data_hmm)
+data_hmm$rugged49_scale <- scale(data_hmm$rugged49.clean)
+data_hmm$rugged25_scale <- scale(data_hmm$rugged25.clean)
+data_hmm$rugged9_scale <- scale(data_hmm$rugged9.clean)
+data_hmm$hq_scale <- scale(data_hmm$hq_dist)
+data_hmm$view_scale <- scale(data_hmm$view)
+data_hmm$vegedge_scale <- scale(data_hmm$veg.edges.dist.clean)
+data_hmm$road_scale <- scale(data_hmm$road.dist.clean)
+data_hmm$grass_scale <- scale(data_hmm$grass_120m)
+data_hmm$chap_scale <- scale(data_hmm$chap_120m)
+data_hmm$wood_scale <- scale(data_hmm$wood_120m)
+head(data_hmm)
+```
+
+
+Look at step lengths and turn angles.
+```{r}
+hist(data_hmm$step)
+hist(data_hmm$angle)
+
+# determine proportion of step lengths equal to 0
+whichzero <- which(data_hmm$step == 0)
+length(whichzero)/nrow(data_hmm)
+```
+
+
+
+## Explore models
+```{r}
+# Package for parallel computations
+library(parallel)
+# Create cluster of size ncores
+ncores <- detectCores() - 1
+cl <- makeCluster(getOption("cl.cores", ncores))
+
+# Export objects needed in parallelised function to cluster 
+clusterExport(cl, list("data_hmm", "fitHMM"))
+
+# Number of tries with different starting values
+niter <- 3
+# Create list of starting values
+allPar0 <- lapply(as.list(1:niter), function(x) { 
+    # Step length mean
+    stepMean0 <- runif(3, min = c(0.0001, 0.05, 0.3), max = c(0.05, 0.3, 1.4))
+    # Step length standard deviation
+    stepSD0 <- runif(3, min = c(0.0001, 0.05, 0.3), max = c(0.05, 0.3, 1.4))
+    # Step length zero mass
+    stepZeromass0 <- runif(3, min = 0, max = 1)
+    # Turning angle mean
+    angleMean0 <- c(0, 0, 0)
+    # Turning angle concentration
+    angleCon0 <- runif(3, min = c(0.1, 0.5, 1), max = c(0.5, 1, 5))
+    # Return vectors of starting values
+    stepPar0 <- c(stepMean0, stepSD0, stepZeromass0)
+    anglePar0 <- c(angleMean0, angleCon0)
+    
+    return(list(step = stepPar0, angle = anglePar0))
+})
+# Fit the niter models in parallel
+allm_parallel <- parLapply(cl = cl, X = allPar0, fun = function(par0) { m <- fitHMM(data = data_hmm, nbStates = 3, stepPar0 = par0$step, anglePar0 = par0$angle)
+return(m) })
+
+# Extract likelihoods of fitted models
+allnllk <- unlist(lapply(allm_parallel, function(m) m$mod$minimum))
+allnllk
+
+# Index of best fitting model (smallest negative log-likelihood)
+whichbest <- which.min(allnllk)
+# Best fitting model
+mbest <- allm[[whichbest]]
+mbest
+```
+
