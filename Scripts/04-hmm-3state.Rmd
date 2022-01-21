@@ -3,6 +3,8 @@ title: "04-hmm-3state"
 author: "Kaitlyn"
 date: "1/21/2022"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ## Load and clean data
