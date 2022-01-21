@@ -99,7 +99,7 @@ states
 prop.table(table(states)) 
  
 plot(model0)
-AIC(model0) # 89677.39
+AIC(model0) # 86302.68
 ```
 
 ## Univariate models
