@@ -1,0 +1,109 @@
+---
+title: "04-hmm-3state"
+author: "Kaitlyn"
+date: "1/21/2022"
+output: html_document
+---
+
+## Load and clean data
+
+```{r}
+library(dplyr)
+library(moveHMM)
+library(tidyr)
+library(ggplot2)
+```
+
+Load data & remove outliers.
+```{r}
+# Load cleaned data
+igotu_data <- read.csv("Data/igotu_data_3min_covariates.csv")
+
+# Select columns of interest
+igotu_data_fewer <- igotu_data %>% 
+    dplyr::select(ID, Party_ID, Longitude, Latitude, DateTime,
+                  rugged49.clean, rugged25.clean, rugged9.clean,
+                  hq_dist, vegetation.coarser.clean2, view,
+                  veg.edges.dist.clean, road.dist.clean,
+                  grass_120m, chap_120m, wood_120m)
+
+# prep data for HMM
+data_hmm <- moveHMM::prepData(igotu_data_fewer, 
+                              type="LL", 
+                              coordNames=c("Longitude","Latitude"))
+
+# remove 300 step lengths of 'NA'
+data_hmm <- data_hmm %>% 
+    drop_na(step) 
+
+# filter out all steps > 15mph
+data_hmm2 <- data_hmm %>% 
+    filter(step < 1.207008)
+```
+
+Scale covariates.
+```{r}
+head(data_hmm)
+data_hmm$rugged49_scale <- scale(data_hmm$rugged49.clean)
+data_hmm$rugged25_scale <- scale(data_hmm$rugged25.clean)
+data_hmm$rugged9_scale <- scale(data_hmm$rugged9.clean)
+data_hmm$hq_scale <- scale(data_hmm$hq_dist)
+data_hmm$view_scale <- scale(data_hmm$view)
+data_hmm$vegedge_scale <- scale(data_hmm$veg.edges.dist.clean)
+data_hmm$road_scale <- scale(data_hmm$road.dist.clean)
+data_hmm$grass_scale <- scale(data_hmm$grass_120m)
+data_hmm$chap_scale <- scale(data_hmm$chap_120m)
+data_hmm$wood_scale <- scale(data_hmm$wood_120m)
+head(data_hmm)
+```
+
+
+Look at step lengths and turn angles.
+```{r}
+hist(data_hmm$step)
+hist(data_hmm$angle)
+
+# what about the small steps? zoom in
+data_hmm_small <- data_hmm %>% 
+  filter(step < 0.15)
+hist(data_hmm_small$step)
+
+# determine proportion of step lengths equal to 0
+whichzero <- which(data_hmm$step == 0)
+length(whichzero)/nrow(data_hmm)
+```
+
+
+## THREE STATE MODELS
+
+Determined the initial values from the exploration in 04b-hmm-3state-parameter-select.Rmd
+ 
+```{r}
+# initial parameters
+mu0_3state <- c(0.07, 0.41, 0.01)
+sigma0_3state <- c(0.045, 0.204, 0.010)
+zeromass0_3state <- c(0.047, 0.0028, 0.469) 
+stepPar0_3state <- c(mu0_3state,sigma0_3state,zeromass0_3state)
+angleMean0_3state <- c(0,0,pi)
+kappa0_3state <- c(1.20,1.14,0.61)
+anglePar3_3state <- c(angleMean0_3state,kappa0_3state)
+```
+
+```{r}
+m3 <- fitHMM(data=data_hmm, nbStates=3, 
+             stepPar0=stepPar0_3state, anglePar0=anglePar3_3state)
+ 
+states <- viterbi(m3)
+states
+ 
+# proportion of time spent in each state
+prop.table(table(states)) 
+ 
+plot(m3)
+AIC(m3)
+```
+
+ 
+State 1 = hanging out
+State 2 = walking
+State 3 = driving

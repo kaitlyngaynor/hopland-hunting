@@ -39,7 +39,7 @@ data_hmm <- data_hmm %>%
     drop_na(step) 
 
 # filter out all steps > 15mph
-data_hmm <- data_hmm %>% 
+data_hmm2 <- data_hmm %>% 
     filter(step < 1.207008)
 ```
 
@@ -79,14 +79,19 @@ length(whichzero)/nrow(data_hmm)
 ## TWO STATE MODELS
 
 Determine and set initial parameters for mu0 and sigma0 based on observation of histograms.
+See this guide for setting parameters: https://cran.r-project.org/web/packages/moveHMM/vignettes/moveHMM-starting-values.pdf
 ```{r}
 mu0_2state <- c(0.01, 0.3) # step mean (two parameters: one for each state)
 sigma0_2state <- c(0.01, 0.3) # step SD
 zeromass0_2state <- c(0.50, 0.10) # step zero-mass
 stepPar0_2state <- c(mu0_2state,sigma0_2state,zeromass0_2state)
 
-angleMean0_2state <- c(pi,0) # angle mean
+angleMean0_2state <- c(0,pi) # angle mean
 kappa0_2state <- c(1,1) # angle concentration
+anglePar0_2state <- c(angleMean0_2state,kappa0_2state)
+
+angleMean0_2state <- c(0,0) # angle mean
+kappa0_2state <- c(0.5,1) # angle concentration
 anglePar0_2state <- c(angleMean0_2state,kappa0_2state)
 ```
 
