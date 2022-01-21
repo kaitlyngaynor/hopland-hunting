@@ -16,7 +16,7 @@ library(tidyr)
 library(ggplot2)
 ```
 
-Load data.
+Load data & remove outliers.
 ```{r}
 # Load cleaned data
 igotu_data <- read.csv("Data/igotu_data_3min_covariates.csv")
@@ -42,6 +42,23 @@ data_hmm <- data_hmm %>%
 data_hmm <- data_hmm %>% 
     filter(step < 1.207008)
 ```
+
+Scale covariates.
+```{r}
+head(data_hmm)
+data_hmm$rugged49_scale <- scale(data_hmm$rugged49.clean)
+data_hmm$rugged25_scale <- scale(data_hmm$rugged25.clean)
+data_hmm$rugged9_scale <- scale(data_hmm$rugged9.clean)
+data_hmm$hq_scale <- scale(data_hmm$hq_dist)
+data_hmm$view_scale <- scale(data_hmm$view)
+data_hmm$vegedge_scale <- scale(data_hmm$veg.edges.dist.clean)
+data_hmm$road_scale <- scale(data_hmm$road.dist.clean)
+data_hmm$grass_scale <- scale(data_hmm$grass_120m)
+data_hmm$chap_scale <- scale(data_hmm$chap_120m)
+data_hmm$wood_scale <- scale(data_hmm$wood_120m)
+head(data_hmm)
+```
+
 
 Look at step lengths and turn angles.
 ```{r}
@@ -75,13 +92,10 @@ anglePar0_2state <- c(angleMean0_2state,kappa0_2state)
 
 ### Null model
 ```{r}
-start <- Sys.time()
 model0 <- fitHMM(data=data_hmm, 
                  nbStates=2, 
                  stepPar0=stepPar0_2state, 
                  anglePar0=anglePar0_2state)
-end <- Sys.time()
-end-start # takes about 9 minutes to run the model
 
 model0 # model summary
 plot(model0) # hit escape to get out of the long list
@@ -96,13 +110,14 @@ plotStates(model0, animals="080815_01")
 AIC(model0) # AIC = 105,028
 ```
 
+
 ### Ruggedness
 ```{r}
 model1 <- fitHMM(data=data_hmm, 
                  nbStates=2, 
                  stepPar0=stepPar0_2state, 
                  anglePar0=anglePar0_2state,
-                 formula = ~rugged25.clean)
+                 formula = ~rugged25_scale)
 model1 # model summary
 AIC(model1) # AIC = 104937.6
 
@@ -110,7 +125,7 @@ model2 <- fitHMM(data=data_hmm,
                  nbStates=2, 
                  stepPar0=stepPar0_2state, 
                  anglePar0=anglePar0_2state,
-                 formula = ~rugged49.clean)
+                 formula = ~rugged49_scale)
 model2 # model summary
 AIC(model2) # AIC = 104971.9
 
@@ -118,7 +133,7 @@ model3 <- fitHMM(data=data_hmm,
                  nbStates=2, 
                  stepPar0=stepPar0_2state, 
                  anglePar0=anglePar0_2state,
-                 formula = ~rugged9.clean)
+                 formula = ~rugged9_scale)
 model3 # model summary
 AIC(model3) # AIC = 104893.4 - best with rugged9
 ```
@@ -219,32 +234,32 @@ AIC(model0, model1, model2, model3, model4, model5, model6, model7, model8, mode
 ```
 
 
-#### Three state model
+## THREE STATE MODELS
+ 
 ```{r}
 # initial parameters
 mu0_3state <- c(0.001, 0.10, 0.35)
 sigma0_3state <- c(0.001, 0.10, 0.35)
-zeromass0_3state <- c(0.40, 0.40, 0.10)
+zeromass0_3state <- c(0.40, 0.40, 0.10) 
 stepPar0_3state <- c(mu0_3state,sigma0_3state,zeromass0_3state)
-
 angleMean0_3state <- c(pi,pi,0)
 kappa0_3state <- c(1,1,1)
 anglePar3_3state <- c(angleMean0_3state,kappa0_3state)
 
 m3 <- fitHMM(data=data_hmm, nbStates=3, 
              stepPar0=stepPar0_3state, anglePar0=anglePar3_3state)
-
+ 
 states <- viterbi(m3)
 states
-
+ 
 # proportion of time spent in each state
 prop.table(table(states)) 
-
+ 
 plot(m3)
-  
 AIC(m3)
 ```
 
+ 
 State 1 = hanging out
 State 2 = walking
 State 3 = driving
