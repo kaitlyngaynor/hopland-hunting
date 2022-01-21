@@ -57,23 +57,6 @@ data_hmm$wood_scale <- scale(data_hmm$wood_120m)
 head(data_hmm)
 ```
 
-
-Look at step lengths and turn angles.
-```{r}
-hist(data_hmm$step)
-hist(data_hmm$angle)
-
-# what about the small steps? zoom in
-data_hmm_small <- data_hmm %>% 
-  filter(step < 0.15)
-hist(data_hmm_small$step)
-
-# determine proportion of step lengths equal to 0
-whichzero <- which(data_hmm$step == 0)
-length(whichzero)/nrow(data_hmm)
-```
-
-
 ## THREE STATE MODELS
 
 Determined the initial values from the exploration in 04b-hmm-3state-parameter-select.Rmd

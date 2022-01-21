@@ -46,23 +46,6 @@ data_hmm <- data_hmm %>%
     filter(step < 1.207008)
 ```
 
-Scale covariates.
-```{r}
-head(data_hmm)
-data_hmm$rugged49_scale <- scale(data_hmm$rugged49.clean)
-data_hmm$rugged25_scale <- scale(data_hmm$rugged25.clean)
-data_hmm$rugged9_scale <- scale(data_hmm$rugged9.clean)
-data_hmm$hq_scale <- scale(data_hmm$hq_dist)
-data_hmm$view_scale <- scale(data_hmm$view)
-data_hmm$vegedge_scale <- scale(data_hmm$veg.edges.dist.clean)
-data_hmm$road_scale <- scale(data_hmm$road.dist.clean)
-data_hmm$grass_scale <- scale(data_hmm$grass_120m)
-data_hmm$chap_scale <- scale(data_hmm$chap_120m)
-data_hmm$wood_scale <- scale(data_hmm$wood_120m)
-head(data_hmm)
-```
-
-
 Look at step lengths and turn angles.
 ```{r}
 hist(data_hmm$step)
