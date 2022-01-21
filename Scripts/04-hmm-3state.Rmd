@@ -57,36 +57,120 @@ data_hmm$wood_scale <- scale(data_hmm$wood_120m)
 head(data_hmm)
 ```
 
+Explore correlation between covariates.
+```{r}
+covariates <- dplyr::select(data_hmm, rugged49_scale, rugged25_scale, rugged9_scale,
+                     hq_scale, view_scale, vegedge_scale, road_scale, grass_scale,
+                     chap_scale, wood_scale)
+round(cor(covariates), digits = 2)
+```
+
+There is high correlation between:
+0.79 = rugged25_scale and rugged49_scale
+0.74 = rugged25_scale and rugged9_scale
+-0.77 = grass_scale and wood_scale
+
+
 ## THREE STATE MODELS
 
 Determined the initial values from the exploration in 04b-hmm-3state-parameter-select.Rmd
  
 ```{r}
-# initial parameters
 mu0_3state <- c(0.07, 0.41, 0.01)
 sigma0_3state <- c(0.045, 0.204, 0.010)
 zeromass0_3state <- c(0.047, 0.0028, 0.469) 
 stepPar0_3state <- c(mu0_3state,sigma0_3state,zeromass0_3state)
 angleMean0_3state <- c(0,0,pi)
 kappa0_3state <- c(1.20,1.14,0.61)
-anglePar3_3state <- c(angleMean0_3state,kappa0_3state)
+anglePar0_3state <- c(angleMean0_3state,kappa0_3state)
 ```
 
+### Null model
 ```{r}
-m3 <- fitHMM(data=data_hmm, nbStates=3, 
-             stepPar0=stepPar0_3state, anglePar0=anglePar3_3state)
+model0 <- fitHMM(data=data_hmm, nbStates=3, 
+             stepPar0=stepPar0_3state, anglePar0=anglePar0_3state)
  
-states <- viterbi(m3)
+states <- viterbi(model0)
 states
  
 # proportion of time spent in each state
 prop.table(table(states)) 
  
-plot(m3)
-AIC(m3)
+plot(model0)
+AIC(model0) # 89677.39
 ```
 
  
-State 1 = hanging out
-State 2 = walking
-State 3 = driving
+### Ruggedness
+```{r}
+model1 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+                 formula = ~rugged25_scale)
+model1 # model summary
+AIC(model1) # AIC = 89413.5
+
+model2 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+                 formula = ~rugged49_scale)
+model2 # model summary
+AIC(model2) # AIC = 
+
+model3 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+                 formula = ~rugged9_scale)
+model3 # model summary
+AIC(model3) # AIC =  - best with rugged9
+```
+
+### Viewshed
+```{r}
+model4 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+                 formula = ~view)
+model4 # model summary
+AIC(model4) # AIC = 
+```
+
+### Distance to road
+```{r}
+model5 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+                 formula = ~road.dist.clean)
+model5 # model summary
+AIC(model5) # AIC = 
+```
+
+### Woodland within 120 meters
+```{r}
+model6 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+                 formula = ~wood_120m)
+model6 # model summary
+AIC(model6) # AIC = 
+```
+
+### Chaparral within 120 meters
+```{r}
+model7 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+                 formula = ~chap_120m)
+model7 # model summary
+AIC(model7) # AIC = 
+```
+
+### Grassland within 120 meters
+```{r}
+model8 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+                 formula = ~grass_120m)
+model8 # model summary
+AIC(model8) # AIC = 
+```
+
+### Distance to vegetation type boundary
+```{r}
+model9 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+                 formula = ~veg.edges.dist.clean)
+model9 # model summary
+AIC(model9) # AIC = 104166.7
+```
+
+### Distance to headquarters
+```{r}
+model10 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+                 formula = ~hq_dist)
+model10 # model summary
+AIC(model10) # AIC = 104948
+```
