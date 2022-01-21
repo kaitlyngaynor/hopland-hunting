@@ -78,12 +78,12 @@ There is high correlation between:
 Determined the initial values from the exploration in 04b-hmm-3state-parameter-select.Rmd
  
 ```{r}
-mu0_3state <- c(0.07, 0.41, 0.01)
-sigma0_3state <- c(0.045, 0.204, 0.010)
-zeromass0_3state <- c(0.047, 0.0028, 0.469) 
+mu0_3state <- c(0.01, 0.07, 0.41)
+sigma0_3state <- c(0.010, 0.045, 0.204)
+zeromass0_3state <- c(0.469, 0.047, 0.0028) 
 stepPar0_3state <- c(mu0_3state,sigma0_3state,zeromass0_3state)
-angleMean0_3state <- c(0,0,pi)
-kappa0_3state <- c(1.20,1.14,0.61)
+angleMean0_3state <- c(pi,0,0)
+kappa0_3state <- c(0.61,1.20,1.14)
 anglePar0_3state <- c(angleMean0_3state,kappa0_3state)
 ```
 
