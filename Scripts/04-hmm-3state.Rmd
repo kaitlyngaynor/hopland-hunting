@@ -39,7 +39,7 @@ data_hmm <- data_hmm %>%
     drop_na(step) 
 
 # filter out all steps > 15mph
-data_hmm2 <- data_hmm %>% 
+data_hmm <- data_hmm %>% 
     filter(step < 1.207008)
 ```
 
