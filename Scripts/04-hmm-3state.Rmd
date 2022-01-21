@@ -73,7 +73,7 @@ There is high correlation between:
 -0.77 = grass_scale and wood_scale
 
 
-## THREE STATE MODELS
+# THREE STATE MODELS
 
 Determined the initial values from the exploration in 04b-hmm-3state-parameter-select.Rmd
  
@@ -102,6 +102,7 @@ plot(model0)
 AIC(model0) # 89677.39
 ```
 
+## Univariate models
  
 ### Ruggedness
 ```{r}
@@ -176,3 +177,69 @@ model10 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0
 model10 # model summary
 AIC(model10) # AIC = 104948
 ```
+
+
+## Two-variable models
+
+### Distance to road + Ruggedness
+```{r}
+model2.1 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+                 formula = ~road.dist.clean + rugged9_scale)
+model2.1 # model summary
+AIC(model2.1) # AIC = 
+```
+
+### Distance to road + Chaparral
+```{r}
+model2.2 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+                 formula = ~road.dist.clean + chap_scale)
+model2.2 # model summary
+AIC(model2.2) # AIC = 
+```
+
+### Distance to road + Grassland
+```{r}
+model2.3 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+                 formula = ~road.dist.clean + grass_scale)
+model2.3 # model summary
+AIC(model2.3) # AIC = 
+```
+
+### Distance to road + Woodland
+```{r}
+model2.4 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+                 formula = ~road.dist.clean + wood_scale)
+model2.4 # model summary
+AIC(model2.4) # AIC = 
+```
+
+### Distance to road + Viewshed
+```{r}
+model2.5 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+                 formula = ~road.dist.clean + view_scale)
+model2.5 # model summary
+AIC(model2.5) # AIC = 
+```
+
+### Distance to road + Distance to HQ
+```{r}
+model2.6 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+                 formula = ~road.dist.clean + hq_scale)
+model2.6 # model summary
+AIC(model2.6) # AIC = 
+```
+
+### Distance to road + Distance to vegetation edge
+```{r}
+model2.7 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+                 formula = ~road.dist.clean + vegedge_scale)
+model2.7 # model summary
+AIC(model2.7) # AIC = 
+```
+
+
+## THREE-VARIABLE MODELS
+```{r}
+
+```
+
