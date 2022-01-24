@@ -337,7 +337,7 @@ AIC(model4.5) # AIC = 82997.09
 model5.1 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
                  formula = ~road.dist.clean + hq_scale + view_scale + wood_scale + rugged9_scale)
 model5.1 # model summary
-AIC(model5.1) # AIC = 
+AIC(model5.1) # AIC = 82898.59
 ```
 
 ### Distance to road + Distance to HQ + Viewshed + Woodland + Chaparral
@@ -345,7 +345,7 @@ AIC(model5.1) # AIC =
 model5.2 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
                  formula = ~road.dist.clean + hq_scale + view_scale + wood_scale + chap_scale)
 model5.2 # model summary
-AIC(model5.2) # AIC = 
+AIC(model5.2) # AIC = 82940.85
 ```
 
 ### Distance to road + Distance to HQ + Viewshed + Woodland + Dist to veg edge
@@ -353,5 +353,23 @@ AIC(model5.2) # AIC =
 model5.3 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
                  formula = ~road.dist.clean + hq_scale + view_scale + wood_scale + vegedge_scale)
 model5.3 # model summary
-AIC(model5.3) # AIC = 
+AIC(model5.3) # AIC = 82917.37
+```
+
+## Six-variable models
+
+### Distance to road + Distance to HQ + Viewshed + Woodland + Ruggedness + Chaparral
+```{r}
+model6.1 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+                 formula = ~road.dist.clean + hq_scale + view_scale + wood_scale + rugged9_scale + chap_scale)
+model6.1 # model summary
+AIC(model6.1) # AIC = 
+```
+
+### Distance to road + Distance to HQ + Viewshed + Woodland + Ruggedness + Dist to veg edge
+```{r}
+model6.2 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+                 formula = ~road.dist.clean + hq_scale + view_scale + wood_scale + rugged9_scale + vegedge_scale)
+model6.2 # model summary
+AIC(model6.2) # AIC = 
 ```
