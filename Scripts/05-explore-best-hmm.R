@@ -56,12 +56,29 @@ anglePar0_3state <- c(angleMean0_3state,kappa0_3state)
 
 # Model -------------------------------------------------------------------
 
+# see vignette https://cran.r-project.org/web/packages/moveHMM/vignettes/moveHMM-guide.pdf
+
 # explore top model (which was the full model), as determined in 04-hmm-3state.Rmd
 start <- Sys.time()
-fit <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+m <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
                    formula = ~road.dist.clean + hq_scale + view_scale + wood_scale + rugged9_scale + chap_scale + vegedge_scale)
 end <- Sys.time()
 end-start
 
 # model summary
-fit 
+m 
+
+# plot model results
+plot(m, plotCI = TRUE)
+
+# look at CIs of parameters
+CI(m)
+
+# plot stationary state probabilities
+plotStationary(m, plotCI=TRUE)
+
+# compute the pseudo-residuals
+pr <- pseudoRes(m)
+
+# time series, qq-plots, and ACF of the pseudo-residuals
+plotPR(m)
