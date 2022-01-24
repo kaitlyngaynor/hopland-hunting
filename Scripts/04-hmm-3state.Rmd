@@ -373,3 +373,13 @@ model6.2 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar
 model6.2 # model summary
 AIC(model6.2) # AIC = 
 ```
+
+## Seven-variable models
+
+### Distance to road + Distance to HQ + Viewshed + Woodland + Ruggedness + Chaparral + Dist to veg edge scaled
+```{r}
+model7.1 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+                 formula = ~road.dist.clean + hq_scale + view_scale + wood_scale + rugged9_scale + chap_scale + vegedge_scale)
+model7.1 # model summary
+AIC(model7.1) # AIC = 
+```
