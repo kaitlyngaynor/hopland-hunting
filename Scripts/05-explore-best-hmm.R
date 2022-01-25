@@ -59,16 +59,21 @@ anglePar0_3state <- c(angleMean0_3state,kappa0_3state)
 # see vignette https://cran.r-project.org/web/packages/moveHMM/vignettes/moveHMM-guide.pdf
 
 # explore top model (which was the full model), as determined in 04-hmm-3state.Rmd
-start <- Sys.time()
-m <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
-                   formula = ~road.dist.clean + hq_scale + view_scale + wood_scale + rugged9_scale + chap_scale + vegedge_scale)
-end <- Sys.time()
-end-start
+# takes about 2.5 hours to run
+#m <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+#                   formula = ~road.dist.clean + hq_scale + view_scale + wood_scale + rugged9_scale + chap_scale + vegedge_scale)
+#saveRDS(m, "hmm-top-model-2021-01-24.Rds")
+m <- readRDS("hmm-top-model-2021-01-24.Rds")
 
 # model summary
 m 
 
-# plot model results
+# proportion of time spent in each state
+states <- viterbi(m)
+prop.table(table(states)) 
+
+
+s# plot model results
 plot(m, plotCI = TRUE)
 
 # look at CIs of parameters
@@ -79,6 +84,12 @@ plotStationary(m, plotCI=TRUE)
 
 # compute the pseudo-residuals
 pr <- pseudoRes(m)
+hist(pr$stepRes)
+ks.test(x=pr$stepRes,y='pnorm',alternative='two.sided')
+hist(pr$angleRes)
+shapiro.test(pr$angleRes)
+ks.test(x=pr$angleRes,y='pnorm',alternative='two.sided')
+# From K-S test, residuals are NOT normally distributed, BUT we have like 55,000 points so it's going to be significantly different from normal. Good enough?
 
 # time series, qq-plots, and ACF of the pseudo-residuals
 plotPR(m)
