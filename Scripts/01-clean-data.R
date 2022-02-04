@@ -42,16 +42,10 @@ igotu_data_all$Time <- format(igotu_data_all$DateTime, format = "%H:%M:%S")
 igotu_data_all <- igotu_data_all %>% 
     filter(Use_track == "Y") 
 
-# remove points outside of HREC boundary
-hrec_boundary <- read_sf("Data/Spatial data/Raw from Alex/HREC_boundary.shp") %>% 
-    st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
-igotu_data_all_sf <- st_as_sf(igotu_data_all,
-                              coords = c("Longitude", "Latitude"),
-                              crs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs",
-                              remove = FALSE)
-igotu_data_all_sf_cropped <- igotu_data_all_sf[st_intersects(igotu_data_all_sf, hrec_boundary) %>% lengths > 0,]
-
-igotu_data_all <- st_drop_geometry(igotu_data_all_sf_cropped)
+# calculate elapsed time from start
+igotu_data_all$Elapsed_Time <- as.numeric(difftime(as_hms(igotu_data_all$Start_time), 
+                                        as_hms(igotu_data_all$Time), 
+                                        units = "hours"))
 
 # remove points before start or after end, export cleaned data
 for(i in unique(igotu_data_all$ID)) {
@@ -76,7 +70,7 @@ for(i in unique(igotu_data_all$ID)) {
         # remove dropped points
         filter(Keep == "YES") %>% 
         # only take columns of interest
-        select(ID, Latitude, Longitude, Date, Time, DateTime, Party_ID, Harvest)
+        select(ID, Latitude, Longitude, Date, Time, DateTime, Party_ID, Harvest, Elapsed_Time)
     
     write.csv(temp_df, paste0("Data/Hunting/igotu_cleaned/", i, ".csv"), row.names = F)
     
