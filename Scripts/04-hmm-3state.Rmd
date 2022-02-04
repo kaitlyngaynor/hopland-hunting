@@ -27,7 +27,9 @@ igotu_data_fewer <- igotu_data %>%
                   rugged49.clean, rugged25.clean, rugged9.clean,
                   hq_dist, vegetation.coarser.clean2, view,
                   veg.edges.dist.clean, road.dist.clean,
-                  grass_120m, chap_120m, wood_120m)
+                  grass_120m, chap_120m, wood_120m, 
+                  Harvest)
+                  #Elapsed_Time, Harvest)
 
 # prep data for HMM
 data_hmm <- moveHMM::prepData(igotu_data_fewer, 
@@ -56,10 +58,11 @@ data_hmm$road_scale <- scale(data_hmm$road.dist.clean)
 data_hmm$grass_scale <- scale(data_hmm$grass_120m)
 data_hmm$chap_scale <- scale(data_hmm$chap_120m)
 data_hmm$wood_scale <- scale(data_hmm$wood_120m)
+data_hmm$time_scale <- scale(data_hmm$Elapsed_Time)
 head(data_hmm)
 ```
 
-Explore correlation between covariates.
+Explore correlation between spatial covariates.
 ```{r}
 covariates <- dplyr::select(data_hmm, rugged49_scale, rugged25_scale, rugged9_scale,
                      hq_scale, view_scale, vegedge_scale, road_scale, grass_scale,
