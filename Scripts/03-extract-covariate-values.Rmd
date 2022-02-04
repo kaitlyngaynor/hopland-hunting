@@ -12,6 +12,7 @@ Bring in raster layers and iGotU tracks and extract covariate values.
 ```{r}
 library(raster)
 library(dplyr)
+library(sf)
 ```
 
 #### Bring in points
@@ -20,13 +21,22 @@ library(dplyr)
 igotu_data <- read.csv("Data/igotu_data_3min.csv")
 #igotu_data <- read.csv("Data/igotu_data_5min.csv")
 
-# convert coordinates to spatial points
-igotu_data.sp <- igotu_data %>% 
-  dplyr::select(Longitude, Latitude) %>% 
-  SpatialPoints(proj4string=CRS("+proj=longlat +ellps=WGS84")) %>% 
-  spTransform(CRS = "+proj=utm +north +zone=10 +ellps=WGS84 +units=m")
+# convert coordinates to spatial object
+igotu_data <- st_as_sf(igotu_data, 
+                       coords = c("Longitude", "Latitude"),
+                       crs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs",
+                       remove = FALSE)
 ```
 
+#### Clip points to huntable area
+
+```{r}
+# remove points outside of huntable zone
+huntable <- read_sf("Data/Spatial data/Raw from Alex/hunt_zone.shp") %>% 
+    st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+
+igotu_data_cropped <- igotu_data[st_intersects(igotu_data, huntable) %>% lengths > 0,]
+```
 
 #### Bring in raster stack
 ```{r raster stack}
@@ -41,14 +51,15 @@ raster.stack <- raster::stack(paste0("Data/Spatial data/Cleaned rasters/", rastl
 #### Extract covariates from raster stack
 
 ```{r raster extract}
-igotu.raster <- as.data.frame(raster::extract(raster.stack, igotu_data.sp)) 
+igotu.raster <- as.data.frame(raster::extract(raster.stack, igotu_data_cropped)) 
 ```
+
 
 Combine raster metadata with the other data 
 
 Note that I use cbind here, so it's important that the rows be in the same order (they should be...)
 ```{r combine metadata}
-igotu_data_covariates <- cbind(igotu_data, igotu.raster) 
+igotu_data_covariates <- cbind(st_drop_geometry(igotu_data_cropped), igotu.raster) 
 ```
 
 Export
