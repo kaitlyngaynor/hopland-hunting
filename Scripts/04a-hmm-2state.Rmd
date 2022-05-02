@@ -25,8 +25,8 @@ igotu_data <- read.csv("Data/igotu_data_3min_covariates.csv")
 igotu_data_fewer <- igotu_data %>% 
     dplyr::select(ID, Party_ID, Longitude, Latitude, DateTime,
                   rugged49.clean, rugged25.clean, rugged9.clean,
-                  hq_dist, vegetation.coarser.clean2, view,
-                  veg.edges.dist.clean, road.dist.clean,
+                  hq_dist, vegetation.coarser.clean2, view_for_kg_proj,
+                  road.dist.clean,
                   grass_120m, chap_120m, wood_120m)
 
 # prep data for HMM
@@ -50,8 +50,7 @@ data_hmm$rugged49_scale <- scale(data_hmm$rugged49.clean)
 data_hmm$rugged25_scale <- scale(data_hmm$rugged25.clean)
 data_hmm$rugged9_scale <- scale(data_hmm$rugged9.clean)
 data_hmm$hq_scale <- scale(data_hmm$hq_dist)
-data_hmm$view_scale <- scale(data_hmm$view)
-data_hmm$vegedge_scale <- scale(data_hmm$veg.edges.dist.clean)
+data_hmm$view_scale <- scale(data_hmm$view_for_kg_proj)
 data_hmm$road_scale <- scale(data_hmm$road.dist.clean)
 data_hmm$grass_scale <- scale(data_hmm$grass_120m)
 data_hmm$chap_scale <- scale(data_hmm$chap_120m)
@@ -210,61 +209,19 @@ model9 # model summary
 AIC(model9) # AIC = 104898.5
 ```
 
-### Distance to vegetation type boundary
+### Distance to headquarters
 ```{r}
 model10 <- fitHMM(data=data_hmm, 
                  nbStates=2, 
                  stepPar0=stepPar0_2state, 
                  anglePar0=anglePar0_2state,
-                 formula = ~veg.edges.dist.clean)
-model10 # model summary
-AIC(model10) # AIC = 104166.7
-```
-
-### Distance to headquarters
-```{r}
-model11 <- fitHMM(data=data_hmm, 
-                 nbStates=2, 
-                 stepPar0=stepPar0_2state, 
-                 anglePar0=anglePar0_2state,
                  formula = ~hq_dist)
-model11 # model summary
-AIC(model11) # AIC = 104948
+model10 # model summary
+AIC(model10) # AIC = 104948
 ```
 
 Compare the two-state models
 ```{r}
-AIC(model0, model1, model2, model3, model4, model5, model6, model7, model8, model9, model10, model11)
+AIC(model0, model1, model2, model3, model4, model5, model6, model7, model8, model9, model10)
 # best is model 5 = road.dist.clean
 ```
-
-
-## THREE STATE MODELS
- 
-```{r}
-# initial parameters
-mu0_3state <- c(0.001, 0.10, 0.35)
-sigma0_3state <- c(0.001, 0.10, 0.35)
-zeromass0_3state <- c(0.40, 0.40, 0.10) 
-stepPar0_3state <- c(mu0_3state,sigma0_3state,zeromass0_3state)
-angleMean0_3state <- c(pi,pi,0)
-kappa0_3state <- c(1,1,1)
-anglePar3_3state <- c(angleMean0_3state,kappa0_3state)
-
-m3 <- fitHMM(data=data_hmm, nbStates=3, 
-             stepPar0=stepPar0_3state, anglePar0=anglePar3_3state)
- 
-states <- viterbi(m3)
-states
- 
-# proportion of time spent in each state
-prop.table(table(states)) 
- 
-plot(m3)
-AIC(m3)
-```
-
- 
-State 1 = hanging out
-State 2 = walking
-State 3 = driving
