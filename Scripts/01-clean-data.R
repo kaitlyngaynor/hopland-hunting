@@ -29,7 +29,7 @@ igotu_data_all <- igotu_raw %>%
     select(-c(FileName, Altitude, Speed, Distance, Essential, Track, Course, Type))
 
 # add the metadata
-metadata <- read.csv(here::here("Data/Hunting/igotu_metadata_times_cleaned_22Jan2022.csv")) %>% 
+metadata <- read.csv(here::here("Data/Hunting/igotu_metadata_times_cleaned_03Feb2022.csv")) %>% 
     mutate(Start_time = paste0(Start_time, ":00"),
            End_time = paste0(End_time, ":00")) %>% 
     select(-Date)
