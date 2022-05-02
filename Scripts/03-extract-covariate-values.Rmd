@@ -62,6 +62,16 @@ Note that I use cbind here, so it's important that the rows be in the same order
 igotu_data_covariates <- cbind(st_drop_geometry(igotu_data_cropped), igotu.raster) 
 ```
 
+Also calculate time to sunrise OR sunset—whichever is closer.
+```{r}
+igotu_data_covariates$Elapsed_Time_SunriseOrSet <- NA
+for(i in 1:nrow(igotu_data_covariates)) {
+    igotu_data_covariates$Elapsed_Time_SunriseOrSet[i] <- min(igotu_data_covariates$Elapsed_Time_Sunrise[i],
+                                                       igotu_data_covariates$Elapsed_Time_Sunset[i])
+}
+```
+
+
 Export
 ```{r}
 write.csv(igotu_data_covariates, "Data/igotu_data_3min_covariates.csv", row.names = F)
