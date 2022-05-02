@@ -42,11 +42,6 @@ igotu_data_all$Time <- format(igotu_data_all$DateTime, format = "%H:%M:%S")
 igotu_data_all <- igotu_data_all %>% 
     filter(Use_track == "Y") 
 
-# calculate elapsed time from start
-igotu_data_all$Elapsed_Time <- as.numeric(difftime(as_hms(igotu_data_all$Start_time), 
-                                        as_hms(igotu_data_all$Time), 
-                                        units = "hours"))
-
 # remove points before start or after end, export cleaned data
 for(i in unique(igotu_data_all$ID)) {
     
@@ -57,12 +52,16 @@ for(i in unique(igotu_data_all$ID)) {
     # create temporary dataframe for each individual
     temp_df <- filter(igotu_data_all, ID == i)
     temp_df$Keep <- "NO"
+    temp_df$Elapsed_Time <- NA
     
     # filter to points within start and end
     for(j in 1:nrow(temp_df)) {
         if(as_hms(temp_df$Time[j]) > as_hms(temp_df$Start_time[j]) &&
            as_hms(temp_df$Time[j]) < as_hms(temp_df$End_time[j])) {
             temp_df$Keep[j] <- "YES"
+            temp_df$Elapsed_Time[j] <- as.numeric(difftime(as_hms(temp_df$Time[j]),
+                                                           as_hms(temp_df$Start_time[j]),
+                                                           units = "hours"))
         }
     }
     

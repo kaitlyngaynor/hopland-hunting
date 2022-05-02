@@ -28,8 +28,7 @@ igotu_data_fewer <- igotu_data %>%
                   hq_dist, vegetation.coarser.clean2, view,
                   veg.edges.dist.clean, road.dist.clean,
                   grass_120m, chap_120m, wood_120m, 
-                  Harvest)
-                  #Elapsed_Time, Harvest)
+                  Elapsed_Time, Harvest)
 
 # prep data for HMM
 data_hmm <- moveHMM::prepData(igotu_data_fewer, 
