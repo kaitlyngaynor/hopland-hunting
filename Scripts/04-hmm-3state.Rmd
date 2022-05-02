@@ -26,7 +26,7 @@ igotu_data_fewer <- igotu_data %>%
     dplyr::select(ID, Party_ID, Longitude, Latitude, DateTime,
                   rugged49.clean, rugged25.clean, rugged9.clean,
                   hq_dist, vegetation.coarser.clean2, view_for_kg_proj,
-                  veg.edges.dist.clean, road.dist.clean,
+                  road.dist.clean,
                   grass_120m, chap_120m, wood_120m, 
                   Elapsed_Time, Harvest)
 
@@ -52,7 +52,6 @@ data_hmm$rugged25_scale <- scale(data_hmm$rugged25.clean)
 data_hmm$rugged9_scale <- scale(data_hmm$rugged9.clean)
 data_hmm$hq_scale <- scale(data_hmm$hq_dist)
 data_hmm$view_scale <- scale(data_hmm$view_for_kg_proj)
-data_hmm$vegedge_scale <- scale(data_hmm$veg.edges.dist.clean)
 data_hmm$road_scale <- scale(data_hmm$road.dist.clean)
 data_hmm$grass_scale <- scale(data_hmm$grass_120m)
 data_hmm$chap_scale <- scale(data_hmm$chap_120m)
@@ -64,7 +63,7 @@ head(data_hmm)
 Explore correlation between spatial covariates.
 ```{r}
 covariates <- dplyr::select(data_hmm, rugged49_scale, rugged25_scale, rugged9_scale,
-                     hq_scale, view_scale, vegedge_scale, road_scale, grass_scale,
+                     hq_scale, view_scale, road_scale, grass_scale,
                      chap_scale, wood_scale)
 round(cor(covariates), digits = 2)
 ```
@@ -164,20 +163,13 @@ model8 # model summary
 AIC(model8) # AIC = 85979.41
 ```
 
-### Distance to vegetation type boundary
-```{r}
-model9 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
-                 formula = ~veg.edges.dist.clean)
-model9 # model summary
-AIC(model9) # AIC = 85239.79
-```
 
 ### Distance to headquarters
 ```{r}
-model10 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+model9 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
                  formula = ~hq_dist)
-model10 # model summary
-AIC(model10) # AIC = 86062.71
+model9 # model summary
+AIC(model9) # AIC = 86062.71
 ```
 
 
@@ -231,14 +223,6 @@ model2.6 # model summary
 AIC(model2.6) # AIC = 83207.56
 ```
 
-### Distance to road + Distance to vegetation edge
-```{r}
-model2.7 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
-                 formula = ~road.dist.clean + vegedge_scale)
-model2.7 # model summary
-AIC(model2.7) # AIC = 83487.3
-```
-
 
 ## Three-variable models
 
@@ -282,13 +266,6 @@ model3.5 # model summary
 AIC(model3.5) # AIC = 83141.04
 ```
 
-### Distance to road + Distance to HQ + Veg edge distance
-```{r}
-model3.6 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
-                 formula = ~road.dist.clean + hq_scale + vegedge_scale)
-model3.6 # model summary
-AIC(model3.6) # AIC = 83149.24
-```
 
 ## Four-variable models
 
@@ -324,13 +301,6 @@ model4.4 # model summary
 AIC(model4.4) # AIC = 83019.43
 ```
 
-### Distance to road + Distance to HQ + Viewshed + Distance to vegetation edge
-```{r}
-model4.5 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
-                 formula = ~road.dist.clean + hq_scale + view_scale + vegedge_scale)
-model4.5 # model summary
-AIC(model4.5) # AIC = 82997.09
-```
 
 ## Five-variable models
 
@@ -350,13 +320,6 @@ model5.2 # model summary
 AIC(model5.2) # AIC = 82940.85
 ```
 
-### Distance to road + Distance to HQ + Viewshed + Woodland + Dist to veg edge
-```{r}
-model5.3 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
-                 formula = ~road.dist.clean + hq_scale + view_scale + wood_scale + vegedge_scale)
-model5.3 # model summary
-AIC(model5.3) # AIC = 82917.37
-```
 
 ## Six-variable models
 
@@ -368,20 +331,3 @@ model6.1 # model summary
 AIC(model6.1) # AIC = 82873.59
 ```
 
-### Distance to road + Distance to HQ + Viewshed + Woodland + Ruggedness + Dist to veg edge
-```{r}
-model6.2 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
-                 formula = ~road.dist.clean + hq_scale + view_scale + wood_scale + rugged9_scale + vegedge_scale)
-model6.2 # model summary
-AIC(model6.2) # AIC = 82861.66
-```
-
-## Seven-variable models
-
-### Distance to road + Distance to HQ + Viewshed + Woodland + Ruggedness + Chaparral + Dist to veg edge scaled
-```{r}
-model7.1 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
-                 formula = ~road.dist.clean + hq_scale + view_scale + wood_scale + rugged9_scale + chap_scale + vegedge_scale)
-model7.1 # model summary
-AIC(model7.1) # AIC = 82835.91
-```
