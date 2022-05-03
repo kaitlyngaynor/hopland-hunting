@@ -27,7 +27,9 @@ igotu_data_fewer <- igotu_data %>%
                   rugged49.clean, rugged25.clean, rugged9.clean,
                   hq_dist, vegetation.coarser.clean2, view_for_kg_proj,
                   road.dist.clean,
-                  grass_120m, chap_120m, wood_120m)
+                  grass_120m, chap_120m, wood_120m,
+                  Elapsed_Time, Elapsed_Time_Sunrise, Elapsed_Time_SunriseOrSet,
+                  Harvest)
 
 # prep data for HMM
 data_hmm <- moveHMM::prepData(igotu_data_fewer, 
@@ -38,7 +40,7 @@ data_hmm <- moveHMM::prepData(igotu_data_fewer,
 data_hmm <- data_hmm %>% 
     drop_na(step) 
 
-# filter out all steps > 15mph
+# filter out all steps > 15mph (removes 70 points)
 data_hmm <- data_hmm %>% 
     filter(step < 1.207008)
 ```
@@ -55,6 +57,9 @@ data_hmm$road_scale <- scale(data_hmm$road.dist.clean)
 data_hmm$grass_scale <- scale(data_hmm$grass_120m)
 data_hmm$chap_scale <- scale(data_hmm$chap_120m)
 data_hmm$wood_scale <- scale(data_hmm$wood_120m)
+data_hmm$time_scale <- scale(data_hmm$Elapsed_Time)
+data_hmm$sunrise_scale <- scale(data_hmm$Elapsed_Time_Sunrise)
+data_hmm$sunriseset_scale <- scale(data_hmm$Elapsed_Time_SunriseOrSet)
 head(data_hmm)
 ```
 
