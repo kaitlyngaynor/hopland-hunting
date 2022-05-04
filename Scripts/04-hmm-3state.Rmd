@@ -21,6 +21,7 @@ Load data & remove outliers.
 # Load cleaned data
 igotu_data <- read.csv("Data/igotu_data_3min_covariates.csv")
 
+
 # Select columns of interest
 igotu_data_fewer <- igotu_data %>% 
     dplyr::select(ID, Party_ID, Longitude, Latitude, DateTime,
@@ -72,11 +73,9 @@ round(cor(covariates), digits = 2)
 ```
 
 There is high correlation between:
-0.79 = rugged25_scale and rugged49_scale
-0.74 = rugged25_scale and rugged9_scale
--0.77 = grass_scale and wood_scale
--0.79 = view_scale and rugged25_scale,
-0.74 = view_scale and grass_scale
+0.83 = rugged25_scale and rugged49_scale
+0.72 = rugged25_scale and rugged9_scale
+-0.69 = grass_scale and wood_scale
 
 
 # THREE STATE MODELS
@@ -105,7 +104,7 @@ states
 prop.table(table(states)) 
  
 plot(model0)
-AIC(model0) # 12248.16
+AIC(model0) # 69566.89
 ```
 
 ## Univariate models
@@ -115,22 +114,25 @@ AIC(model0) # 12248.16
 model1 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
                  formula = ~rugged25_scale)
 model1 # model summary
-AIC(model1) # AIC = 11722.44
+AIC(model1) # AIC = 
 
 model2 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
                  formula = ~rugged49_scale)
 model2 # model summary
-AIC(model2) # AIC = 12181.91
+AIC(model2) # AIC = 
 
 model3 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
                  formula = ~rugged9_scale)
 model3 # model summary
-AIC(model3) # AIC = 11474.74 
+AIC(model3) # AIC =  
+```
 
+### Viewshed
+```{r}
 model4 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
                  formula = ~view_scale)
 model4 # model summary
-AIC(model4) # AIC = 11469.23 - best with viewshed
+AIC(model4) # AIC = 
 ```
 
 
@@ -181,15 +183,15 @@ model10 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0
 model10 # model summary
 AIC(model10) # AIC = 
 
-model10 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+model11 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
                  formula = ~sunrise_scale)
-model10 # model summary
-AIC(model10) # AIC = 
+model11 # model summary
+AIC(model11) # AIC = 
 
-model10 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+model12 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
                  formula = ~sunriseset_scale)
-model10 # model summary
-AIC(model10) # AIC = 
+model12 # model summary
+AIC(model12) # AIC = 
 ```
 
 
