@@ -44,23 +44,6 @@ sf::sf_use_s2(FALSE) # turn off to avoid errors
 huntable_sf <- read_sf("Data/Spatial data/huntable.shp") %>% 
     st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 igotu_data_cropped <- igotu_data[st_intersects(igotu_data, huntable_sf) %>% lengths > 0,]
-
-library(ggplot2)
-igotu_cropped_plots <- lapply(sort(unique(igotu_data_cropped$ID)), function(i) {
-    
-    ggplot() + 
-        geom_sf(data = huntable_sf) +
-        geom_sf(data = igotu_data_cropped[igotu_data_cropped$ID==i,]) +
-        theme_bw() +
-        ggtitle(i) 
-})
-
-# print all plots to pdf
-pdf("igotu_cropped-plots-newtracks.pdf")
-for (i in 1:length(igotu_cropped_plots)) {
-    print(igotu_cropped_plots[[i]])
-}
-dev.off()
 ```
 
 #### Bring in raster stack
