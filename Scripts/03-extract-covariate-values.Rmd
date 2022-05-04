@@ -13,6 +13,7 @@ Bring in raster layers and iGotU tracks and extract covariate values.
 library(raster)
 library(dplyr)
 library(sf)
+library(rgdal)
 ```
 
 #### Bring in points
@@ -31,11 +32,35 @@ igotu_data <- st_as_sf(igotu_data,
 #### Clip points to huntable area
 
 ```{r}
-# remove points outside of huntable zone
-huntable <- read_sf("Data/Spatial data/Raw from Alex/hunt_zone.shp") %>% 
-    st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+# create polygon with huntable area only (subtract no hunt from entire boundary)
+hrec_boundary <- readOGR("Data/Spatial data/Raw from Alex", "HREC_boundary") %>% 
+  spTransform("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+no_hunting <- readOGR("Data/Spatial data/Raw from Alex", "hunt_zone") %>% 
+  spTransform("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+huntable <- hrec_boundary - no_hunting
+writeOGR(obj=huntable, dsn="Data/Spatial data", layer="huntable", driver="ESRI Shapefile", overwrite_layer = TRUE)
 
-igotu_data_cropped <- igotu_data[st_intersects(igotu_data, huntable) %>% lengths > 0,]
+sf::sf_use_s2(FALSE) # turn off to avoid errors
+huntable_sf <- read_sf("Data/Spatial data/huntable.shp") %>% 
+    st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+igotu_data_cropped <- igotu_data[st_intersects(igotu_data, huntable_sf) %>% lengths > 0,]
+
+library(ggplot2)
+igotu_cropped_plots <- lapply(sort(unique(igotu_data_cropped$ID)), function(i) {
+    
+    ggplot() + 
+        geom_sf(data = huntable_sf) +
+        geom_sf(data = igotu_data_cropped[igotu_data_cropped$ID==i,]) +
+        theme_bw() +
+        ggtitle(i) 
+})
+
+# print all plots to pdf
+pdf("igotu_cropped-plots-newtracks.pdf")
+for (i in 1:length(igotu_cropped_plots)) {
+    print(igotu_cropped_plots[[i]])
+}
+dev.off()
 ```
 
 #### Bring in raster stack
