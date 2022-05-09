@@ -15,16 +15,17 @@ igotu_data <- read.csv("Data/igotu_data_3min_covariates.csv")
 igotu_data_fewer <- igotu_data %>% 
     dplyr::select(ID, Party_ID, Longitude, Latitude, DateTime,
                   rugged49.clean, rugged25.clean, rugged9.clean,
-                  hq_dist, vegetation.coarser.clean2, view,
+                  hq_dist, vegetation.coarser.clean2, view_for_kg_proj,
                   veg.edges.dist.clean, road.dist.clean,
-                  grass_120m, chap_120m, wood_120m)
+                  grass_120m, chap_120m, wood_120m,
+                  Elapsed_Time_Sunrise)
 
 # prep data for HMM
 data_hmm <- moveHMM::prepData(igotu_data_fewer, 
                               type="LL", 
                               coordNames=c("Longitude","Latitude"))
 
-# remove 300 step lengths of 'NA'
+# remove 225 step lengths of 'NA'
 data_hmm <- data_hmm %>% 
     drop_na(step) 
 
@@ -37,12 +38,13 @@ data_hmm$rugged49_scale <- scale(data_hmm$rugged49.clean)
 data_hmm$rugged25_scale <- scale(data_hmm$rugged25.clean)
 data_hmm$rugged9_scale <- scale(data_hmm$rugged9.clean)
 data_hmm$hq_scale <- scale(data_hmm$hq_dist)
-data_hmm$view_scale <- scale(data_hmm$view)
+data_hmm$view_scale <- scale(data_hmm$view_for_kg_proj)
 data_hmm$vegedge_scale <- scale(data_hmm$veg.edges.dist.clean)
 data_hmm$road_scale <- scale(data_hmm$road.dist.clean)
 data_hmm$grass_scale <- scale(data_hmm$grass_120m)
 data_hmm$chap_scale <- scale(data_hmm$chap_120m)
 data_hmm$wood_scale <- scale(data_hmm$wood_120m)
+data_hmm$sunrise_scale <- scale(data_hmm$Elapsed_Time_Sunrise)
 
 # set initial parameters (determined by 04b-hmm-3state-parameter-select.Rmd)
 mu0_3state <- c(0.01, 0.07, 0.41)
@@ -60,10 +62,10 @@ anglePar0_3state <- c(angleMean0_3state,kappa0_3state)
 
 # explore top model (which was the full model), as determined in 04-hmm-3state.Rmd
 # takes about 2.5 hours to run
-#m <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
-#                   formula = ~road.dist.clean + hq_scale + view_scale + wood_scale + rugged9_scale + chap_scale + vegedge_scale)
-#saveRDS(m, "hmm-top-model-2021-01-24.Rds")
-m <- readRDS("hmm-top-model-2021-01-24.Rds")
+# m <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+#                   formula = ~road_scale + hq_scale + view_scale + wood_scale + rugged9_scale + chap_scale + sunrise_scale)
+saveRDS(m, "hmm-top-model-2022-05-09.Rds")
+m <- readRDS("hmm-top-model-2021-05-09.Rds")
 
 # model summary
 m 
