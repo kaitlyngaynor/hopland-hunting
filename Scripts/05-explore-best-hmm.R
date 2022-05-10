@@ -61,10 +61,20 @@ anglePar0_3state <- c(angleMean0_3state,kappa0_3state)
 
 # explore top model (which was the full model), as determined in 04-hmm-3state.Rmd
 # takes about 2.5 hours to run
-# m <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
-#                   formula = ~road_scale + hq_scale + view_scale + wood_scale + rugged9_scale + chap_scale + sunrise_scale)
-#saveRDS(m, "hmm-top-model-2022-05-09.Rds")
+m <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+                   formula = ~road_scale + view_scale + wood_scale + rugged9_scale + chap_scale + sunrise_scale)
+saveRDS(m, "hmm-top-model-2022-05-09.Rds")
 m <- readRDS("hmm-top-model-2022-05-09.Rds")
+
+# make a version without roads
+m2 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+            formula = ~ view_scale + wood_scale + rugged9_scale + chap_scale + sunrise_scale)
+saveRDS(m2, "hmm-top-model-no-road-2022-05-09.Rds")
+
+# split by successful & unsuccessful
+data_hmm_success <- data_hmm |> 
+    filter()
+
 
 # model summary
 m 
