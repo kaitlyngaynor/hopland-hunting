@@ -15,7 +15,7 @@ igotu_data <- read.csv("Data/igotu_data_3min_covariates.csv")
 igotu_data_fewer <- igotu_data %>% 
     dplyr::select(ID, Party_ID, Longitude, Latitude, DateTime,
                   rugged49.clean, rugged25.clean, rugged9.clean,
-                  hq_dist, vegetation.coarser.clean2, view_for_kg_proj,
+                  vegetation.coarser.clean2, view_for_kg_proj,
                   veg.edges.dist.clean, road.dist.clean,
                   grass_120m, chap_120m, wood_120m,
                   Elapsed_Time_Sunrise)
@@ -37,7 +37,6 @@ data_hmm <- data_hmm %>%
 data_hmm$rugged49_scale <- scale(data_hmm$rugged49.clean)
 data_hmm$rugged25_scale <- scale(data_hmm$rugged25.clean)
 data_hmm$rugged9_scale <- scale(data_hmm$rugged9.clean)
-data_hmm$hq_scale <- scale(data_hmm$hq_dist)
 data_hmm$view_scale <- scale(data_hmm$view_for_kg_proj)
 data_hmm$vegedge_scale <- scale(data_hmm$veg.edges.dist.clean)
 data_hmm$road_scale <- scale(data_hmm$road.dist.clean)
@@ -64,8 +63,8 @@ anglePar0_3state <- c(angleMean0_3state,kappa0_3state)
 # takes about 2.5 hours to run
 # m <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
 #                   formula = ~road_scale + hq_scale + view_scale + wood_scale + rugged9_scale + chap_scale + sunrise_scale)
-saveRDS(m, "hmm-top-model-2022-05-09.Rds")
-m <- readRDS("hmm-top-model-2021-05-09.Rds")
+#saveRDS(m, "hmm-top-model-2022-05-09.Rds")
+m <- readRDS("hmm-top-model-2022-05-09.Rds")
 
 # model summary
 m 
@@ -75,7 +74,7 @@ states <- viterbi(m)
 prop.table(table(states)) 
 
 
-s# plot model results
+# plot model results
 plot(m, plotCI = TRUE)
 
 # look at CIs of parameters
