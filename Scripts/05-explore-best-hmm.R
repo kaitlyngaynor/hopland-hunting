@@ -7,6 +7,7 @@ library(ggplot2)
 library(sf)
 library(raster)
 library(SpatialKDE)
+library(viridis)
 
 # Set-up ------------------------------------------------------------------
 
@@ -57,7 +58,7 @@ kappa0_3state <- c(0.61,1.20,1.14)
 anglePar0_3state <- c(angleMean0_3state,kappa0_3state)
 
 
-# Model -------------------------------------------------------------------
+# Run & explore model -----------------------------------------------------------------
 
 # see vignette https://cran.r-project.org/web/packages/moveHMM/vignettes/moveHMM-guide.pdf
 
@@ -67,11 +68,6 @@ anglePar0_3state <- c(angleMean0_3state,kappa0_3state)
 #                   formula = ~road_scale + view_scale + wood_scale + rugged9_scale + chap_scale + sunrise_scale)
 #saveRDS(m, "hmm-top-model-2022-05-09.Rds")
 m <- readRDS("hmm-top-model-2022-05-09.Rds")
-
-# make a version without roads
-#m2 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
-#            formula = ~ view_scale + wood_scale + rugged9_scale + chap_scale + sunrise_scale)
-#saveRDS(m2, "hmm-top-model-no-road-2022-05-09.Rds")
 
 # model summary
 m 
@@ -108,13 +104,14 @@ plotPR(m)
 
 # Map three states --------------------------------------------------------
 
-# bring in locations
+# Join with coordinates
 data_hmm_sf <- left_join(data_hmm,
                          dplyr::select(igotu_data, ID, DateTime, Latitude, Longitude)) |> 
     st_as_sf(coords = c("Longitude", "Latitude"),
              crs = "+proj=longlat +datum=WGS84", 
              remove = FALSE)
 
+# Split observations into the three behavioral states
 walking <- data_hmm_sf |> 
     dplyr::filter(state == "Walking") |> 
     st_transform(crs = "+proj=utm +zone=10 +datum=WGS84")
@@ -125,14 +122,13 @@ driving <- data_hmm_sf |>
     dplyr::filter(state == "Driving") |> 
     st_transform(crs = "+proj=utm +zone=10 +datum=WGS84")
 
-# create reference raster
+# Create reference raster to use for kernel density estimation
 sf::sf_use_s2(FALSE)
 huntable <- read_sf("Data/Spatial data/huntable.shp") |> 
     st_transform(crs = "+proj=utm +zone=10 +datum=WGS84")
 reference <- create_raster(huntable, cell_size = 100) 
 
-library(viridis)
-# kernel density for walking
+# Calculate kernel density for walking
 walking_dens <- SpatialKDE::kde(walking, 
                                 band_width = 400,
                                 grid = reference)
@@ -141,7 +137,7 @@ plot(walking_dens,
      zlim=c(0,500),
      main = "Walking")
 
-# kernel density for driving
+# Calculate kernel density for driving
 driving_dens <- SpatialKDE::kde(driving, 
                                 band_width = 400,
                                 grid = reference)
@@ -150,7 +146,7 @@ plot(driving_dens,
      zlim=c(0,500),
      main = "Driving")
 
-# kernel density for stationary
+# Calculate kernel density for stationary
 stationary_dens <- SpatialKDE::kde(stationary, 
                                 band_width = 400,
                                 grid = reference)
@@ -159,13 +155,15 @@ plot(stationary_dens,
      zlim=c(0,500),
      main = "Stationary")
 
-# K-means clustering----------------------------------------------
 
-# for each hunter, calculate number of points in each state
+# Explore time spent in states across hunters -----------------------------
+
+# For each hunter, calculate number of points in each state
 hunter_summary <- data_hmm |> 
     group_by(ID) |> 
     count(state) 
 
+# Calculate percent of time spent in each state for each hunter
 hunter_percentages <- hunter_summary |> 
     pivot_wider(names_from = state, values_from = n) |> 
     replace_na(list(Stationary = 0, Walking = 0, Driving = 0)) |> 
@@ -176,48 +174,29 @@ hunter_percentages <- hunter_summary |>
     dplyr::select(-c(Stationary, Walking, Driving, Total)) |> 
     ungroup()
 
+# Create long version of datafrae
 hunter_percentages_long <- hunter_percentages |> 
     pivot_longer(cols = c(Stationary_pct, Walking_pct, Driving_pct),
                  names_to = "State",
                  values_to = "Percentage")
 
+# Histogram of percentage of time spent in each state
 ggplot(hunter_percentages_long, aes(x = Percentage)) +
     facet_wrap(~State, nrow = 3) +
     geom_histogram() +
     theme_bw() +
     xlab("Percentage of Time Spent in Behavioral State")
 
-# K-means cluster analysis
+
+# K-means clustering----------------------------------------------
+
+# Prep for K-means cluster analysis
 hunter_percentages_noID <- hunter_percentages |> 
     dplyr::select(-ID) 
 set.seed(123)
-k3 <- kmeans(as.matrix(hunter_percentages_noID), centers = 3, nstart = 25)
-k3
 
-# K-means clustering with 3 clusters of sizes 75, 85, 65
-# 
-# Cluster means:
-#     Stationary_pct Walking_pct Driving_pct
-# 1      0.4939986   0.1879199   0.3180815
-# 2      0.2073040   0.2034379   0.5892581
-# 3      0.2695095   0.4529574   0.2775332    
-
-# assign cluster to each point
-hunter_percentages$Cluster = factor(k3$cluster)
-levels(hunter_percentages$Cluster) <- c("Waiters", "Drivers", "Walkers") # change factor level names
-
-# funny 3d plot
-library(plotly)
-p <- plot_ly(hunter_percentages_noID, 
-             x=~Stationary_pct, 
-             y=~Walking_pct, 
-             z=~Driving_pct, 
-             color=~Cluster) %>%
-    add_markers(size=1.5)
-print(p)
-
-#Elbow Method for finding the optimal number of clusters - THREE CLUSTERS IS OPTIMAL
-# Compute and plot wss for k = 2 to k = 15.
+# Elbow Method for finding the optimal number of clusters (k=2 to k=15)
+# THREE CLUSTERS IS OPTIMAL
 k.max <- 15
 data <- hunter_percentages_noID
 wss <- sapply(1:k.max, 
@@ -228,28 +207,47 @@ plot(1:k.max, wss,
      xlab="Number of clusters K",
      ylab="Total within-clusters sum of squares")
 
-# join with long data
+# Run K-means cluster analysis with k=3 clusters
+k3 <- kmeans(as.matrix(hunter_percentages_noID), centers = 3, nstart = 25)
+k3
+
+# RESULTS:
+# K-means clustering with 3 clusters of sizes 75, 85, 65
+# 
+# Cluster means:
+#     Stationary_pct Walking_pct Driving_pct
+# 1      0.4939986   0.1879199   0.3180815
+# 2      0.2073040   0.2034379   0.5892581
+# 3      0.2695095   0.4529574   0.2775332    
+
+# Assign cluster to each point
+hunter_percentages$Cluster = factor(k3$cluster)
+levels(hunter_percentages$Cluster) <- c("Waiters", "Drivers", "Walkers") # change factor level names
+
+# Join assigned clusters with long data also
 hunter_percentages_long <- left_join(hunter_percentages_long,
                                      dplyr::select(hunter_percentages, ID, Cluster))
+
+# Make histogram of time spent in each state across clusters
 ggplot(hunter_percentages_long, aes(x = Percentage, fill = State)) +
     facet_grid(State~Cluster) +
     geom_histogram() +
     theme_bw() +
     xlab("Percentage of Time Spent in Behavioral State")
 
-# join in with success
+# Join cluster with hunting success
 hunter_success <- data_hmm |> 
     dplyr::select(ID, Harvest) |> 
     unique()
 hunter_cluster_success <- left_join(hunter_percentages, hunter_success)
 
-# plot success by cluster
+# Plot success by cluster
 ggplot(hunter_cluster_success, aes(x = Cluster, fill = Harvest)) +
     geom_bar(stat = "count") + 
     theme_bw() +
     xlab("Hunting Mode")
 
-# calculate success rate by mode
+# Calculate success rate by cluster
 success_rate <- hunter_cluster_success |>
     count(Cluster, Harvest) |> 
     pivot_wider(id_cols = Cluster,
@@ -260,7 +258,7 @@ success_rate <- hunter_cluster_success |>
            Failure_rate = N/Total)
     
 
-# model of success rate as function of dominant mode
+# Model success rate as function of dominant mode
 hunter_cluster_success <- hunter_cluster_success %>%
     mutate(Harvest01 = ifelse(Harvest == "N",0,1))
 fit <- glm(Harvest01 ~ Cluster, data = hunter_cluster_success,
@@ -271,74 +269,22 @@ plot_model(fit)
 
 
 
+# Explore states in the hour before successful hunt ----------------------------------------
 
+library(hms)
 
-# Successful vs unsuccessful hunters --------------------------------------
-
-# split by successful & unsuccessful
-data_hmm_success <- data_hmm |> 
-    filter(Harvest == "Y")
-data_hmm_unsuccess <- data_hmm |> 
-    filter(Harvest == "N")
-
-# remove any individuals from successful parties from "unsuccess" to be more conservative
-`%notin%` <- Negate(`%in%`)
-data_hmm_unsuccess_cons <- data_hmm_unsuccess |> 
-    filter(Party_ID %notin% unique(data_hmm_success$Party_ID))
-
-# run models
-m_success <- fitHMM(data=data_hmm_success, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
-                    formula = ~road_scale + view_scale + wood_scale + rugged9_scale + chap_scale + sunrise_scale)
-saveRDS(m_success, "hmm-top-model-successfulharvest-2022-05-09.Rds")
-m_unsuccess <- fitHMM(data=data_hmm_unsuccess, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
-                      formula = ~road_scale + view_scale + wood_scale + rugged9_scale + chap_scale + sunrise_scale)
-saveRDS(m_unsuccess, "hmm-top-model-unsuccessfulharvest-2022-05-09.Rds")
-m_unsuccess_cons <- fitHMM(data=data_hmm_unsuccess_cons, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
-                      formula = ~road_scale + view_scale + wood_scale + rugged9_scale + chap_scale + sunrise_scale)
-saveRDS(m_unsuccess_cons, "hmm-top-model-unsuccessfulharvest-cons-2022-05-09.Rds")
-
-# explore results
-
-# proportion of time spent in each state
-states_s <- viterbi(m_success)
-prop.table(table(states_s)) 
-
-states_u <- viterbi(m_unsuccess)
-prop.table(table(states_u)) 
-
-states_uc <- viterbi(m_unsuccess_cons)
-prop.table(table(states_uc)) 
-
-# plot stationary state probabilities
-pdf("Figures/stationary-state-successful.pdf")
-plotStationary(m_success, plotCI=TRUE)
-dev.off()
-
-pdf("Figures/stationary-state-unsuccessful.pdf")
-plotStationary(m_unsuccess, plotCI=TRUE)
-dev.off()
-
-pdf("Figures/stationary-state-unsuccessful-cons.pdf")
-plotStationary(m_unsuccess_cons, plotCI=TRUE)
-dev.off()
-
-
-
-# Only hour before successful hunt ----------------------------------------
-
-# look at 31 harvest tracks
+# Identify 31 harvest tracks with associated time
 metadata <- read.csv("Data/Hunting/igotu_metadata_times_cleaned_03Feb2022.csv") |> 
     filter(Harvest == "Y") |> 
     filter(Harvest_time != "tbd") |> 
     filter(Harvest_time != "TBD")
 
-# filter tracks to just the hour before harvest
+# Filter tracks to just the hour before harvest
 harvest_hour <- igotu_data |> 
     filter(ID %in% metadata$ID) |> 
     left_join(metadata)
 
-# calculate time from harvest
-library(hms)
+# Calculate time from harvest
 harvest_hour$Time_to_Hunt <- NA
 for(j in 1:nrow(harvest_hour)) {
     harvest_hour$Time_to_Hunt[j] <- as.numeric(difftime(as_hms(harvest_hour$Time[j]),
@@ -346,12 +292,12 @@ for(j in 1:nrow(harvest_hour)) {
                                                        units = "hours"))
 }
 
-# take just the hour before harvest
+# Take just the hour before harvest
 harvest_hour <- harvest_hour |> 
     filter(Time_to_Hunt < 0) |> 
     filter(Time_to_Hunt > -1)
 
-# join with state
+# Join with state
 harvest_hour <- left_join(harvest_hour,
                           dplyr::select(data_hmm, ID, DateTime, state))
 
