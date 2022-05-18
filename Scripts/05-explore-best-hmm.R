@@ -18,7 +18,7 @@ igotu_data_fewer <- igotu_data %>%
                   vegetation.coarser.clean2, view_for_kg_proj,
                   veg.edges.dist.clean, road.dist.clean,
                   grass_120m, chap_120m, wood_120m,
-                  Elapsed_Time_Sunrise)
+                  Elapsed_Time_Sunrise, Harvest)
 
 # prep data for HMM
 data_hmm <- moveHMM::prepData(igotu_data_fewer, 
@@ -61,20 +61,15 @@ anglePar0_3state <- c(angleMean0_3state,kappa0_3state)
 
 # explore top model (which was the full model), as determined in 04-hmm-3state.Rmd
 # takes about 2.5 hours to run
-m <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
-                   formula = ~road_scale + view_scale + wood_scale + rugged9_scale + chap_scale + sunrise_scale)
-saveRDS(m, "hmm-top-model-2022-05-09.Rds")
+#m <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+#                   formula = ~road_scale + view_scale + wood_scale + rugged9_scale + chap_scale + sunrise_scale)
+#saveRDS(m, "hmm-top-model-2022-05-09.Rds")
 m <- readRDS("hmm-top-model-2022-05-09.Rds")
 
 # make a version without roads
-m2 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
-            formula = ~ view_scale + wood_scale + rugged9_scale + chap_scale + sunrise_scale)
-saveRDS(m2, "hmm-top-model-no-road-2022-05-09.Rds")
-
-# split by successful & unsuccessful
-data_hmm_success <- data_hmm |> 
-    filter()
-
+#m2 <- fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+#            formula = ~ view_scale + wood_scale + rugged9_scale + chap_scale + sunrise_scale)
+#saveRDS(m2, "hmm-top-model-no-road-2022-05-09.Rds")
 
 # model summary
 m 
@@ -83,6 +78,8 @@ m
 states <- viterbi(m)
 prop.table(table(states)) 
 
+# add most likely state to data
+data_hmm$state <- factor(viterbi(m))
 
 # plot model results
 plot(m, plotCI = TRUE)
@@ -104,3 +101,155 @@ ks.test(x=pr$angleRes,y='pnorm',alternative='two.sided')
 
 # time series, qq-plots, and ACF of the pseudo-residuals
 plotPR(m)
+
+
+# Exploring the three states ----------------------------------------------
+
+# for each hunter, calculate number of points in each state
+levels(data_hmm$state) <- c("Stationary", "Walking", "Driving") # change factor level names
+hunter_summary <- data_hmm |> 
+    group_by(ID) |> 
+    count(state) 
+
+hunter_percentages <- hunter_summary |> 
+    pivot_wider(names_from = state, values_from = n) |> 
+    replace_na(list(Stationary = 0, Walking = 0, Driving = 0)) |> 
+    mutate(Total = sum(Stationary, Walking, Driving),
+           Stationary_pct = Stationary/Total,
+           Walking_pct = Walking/Total,
+           Driving_pct = Driving/Total) |> 
+    dplyr::select(-c(Stationary, Walking, Driving, Total)) |> 
+    ungroup()
+
+hunter_percentages_long <- hunter_percentages |> 
+    pivot_longer(cols = c(Stationary_pct, Walking_pct, Driving_pct),
+                 names_to = "State",
+                 values_to = "Percentage")
+
+ggplot(hunter_percentages_long, aes(x = Percentage)) +
+    facet_wrap(~State, nrow = 3) +
+    geom_histogram() +
+    theme_bw()
+
+# K-means cluster analysis
+hunter_percentages_noID <- hunter_percentages |> 
+    dplyr::select(-ID) 
+k3 <- kmeans(as.matrix(hunter_percentages_noID), centers = 3, nstart = 25)
+k3
+
+# K-means clustering with 3 clusters of sizes 85, 67, 73
+# 
+# Cluster means:
+#     Stationary_pct Walking_pct Driving_pct Cluster
+# 1      0.2073040   0.2034379   0.5892581       3
+# 2      0.2732064   0.4491096   0.2776839       1
+# 3      0.4967559   0.1841900   0.3190541       2
+
+# assign cluster to each point
+hunter_percentages$Cluster = factor(k3$cluster)
+levels(hunter_percentages$Cluster) <- c("Drivers", "Walkers", "Sitters") # change factor level names
+
+# funny 3d plot
+library(plotly)
+p <- plot_ly(hunter_percentages_noID, 
+             x=~Stationary_pct, 
+             y=~Walking_pct, 
+             z=~Driving_pct, 
+             color=~Cluster) %>%
+    add_markers(size=1.5)
+print(p)
+
+#Elbow Method for finding the optimal number of clusters - THREE CLUSTERS IS OPTIMAL
+set.seed(123)
+# Compute and plot wss for k = 2 to k = 15.
+k.max <- 15
+data <- hunter_percentages_noID
+wss <- sapply(1:k.max, 
+              function(k){kmeans(data, k, nstart=50,iter.max = 15 )$tot.withinss})
+wss
+plot(1:k.max, wss,
+     type="b", pch = 19, frame = FALSE, 
+     xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares")
+
+
+# join in with success
+hunter_success <- data_hmm |> 
+    dplyr::select(ID, Harvest) |> 
+    unique()
+hunter_cluster_success <- left_join(hunter_percentages, hunter_success)
+
+# plot success by cluster
+ggplot(hunter_cluster_success, aes(x = Cluster, fill = Harvest)) +
+    geom_bar(stat = "count") + 
+    theme_bw() +
+    xlab("Hunting Mode")
+
+# calculate success rate by mode
+success_rate <- hunter_cluster_success |>
+    count(Cluster, Harvest) |> 
+    pivot_wider(id_cols = Cluster,
+                names_from = Harvest,
+                values_from = n) |> 
+    mutate(Total = N + Y,
+           Success_Rate = Y/Total,
+           Failure_rate = N/Total)
+    
+
+# model of success rate as function of dominant mode
+hunter_cluster_success <- hunter_cluster_success %>%
+    mutate(Harvest01 = ifelse(Harvest == "N",0,1))
+fit <- glm(Harvest01 ~ Cluster, data = hunter_cluster_success,
+           family = binomial)
+summary(fit)
+library(sjPlot)
+plot_model(fit)
+
+# Successful vs unsuccessful hunters --------------------------------------
+
+# split by successful & unsuccessful
+data_hmm_success <- data_hmm |> 
+    filter(Harvest == "Y")
+data_hmm_unsuccess <- data_hmm |> 
+    filter(Harvest == "N")
+
+# remove any individuals from successful parties from "unsuccess" to be more conservative
+`%notin%` <- Negate(`%in%`)
+data_hmm_unsuccess_cons <- data_hmm_unsuccess |> 
+    filter(Party_ID %notin% unique(data_hmm_success$Party_ID))
+
+# run models
+m_success <- fitHMM(data=data_hmm_success, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+                    formula = ~road_scale + view_scale + wood_scale + rugged9_scale + chap_scale + sunrise_scale)
+saveRDS(m_success, "hmm-top-model-successfulharvest-2022-05-09.Rds")
+m_unsuccess <- fitHMM(data=data_hmm_unsuccess, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+                      formula = ~road_scale + view_scale + wood_scale + rugged9_scale + chap_scale + sunrise_scale)
+saveRDS(m_unsuccess, "hmm-top-model-unsuccessfulharvest-2022-05-09.Rds")
+m_unsuccess_cons <- fitHMM(data=data_hmm_unsuccess_cons, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+                      formula = ~road_scale + view_scale + wood_scale + rugged9_scale + chap_scale + sunrise_scale)
+saveRDS(m_unsuccess_cons, "hmm-top-model-unsuccessfulharvest-cons-2022-05-09.Rds")
+
+# explore results
+
+# proportion of time spent in each state
+states_s <- viterbi(m_success)
+prop.table(table(states_s)) 
+
+states_u <- viterbi(m_unsuccess)
+prop.table(table(states_u)) 
+
+states_uc <- viterbi(m_unsuccess_cons)
+prop.table(table(states_uc)) 
+
+# plot stationary state probabilities
+pdf("Figures/stationary-state-successful.pdf")
+plotStationary(m_success, plotCI=TRUE)
+dev.off()
+
+pdf("Figures/stationary-state-unsuccessful.pdf")
+plotStationary(m_unsuccess, plotCI=TRUE)
+dev.off()
+
+pdf("Figures/stationary-state-unsuccessful-cons.pdf")
+plotStationary(m_unsuccess_cons, plotCI=TRUE)
+dev.off()
