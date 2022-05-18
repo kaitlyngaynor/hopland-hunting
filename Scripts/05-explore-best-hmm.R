@@ -318,4 +318,60 @@ dev.off()
 
 # Only hour before successful hunt ----------------------------------------
 
+# look at 31 harvest tracks
+metadata <- read.csv("Data/Hunting/igotu_metadata_times_cleaned_03Feb2022.csv") |> 
+    filter(Harvest == "Y") |> 
+    filter(Harvest_time != "tbd") |> 
+    filter(Harvest_time != "TBD")
 
+# filter tracks to just the hour before harvest
+harvest_hour <- igotu_data |> 
+    filter(ID %in% metadata$ID) |> 
+    left_join(metadata)
+
+# calculate time from harvest
+library(hms)
+harvest_hour$Time_to_Hunt <- NA
+for(j in 1:nrow(harvest_hour)) {
+    harvest_hour$Time_to_Hunt[j] <- as.numeric(difftime(as_hms(harvest_hour$Time[j]),
+                                                       as_hms(strptime(harvest_hour$Harvest_time[j], "%H:%M")),
+                                                       units = "hours"))
+}
+
+# take just the hour before harvest
+harvest_hour2 <- harvest_hour |> 
+    filter(Time_to_Hunt < 0) |> 
+    filter(Time_to_Hunt > -1)
+
+# Select columns of interest & attached scaled values
+harvest_hour_fewer <- harvest_hour2 %>% 
+    dplyr::select(ID, Party_ID, Longitude, Latitude, DateTime,
+                  rugged49.clean, rugged25.clean, rugged9.clean,
+                  vegetation.coarser.clean2, view_for_kg_proj,
+                  veg.edges.dist.clean, road.dist.clean,
+                  grass_120m, chap_120m, wood_120m,
+                  Elapsed_Time_Sunrise, Harvest) |> 
+    left_join(dplyr::select(data_hmm, -c(step, angle, x, y)))
+
+# prep data for HMM
+data_hmm_hour <- moveHMM::prepData(harvest_hour_fewer, 
+                              type="LL", 
+                              coordNames=c("Longitude","Latitude"))
+
+# remove step lengths of 'NA'
+data_hmm_hour <- data_hmm_hour %>% 
+    drop_na(step) 
+
+# filter out all steps > 15mph - results in 278 observations
+data_hmm_hour <- data_hmm_hour %>% 
+    filter(step < 1.207008)
+
+# NOT WORKING - rror in nlm(nLogLike, wpar, nbStates, bounds, parSize, data, stepDist,  :  non-finite value supplied by 'nlm'
+m_hour <- fitHMM(data=data_hmm_hour, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
+                   formula = ~road_scale + view_scale + wood_scale + rugged9_scale + chap_scale + sunrise_scale)
+saveRDS(m_hour, "hmm-top-model-hour-2022-05-17.Rds")
+
+plot(m_hour)
+
+# plot stationary state probabilities
+plotStationary(m, plotCI=TRUE)
