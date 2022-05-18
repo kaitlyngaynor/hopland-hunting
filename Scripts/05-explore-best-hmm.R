@@ -184,7 +184,8 @@ hunter_percentages_long <- hunter_percentages |>
 ggplot(hunter_percentages_long, aes(x = Percentage)) +
     facet_wrap(~State, nrow = 3) +
     geom_histogram() +
-    theme_bw()
+    theme_bw() +
+    xlab("Percentage of Time Spent in Behavioral State")
 
 # K-means cluster analysis
 hunter_percentages_noID <- hunter_percentages |> 
@@ -233,7 +234,8 @@ hunter_percentages_long <- left_join(hunter_percentages_long,
 ggplot(hunter_percentages_long, aes(x = Percentage, fill = State)) +
     facet_grid(State~Cluster) +
     geom_histogram() +
-    theme_bw()
+    theme_bw() +
+    xlab("Percentage of Time Spent in Behavioral State")
 
 # join in with success
 hunter_success <- data_hmm |> 
