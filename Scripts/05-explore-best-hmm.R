@@ -369,6 +369,9 @@ data_hmm_hour <- data_hmm_hour %>%
 # NOT WORKING - rror in nlm(nLogLike, wpar, nbStates, bounds, parSize, data, stepDist,  :  non-finite value supplied by 'nlm'
 m_hour <- fitHMM(data=data_hmm_hour, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
                    formula = ~road_scale + view_scale + wood_scale + rugged9_scale + chap_scale + sunrise_scale)
+m_hour <- fitHMM(data=data_hmm_hour, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state)
+plot(m_hour)
+
 saveRDS(m_hour, "hmm-top-model-hour-2022-05-17.Rds")
 
 plot(m_hour)
