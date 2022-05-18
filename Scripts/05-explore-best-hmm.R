@@ -4,7 +4,9 @@ library(dplyr)
 library(moveHMM)
 library(tidyr)
 library(ggplot2)
-
+library(sf)
+library(raster)
+library(SpatialKDE)
 
 # Set-up ------------------------------------------------------------------
 
@@ -80,6 +82,7 @@ prop.table(table(states))
 
 # add most likely state to data
 data_hmm$state <- factor(viterbi(m))
+levels(data_hmm$state) <- c("Stationary", "Walking", "Driving") # change factor level names
 
 # plot model results
 plot(m, plotCI = TRUE)
@@ -103,10 +106,63 @@ ks.test(x=pr$angleRes,y='pnorm',alternative='two.sided')
 plotPR(m)
 
 
-# Exploring the three states ----------------------------------------------
+# Map three states --------------------------------------------------------
+
+# bring in locations
+data_hmm_sf <- left_join(data_hmm,
+                         dplyr::select(igotu_data, ID, DateTime, Latitude, Longitude)) |> 
+    st_as_sf(coords = c("Longitude", "Latitude"),
+             crs = "+proj=longlat +datum=WGS84", 
+             remove = FALSE)
+
+walking <- data_hmm_sf |> 
+    dplyr::filter(state == "Walking") |> 
+    st_transform(crs = "+proj=utm +zone=10 +datum=WGS84")
+stationary <- data_hmm_sf |> 
+    dplyr::filter(state == "Stationary") |> 
+    st_transform(crs = "+proj=utm +zone=10 +datum=WGS84")
+driving <- data_hmm_sf |> 
+    dplyr::filter(state == "Driving") |> 
+    st_transform(crs = "+proj=utm +zone=10 +datum=WGS84")
+
+# bring in reference raster
+reference <- raster("Data/Spatial data/Cleaned rasters/blm_dist.tif")
+sf::sf_use_s2(FALSE)
+huntable <- read_sf("Data/Spatial data/huntable.shp") |> 
+    st_transform(crs = "+proj=utm +zone=10 +datum=WGS84")
+reference2 <- create_raster(huntable, cell_size = 100) 
+
+library(viridis)
+# kernel density for walking
+walking_dens <- SpatialKDE::kde(walking, 
+                                band_width = 400,
+                                grid = reference2)
+plot(walking_dens, 
+     col = viridis(1e3), 
+     zlim=c(0,500),
+     main = "Walking")
+
+# kernel density for driving
+driving_dens <- SpatialKDE::kde(driving, 
+                                band_width = 400,
+                                grid = reference2)
+plot(driving_dens, 
+     col = viridis(1e3), 
+     zlim=c(0,500),
+     main = "Driving")
+
+# kernel density for stationary
+stationary_dens <- SpatialKDE::kde(stationary, 
+                                band_width = 400,
+                                grid = reference2)
+plot(stationary_dens, 
+     col = viridis(1e3), 
+     zlim=c(0,500),
+     main = "Stationary")
+
+# K-means clustering----------------------------------------------
 
 # for each hunter, calculate number of points in each state
-levels(data_hmm$state) <- c("Stationary", "Walking", "Driving") # change factor level names
 hunter_summary <- data_hmm |> 
     group_by(ID) |> 
     count(state) 
@@ -140,10 +196,10 @@ k3
 # K-means clustering with 3 clusters of sizes 85, 67, 73
 # 
 # Cluster means:
-#     Stationary_pct Walking_pct Driving_pct Cluster
-# 1      0.2073040   0.2034379   0.5892581       3
-# 2      0.2732064   0.4491096   0.2776839       1
-# 3      0.4967559   0.1841900   0.3190541       2
+#     Stationary_pct Walking_pct Driving_pct
+# 1      0.2073040   0.2034379   0.5892581 
+# 2      0.2732064   0.4491096   0.2776839 
+# 3      0.4967559   0.1841900   0.3190541      
 
 # assign cluster to each point
 hunter_percentages$Cluster = factor(k3$cluster)
@@ -205,6 +261,10 @@ summary(fit)
 library(sjPlot)
 plot_model(fit)
 
+
+
+
+
 # Successful vs unsuccessful hunters --------------------------------------
 
 # split by successful & unsuccessful
@@ -253,3 +313,9 @@ dev.off()
 pdf("Figures/stationary-state-unsuccessful-cons.pdf")
 plotStationary(m_unsuccess_cons, plotCI=TRUE)
 dev.off()
+
+
+
+# Only hour before successful hunt ----------------------------------------
+
+
