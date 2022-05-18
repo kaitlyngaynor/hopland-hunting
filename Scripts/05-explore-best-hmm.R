@@ -125,18 +125,17 @@ driving <- data_hmm_sf |>
     dplyr::filter(state == "Driving") |> 
     st_transform(crs = "+proj=utm +zone=10 +datum=WGS84")
 
-# bring in reference raster
-reference <- raster("Data/Spatial data/Cleaned rasters/blm_dist.tif")
+# create reference raster
 sf::sf_use_s2(FALSE)
 huntable <- read_sf("Data/Spatial data/huntable.shp") |> 
     st_transform(crs = "+proj=utm +zone=10 +datum=WGS84")
-reference2 <- create_raster(huntable, cell_size = 100) 
+reference <- create_raster(huntable, cell_size = 100) 
 
 library(viridis)
 # kernel density for walking
 walking_dens <- SpatialKDE::kde(walking, 
                                 band_width = 400,
-                                grid = reference2)
+                                grid = reference)
 plot(walking_dens, 
      col = viridis(1e3), 
      zlim=c(0,500),
@@ -145,7 +144,7 @@ plot(walking_dens,
 # kernel density for driving
 driving_dens <- SpatialKDE::kde(driving, 
                                 band_width = 400,
-                                grid = reference2)
+                                grid = reference)
 plot(driving_dens, 
      col = viridis(1e3), 
      zlim=c(0,500),
@@ -154,7 +153,7 @@ plot(driving_dens,
 # kernel density for stationary
 stationary_dens <- SpatialKDE::kde(stationary, 
                                 band_width = 400,
-                                grid = reference2)
+                                grid = reference)
 plot(stationary_dens, 
      col = viridis(1e3), 
      zlim=c(0,500),
@@ -190,20 +189,21 @@ ggplot(hunter_percentages_long, aes(x = Percentage)) +
 # K-means cluster analysis
 hunter_percentages_noID <- hunter_percentages |> 
     dplyr::select(-ID) 
+set.seed(123)
 k3 <- kmeans(as.matrix(hunter_percentages_noID), centers = 3, nstart = 25)
 k3
 
-# K-means clustering with 3 clusters of sizes 85, 67, 73
+# K-means clustering with 3 clusters of sizes 75, 85, 65
 # 
 # Cluster means:
 #     Stationary_pct Walking_pct Driving_pct
-# 1      0.2073040   0.2034379   0.5892581 
-# 2      0.2732064   0.4491096   0.2776839 
-# 3      0.4967559   0.1841900   0.3190541      
+# 1      0.4939986   0.1879199   0.3180815
+# 2      0.2073040   0.2034379   0.5892581
+# 3      0.2695095   0.4529574   0.2775332    
 
 # assign cluster to each point
 hunter_percentages$Cluster = factor(k3$cluster)
-levels(hunter_percentages$Cluster) <- c("Drivers", "Walkers", "Sitters") # change factor level names
+levels(hunter_percentages$Cluster) <- c("Sitters", "Drivers", "Walkers") # change factor level names
 
 # funny 3d plot
 library(plotly)
@@ -216,7 +216,6 @@ p <- plot_ly(hunter_percentages_noID,
 print(p)
 
 #Elbow Method for finding the optimal number of clusters - THREE CLUSTERS IS OPTIMAL
-set.seed(123)
 # Compute and plot wss for k = 2 to k = 15.
 k.max <- 15
 data <- hunter_percentages_noID
@@ -228,6 +227,13 @@ plot(1:k.max, wss,
      xlab="Number of clusters K",
      ylab="Total within-clusters sum of squares")
 
+# join with long data
+hunter_percentages_long <- left_join(hunter_percentages_long,
+                                     dplyr::select(hunter_percentages, ID, Cluster))
+ggplot(hunter_percentages_long, aes(x = Percentage, fill = State)) +
+    facet_grid(State~Cluster) +
+    geom_histogram() +
+    theme_bw()
 
 # join in with success
 hunter_success <- data_hmm |> 
@@ -339,42 +345,12 @@ for(j in 1:nrow(harvest_hour)) {
 }
 
 # take just the hour before harvest
-harvest_hour2 <- harvest_hour |> 
+harvest_hour <- harvest_hour |> 
     filter(Time_to_Hunt < 0) |> 
     filter(Time_to_Hunt > -1)
 
-# Select columns of interest & attached scaled values
-harvest_hour_fewer <- harvest_hour2 %>% 
-    dplyr::select(ID, Party_ID, Longitude, Latitude, DateTime,
-                  rugged49.clean, rugged25.clean, rugged9.clean,
-                  vegetation.coarser.clean2, view_for_kg_proj,
-                  veg.edges.dist.clean, road.dist.clean,
-                  grass_120m, chap_120m, wood_120m,
-                  Elapsed_Time_Sunrise, Harvest) |> 
-    left_join(dplyr::select(data_hmm, -c(step, angle, x, y)))
+# join with state
+harvest_hour <- left_join(harvest_hour,
+                          dplyr::select(data_hmm, ID, DateTime, state))
 
-# prep data for HMM
-data_hmm_hour <- moveHMM::prepData(harvest_hour_fewer, 
-                              type="LL", 
-                              coordNames=c("Longitude","Latitude"))
-
-# remove step lengths of 'NA'
-data_hmm_hour <- data_hmm_hour %>% 
-    drop_na(step) 
-
-# filter out all steps > 15mph - results in 278 observations
-data_hmm_hour <- data_hmm_hour %>% 
-    filter(step < 1.207008)
-
-# NOT WORKING - rror in nlm(nLogLike, wpar, nbStates, bounds, parSize, data, stepDist,  :  non-finite value supplied by 'nlm'
-m_hour <- fitHMM(data=data_hmm_hour, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
-                   formula = ~road_scale + view_scale + wood_scale + rugged9_scale + chap_scale + sunrise_scale)
-m_hour <- fitHMM(data=data_hmm_hour, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state)
-plot(m_hour)
-
-saveRDS(m_hour, "hmm-top-model-hour-2022-05-17.Rds")
-
-plot(m_hour)
-
-# plot stationary state probabilities
-plotStationary(m, plotCI=TRUE)
+count(harvest_hour, state)
