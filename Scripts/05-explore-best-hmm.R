@@ -203,7 +203,7 @@ k3
 
 # assign cluster to each point
 hunter_percentages$Cluster = factor(k3$cluster)
-levels(hunter_percentages$Cluster) <- c("Sitters", "Drivers", "Walkers") # change factor level names
+levels(hunter_percentages$Cluster) <- c("Waiters", "Drivers", "Walkers") # change factor level names
 
 # funny 3d plot
 library(plotly)
