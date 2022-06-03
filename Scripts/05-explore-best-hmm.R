@@ -122,11 +122,14 @@ driving <- data_hmm_sf |>
     dplyr::filter(state == "Driving") |> 
     st_transform(crs = "+proj=utm +zone=10 +datum=WGS84")
 
-# Create reference raster to use for kernel density estimation
+# Create 100m resolution reference raster to use for kernel density estimation
 sf::sf_use_s2(FALSE)
-huntable <- read_sf("Data/Spatial data/huntable.shp") |> 
-    st_transform(crs = "+proj=utm +zone=10 +datum=WGS84")
-reference <- create_raster(huntable, cell_size = 100) 
+ huntable <- read_sf("Data/Spatial data/huntable.shp") |> 
+     st_transform(crs = "+proj=utm +zone=10 +datum=WGS84")
+ reference <- create_raster(huntable, cell_size = 100) 
+ 
+# alternatively, use 10m x 10m raster
+# reference <- raster("Data/Spatial data/Cleaned rasters/road.dist.clean.tif")
 
 # Calculate kernel density for walking
 walking_dens <- SpatialKDE::kde(walking, 
