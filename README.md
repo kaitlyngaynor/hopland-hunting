@@ -36,6 +36,8 @@ We followed guidance from the moveHMM package authors when choosing initial para
 
 We used the viterbi function in the moveHMM package to determine the most probable behavioral state at each step for each hunter, based on the global model. We then determined the percentate of time that each hunter spent in each of the three behavioral states.
 
+We then mapped the spatial distribution of steps corresponding to each behavioral state, using kernel density estimation (SpatialKDE::kde() function). We set the bandwidth to 400m, which seemed meaningful for understanding the spatial footprint of hunting as this is the maximum distance at which a hunter is likely to locate a deer (Higley 2002).
+
 We then used k-means clustering to group hunters by hunting mode, on the basis of their time spent in each behavioral state. We determined the optimal value of k using the elbow method heuristic (we plotted the total within-cluster sum of squares as a function of k, and determined the value of k at which this sum of squares began declining linearly). We then compared harvest success rates across hunting modes.
 
 
