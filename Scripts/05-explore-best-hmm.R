@@ -124,9 +124,9 @@ driving <- data_hmm_sf |>
 
 # Create 100m resolution reference raster to use for kernel density estimation
 sf::sf_use_s2(FALSE)
- huntable <- read_sf("Data/Spatial data/huntable.shp") |> 
+huntable <- read_sf("Data/Spatial data/huntable.shp") |> 
      st_transform(crs = "+proj=utm +zone=10 +datum=WGS84")
- reference <- create_raster(huntable, cell_size = 100) 
+reference <- create_raster(huntable, cell_size = 100) 
  
 # alternatively, use 10m x 10m raster
 # reference <- raster("Data/Spatial data/Cleaned rasters/road.dist.clean.tif")
@@ -157,6 +157,11 @@ plot(stationary_dens,
      col = viridis(1e3), 
      zlim=c(0,500),
      main = "Stationary")
+
+# Write all rasters to file
+writeRaster(walking_dens, "Data/Spatial data/Hunter_KDE/walking_dens.tif")
+writeRaster(driving_dens, "Data/Spatial data/Hunter_KDE/driving_dens.tif")
+writeRaster(stationary_dens, "Data/Spatial data/Hunter_KDE/stationary_dens.tif")
 
 
 # Explore time spent in states across hunters -----------------------------
@@ -231,6 +236,13 @@ levels(hunter_percentages$Cluster) <- c("Waiters", "Drivers", "Walkers") # chang
 hunter_percentages_long <- left_join(hunter_percentages_long,
                                      dplyr::select(hunter_percentages, ID, Cluster))
 
+# Join cluster with hunting success
+hunter_success <- data_hmm |> 
+    dplyr::select(ID, Harvest) |> 
+    unique()
+hunter_cluster_success <- left_join(hunter_percentages, hunter_success)
+hunter_cluster_success_long <- left_join(hunter_percentages_long, hunter_success)
+
 # Make histogram of time spent in each state across clusters
 ggplot(hunter_percentages_long, aes(x = Percentage, fill = State)) +
     facet_grid(State~Cluster) +
@@ -238,11 +250,19 @@ ggplot(hunter_percentages_long, aes(x = Percentage, fill = State)) +
     theme_bw() +
     xlab("Percentage of Time Spent in Behavioral State")
 
-# Join cluster with hunting success
-hunter_success <- data_hmm |> 
-    dplyr::select(ID, Harvest) |> 
-    unique()
-hunter_cluster_success <- left_join(hunter_percentages, hunter_success)
+# Boxplot of time spent in each state BY Cluster
+ggplot(hunter_cluster_success_long, aes(y = Percentage,
+                                        x = Cluster,
+                                        fill = State)) +
+    geom_boxplot() +
+    theme_bw()
+
+# Boxplot of time spent in each state BY success
+ggplot(hunter_cluster_success_long, aes(y = Percentage,
+                                        x = State,
+                                        fill = Harvest)) +
+    geom_boxplot() +
+    theme_bw()
 
 # Plot success by cluster
 ggplot(hunter_cluster_success, aes(x = Cluster, fill = Harvest)) +
