@@ -1,0 +1,358 @@
+---
+title: "Hopland hunter activity"
+author: "Kaitlyn Gaynor"
+date: "1/28/2019"
+output:
+  html_document:
+    theme: cosmo
+    toc: yes
+    toc_float: yes
+  pdf_document:
+    toc: yes
+  word_document:
+    toc: yes
+editor_options:
+  chunk_output_type: console
+---
+
+Code adopted from Tristan's iGotU code on the GitHub:
+
+```{r igotu manipulation, message = F, warning = F}
+# load libraries
+library(tidyverse)
+library(readr)
+library(plyr)
+library(dplyr)
+library(rgdal)
+library(sp)
+library(raster)
+library(bcpa)
+library(rgeos)
+library(spatialEco)
+library(overlap)
+library(maptools)
+library(lubridate)
+library(RColorBrewer)
+library(rJava)
+library(glmulti)
+library(adehabitatLT)
+```
+
+Import the shapefile of HREC. We'll consider this the huntable area for generating random points and mapping risk. Of course, there are some pastures that need to be masked. 
+```{r import hrec shapefile, message = F, results ='hide', warning = F}
+# read hrec boundary layer
+hrec.boundary.orig <- readOGR("Data/Spatial data/Raw from Alex", "HREC_boundary")
+
+# change projection to UTM
+hrec.boundary <- spTransform(hrec.boundary.orig, "+proj=utm 
+                             +north +zone=10 +ellps=WGS84 +units=m")
+
+###Import shape file with mask of areas that do not allow hunting. 
+no.hunt.area.orig <- readOGR("Data/Spatial data/Raw from Alex", "hunt_zone")
+
+# change projection to UTM
+no.hunt.area <- spTransform(no.hunt.area.orig, "+proj=utm 
+                             +north +zone=10 +ellps=WGS84 +units=m")
+
+# create polygon with huntable area only (subtract no hunt from entire boundary)
+huntable <- hrec.boundary - no.hunt.area
+
+# make sure that worked
+plot(huntable, col = "blue") # it did
+
+#Alex: make this in original proj for other spatial needs:
+huntable.wgs <- hrec.boundary.orig - no.hunt.area.orig
+huntable.wgs <- spTransform(huntable, "+proj=longlat +ellps=WGS84")
+plot(huntable.wgs, col = "red")
+
+```
+
+#### Load in the iGotU data csv files.
+
+Note that once I opened a few of them in Excel, the date was converted to a character. Ugh. So I went through and set them all to be characters, and also got rid of the spaces in the column headings, and added a column for the track (note: column for track is empty for about half of them; see notes). 
+
+```{r setup igotu}
+# read in the igotU files
+options(digits=15) # this ensures that all the decimal places are read in from lat/long readings
+
+#Alex: later, for converting to spdf, we will need the ID to come from the filenames. This code adds a column called "source" with the filename that can be used below
+wd <- getwd()
+filenames <- list.files(path = paste(wd, "/Data/Hunting/igotu_raw/", sep=""), pattern = NULL, all.files = FALSE, full.names = TRUE, recursive = FALSE, ignore.case = FALSE)
+read_csv_filename <- function(filename){
+    ret <- read.csv(filename)
+    ret$Source <- filename #EDIT
+    ret
+}
+hunter.csvs <- lapply(filenames, FUN=read_csv_filename)
+
+ExtractCollarData <- function (X){
+  id <- X[,"Source"]
+  unit.time <- X[,"Time"]
+  unit.date <- X[,"Date"]
+  unit.datetime <- paste(unit.date, unit.time, sep="")
+  # translates into POSIXct times
+  da <- as.POSIXct(strptime(unit.datetime, "%m/%d/%y %H:%M:%S"), tz="America/Los_Angeles")
+  # rename lat and long
+  lat <-X[,"Latitude"]
+  lon <-X[,"Longitude"]
+  # spit out as a dataframe
+  data.frame(id=id, da=da, lat=lat, lon=lon)
+}
+
+# generate list of extracted collar data
+extracted.list <- lapply(hunter.csvs, FUN=ExtractCollarData)
+
+# define function for creating spatial data frame, transforming to UTM, and cropping to HREC huntable zone
+SPDFTransform <- function (X) {
+  Y <- X # copy
+  coordinates(Y) <- ~lon+lat # creat spdf
+  proj4string(Y) <- CRS("+proj=longlat +ellps=WGS84")
+  Y <- spTransform(Y, CRS("+proj=utm +north +zone=10 +ellps=WGS84 +units=m"))
+  Y <- Y[huntable,]
+  return(Y)
+}
+
+#Alex: make into data frame using non-transformed coords (required for some movement metrics)
+SPDFTransformWGS <- function (X) {
+  Y <- X # copy
+  coordinates(Y) <- ~lon+lat # creat spdf
+  proj4string(Y) <- CRS("+proj=longlat +ellps=WGS84")
+  Y <- spTransform(Y, CRS("+proj=longlat +ellps=WGS84"))
+  Y <- Y[huntable.wgs,]
+  return(Y)
+}
+
+# transform into an spdf
+spdf.list <- lapply(extracted.list, FUN=SPDFTransform)
+spdf.list.wgs <- lapply(extracted.list, FUN=SPDFTransformWGS)
+
+# combine list into single SPDF 
+spdf <- do.call("rbind", spdf.list)
+spdf.wgs <- do.call("rbind", spdf.list.wgs)
+
+#Alex: Trying the redisltraj function from the adehabitatLT package. From Briana: "It lets you 'rediscretize' your data into any sampling rate you want. You'll need to convert the data into an ltraj object in this package" 
+hunter.ltraj <- as.ltraj(coordinates(spdf), spdf$da, id = spdf$id, typeII = TRUE)
+hunter.ltraj.wgs <- as.ltraj(coordinates(spdf.wgs), spdf.wgs$da, id = spdf.wgs$id, typeII = TRUE)
+#Alex: show the time lag before rediscretization
+
+# plotltr(hunter.ltraj, "dt") # not working, fig margins too large
+
+# Line below rediscretizes by time to 10min intervals, up from 5s
+hunter.ltraj.10 <- redisltraj(l = hunter.ltraj, u = 10, type = "time")
+hunter.ltraj.30 <- redisltraj(l = hunter.ltraj, u = 30, type = "time")
+hunter.ltraj.60 <- redisltraj(l = hunter.ltraj, u = 60, type = "time")
+hunter.ltraj.600 <- redisltraj(l = hunter.ltraj, u = 600, type = "time")
+hunter.ltraj.10.wgs <- redisltraj(l = hunter.ltraj.wgs, u = 10, type = "time")
+
+
+# kg - not totally sure what code below is doing
+
+#make sure it looks right
+head(spdf) 
+
+# copy for making spdf
+df.spdf <- spdf
+coordinates(df.spdf) <- ~lon+lat # create spdf
+proj4string(df.spdf) <- CRS("+proj=utm +north +zone=10 +ellps=WGS84 +units=m") #define projection
+df.spdf <- df.spdf[huntable,] #use only huntable area
+df.ltraj <- df.spdf #copy for making ltraj
+          
+df.ltraj <- as.ltraj(coordinates(df.ltraj), df.ltraj$da, id = df.ltraj$id, typeII = TRUE)
+            
+            redisltraj(l = df_ltraj, u = 60, type = "time")
+
+
+# a note: cropping to huntable zone should also *mostly* take care of cropping to start and end time
+# when the iGotU units were not in use, they were in non-huntable zone 
+#(however, there was at least one night when I drove from dorms home via Amy's with functioning iGotU units, 
+#and my drive out of the property should be cut off. Ignoring for now)
+```
+
+
+CODE BELOW IS UNUSED:
+
+Determine times of day of activity associated with the points in the huntable area. (Using the 10 min independent points for this).
+```{r huntable times of day}
+
+#Alex: changed all these to use ltraj. Even more data is available when converting from the ltraj object. You get a bunch of movement metrics in addition to the locs and times. Go to the as.ltraj function here for a lot of detail https://cran.r-project.org/web/packages/adehabitatLT/adehabitatLT.pdf
+spdf.10min.times <- ld(hunter.ltraj.600)
+spdf.10min.times$Date <- as.POSIXct(spdf.10min.times$date)
+spdf.10min.times$Time <- format(as.POSIXct(spdf.10min.times$date) ,format = "%H:%M:%S") %>% hms()
+
+
+coords <- matrix(c(-123.079, 39.0013), nrow=1) # note it is c(longitude, latitude)
+Coords <- sp::SpatialPoints(coords, proj4string=sp::CRS("+proj=longlat +datum=WGS84"))
+
+# convert time from HH:MM:SS to decimal hours (HH.HHHH or whatever)
+spdf.10min.times$Time.Decimal <- spdf.10min.times$Time$hour + spdf.10min.times$Time$minute/60 + spdf.10min.times$Time$second/3600
+
+# scale time so that it is between 0 and 1 by dividing by 24
+spdf.10min.times$Time.Scaled <- spdf.10min.times$Time.Decimal / 24
+
+# convert scaled time (0 to 1) to radians (0 to 2pi)
+spdf.10min.times$Time.Radians <- spdf.10min.times$Time.Scaled * 2 * pi
+
+# calculate suntime using function from overlap package, and coordinates and dates as formatted above
+# throwing an error, I'm not sure why...
+spdf.10min.times$Time.Sun <- sunTime(spdf.10min.times$Time.Radians, spdf.10min.times$Date, Coords)
+
+write.csv(spdf.10min.times, "Data/Hunting/igotu_activity_times.csv")
+```
+
+
+
+
+Examine correlations between hunter activity density and other raster layers.
+
+I'm not sure how to do this adequately in a way that accounts for spatial autocorrelation of each of the predictors and the output... so just ignoring for now.
+
+Bring in raster stack.
+```{r bring in raster stack for hunter activity comparison}
+ndvi.16.clean <- raster("Data/spatial data/Cleaned rasters/ndvi.16.clean.tif")
+blm.dist.clean <- raster("Data/spatial data/Cleaned rasters/blm.dist.clean.tif")
+bound.dist.clean <- raster("Data/spatial data/Cleaned rasters/bound.dist.clean.tif")
+elevation.clean <- raster("Data/spatial data/Cleaned rasters/elevation.clean.tif")
+fence.dist.clean <- raster("Data/spatial data/Cleaned rasters/fence.dist.clean.tif")
+hq.dist.clean <- raster("Data/spatial data/Cleaned rasters/hq.dist.clean.tif")
+road.dist.clean <- raster("Data/spatial data/Cleaned rasters/road.dist.clean.tif")
+rugged121.clean <- raster("Data/spatial data/Cleaned rasters/rugged121.clean.tif")
+rugged25.clean <- raster("Data/spatial data/Cleaned rasters/rugged25.clean.tif")
+rugged49.clean <- raster("Data/spatial data/Cleaned rasters/rugged49.clean.tif")
+rugged81.clean <- raster("Data/spatial data/Cleaned rasters/rugged81.clean.tif")
+rugged9.clean <- raster("Data/spatial data/Cleaned rasters/rugged9.clean.tif")
+slope.clean <- raster("Data/spatial data/Cleaned rasters/slope.clean.tif")
+vegetation.clean <- raster("Data/spatial data/Cleaned rasters/vegetation.clean.tif")
+vegetation.coarser.clean <- raster("Data/spatial data/Cleaned rasters/vegetation.coarser.clean.tif")
+vegetation.coarser.clean2 <- raster("Data/spatial data/Cleaned rasters/vegetation.coarser.clean2.tif")
+water.dist.clean <- raster("Data/spatial data/Cleaned rasters/water.dist.clean.tif")
+viewshed.clean <- raster("Data/spatial data/Cleaned rasters/viewshed.clean.tif")
+viewshed.reclass.clean <- raster("Data/spatial data/Cleaned rasters/viewshed.reclass.clean.tif")
+veg.edges.dist.clean <- raster("Data/Spatial data/Cleaned rasters/veg.edges.dist.clean.tif")
+chap.edges.dist.clean <- raster("Data/Spatial data/Cleaned rasters/chap.edges.dist.clean.tif")
+bb.all <- raster("GIS_data/bb_all_mask.tif")
+bb.900 <- raster("GIS_data/bbFPT_mask.tif")
+
+raster.stack <- raster::stack(elevation.clean, slope.clean, vegetation.clean, 
+                              vegetation.coarser.clean, vegetation.coarser.clean2,
+                              blm.dist.clean, bound.dist.clean, fence.dist.clean, 
+                              hq.dist.clean, road.dist.clean, water.dist.clean, 
+                              rugged9.clean, rugged25.clean, rugged49.clean, 
+                              rugged81.clean, rugged121.clean,
+                              viewshed.clean, viewshed.reclass.clean,
+                              ndvi.16.clean, veg.edges.dist.clean, chap.edges.dist.clean,
+                              bb.all, bb.900)
+
+# specify names - for whatever reason, the density layers were still named kde.1 and kde.2 so this is really just to take care of them
+names(raster.stack) <- c("elevation.clean", "slope.clean", "vegetation.clean",
+                         "vegetation.coarser.clean", "vegetation.coarser.clean2",
+                         "blm.dist.clean", "bound.dist.clean", "fence.dist.clean",
+                         "hq.dist.clean", "road.dist.clean", "water.dist.clean",
+                         "rugged9.clean", "rugged25.clean", "rugged49.clean", "rugged81.clean",
+                         "rugged 121.clean", "viewshed.clean", "viewshed.reclass.clean",
+                         "ndvi.16.clean", "veg.edges.dist.clean", "chap.edges.dist.clean",
+                         "density.offroad.10min", "density.all.10min")
+```
+
+
+One appoach is to stack the rasters on top of each other, and just calculate correlation between the raster layers.
+```{r correlation between raster layers}
+layerstats <- layerStats(raster.stack, stat = "pearson", na.rm = "TRUE")
+
+correlation.matrix <- as.data.frame(layerstats[[1]]) 
+correlation.matrix <- subset(correlation.matrix, select = "density.all.10min")
+correlation.matrix
+
+write.csv(correlation.matrix, "Results/correlation_matrix_hunter_activity.csv")
+```
+
+Another approach is to generate random points, extract raster values, and then do a GLM. Ideally, the number of random points would be chosen to minimize spatial autocorrelation. I'm just using the same 2000 random points from the hunter risk model for now.
+```{r correlation between raster layers using random points}
+random <- readOGR("Data/Hunting", "random_points_012819")
+
+random.raster <- as.data.frame(raster::extract(raster.stack, random))
+names(random.raster) <- c(names(random.raster)[1:21], "density.offroad.10min", "density.all.10min")
+
+# specify that vegetation is a factor
+random.raster$vegetation.clean <- as.factor(random.raster$vegetation.clean)
+random.raster$vegetation.coarser.clean <- as.factor(random.raster$vegetation.coarser.clean)
+random.raster$vegetation.coarser.clean2 <- as.factor(random.raster$vegetation.coarser.clean2)
+
+# model for all hunting points
+fit <- glmulti(density.all.10min ~ slope.clean + vegetation.coarser.clean2 + 
+                 fence.dist.clean + hq.dist.clean + road.dist.clean + 
+                 rugged9.clean + rugged25.clean + chap.edges.dist.clean,
+                      data = random.raster,
+                      method = "h",
+                      crit="aic", # use AIC as model selection criterion
+                      level=1) # only main effects are to be used, no interactions
+
+
+averaged.results <- as.data.frame(coef(fit, select = as.numeric(2)))
+names(averaged.results) <- c("Estimate", "Variance", "Num_models", "Importance", "PlusMinus")
+averaged.results$LowerCI <- averaged.results$Estimate - averaged.results$PlusMinus
+averaged.results$UpperCI <- averaged.results$Estimate + averaged.results$PlusMinus
+write.csv(averaged.results, "Results/Averaged_model_hunter_activity.csv")
+
+# for off-road hunting points
+fit2 <- glmulti(density.offroad.10min ~ slope.clean + vegetation.coarser.clean2 + 
+                 fence.dist.clean + hq.dist.clean + road.dist.clean + 
+                 rugged9.clean + rugged25.clean + chap.edges.dist.clean,
+                      data = random.raster,
+                      method = "h",
+                      crit="aic", # use AIC as model selection criterion
+                      level=1) # only main effects are to be used, no interactions
+
+coef(fit2, select = as.numeric(2))
+
+```
+
+Just out of curiosity, what does this look like predicted over the study area?
+```{r predict hunter activity model}
+
+fit.best <- fit@objects[[1]]
+
+# generate predictions across raster stack
+prediction <- raster::predict(raster.stack, fit.best, type = "response")
+
+# crop out the area without hunting
+prediction <- mask(prediction, huntable)
+
+# make pretty color ramp
+color.ramp.blues = brewer.pal(n = 9, name = "Blues")
+
+# plot model output
+plot(prediction, col = color.ramp.blues)
+lines(huntable)
+
+plot(density.all.10min, col = color.ramp.blues)
+```
+
+This is Tristan's old code:
+
+```{r movement exploration, eval = F}
+# Begin to look at movement metrics; this code heavily borrows from Eli Gurarie's wiki 
+# project to UTM; units are now meters rather than decimal degrees
+m<-spdf.list[[1]]
+m$local.time <- m$unit.time.POSIXct
+m.coords<- coordinates(m)
+X <- m.coords[,1] # gives the x coordinates
+Y <- m.coords[,2]# gives y coordinates
+
+dX<-diff(X) # change in longitude
+dY <- diff(Y) # change in latitude
+
+Time <- m$local.time # timestamp
+mytrack <- MakeTrack(X,Y,Time) # special format from BCPA package
+Simp <- mytrack
+Z <- complex(re=Simp$X, im=Simp$Y) # creates complex numbers 
+dZ <- diff(Z) # change in trajectory
+Phi <- Arg(dZ) # forget what this is; absolute direction? 
+Theta <- diff(Phi) #this gives turn angles
+absTheta <- abs(Theta) # this gives absolute turn angles 
+stTheta <- absTheta # creat copy
+stTheta[which(stTheta>pi)]<-pi-(stTheta[stTheta>pi]-pi)#standardize turn angle to between 0 and pi
+S <- Mod(dZ) # this gives step length
+dT <- as.numeric(diff(Simp$T))*60 # this gives change in time with each step 
+V <- S/dT # this gives velocity 
+```
+

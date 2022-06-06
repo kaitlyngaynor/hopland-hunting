@@ -1,0 +1,232 @@
+---
+title: "State Space Models (HMM)"
+author: "Kaitlyn"
+date: "8/21/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+## Load and clean data
+
+```{r}
+library(dplyr)
+library(moveHMM)
+library(tidyr)
+library(ggplot2)
+```
+
+Load data & remove outliers.
+```{r}
+# Load cleaned data
+igotu_data <- read.csv("Data/igotu_data_3min_covariates.csv")
+
+# Select columns of interest
+igotu_data_fewer <- igotu_data %>% 
+    dplyr::select(ID, Party_ID, Longitude, Latitude, DateTime,
+                  rugged49.clean, rugged25.clean, rugged9.clean,
+                  hq_dist, vegetation.coarser.clean2, view_for_kg_proj,
+                  road.dist.clean,
+                  grass_120m, chap_120m, wood_120m,
+                  Elapsed_Time, Elapsed_Time_Sunrise, Elapsed_Time_SunriseOrSet,
+                  Harvest)
+
+# prep data for HMM
+data_hmm <- moveHMM::prepData(igotu_data_fewer, 
+                              type="LL", 
+                              coordNames=c("Longitude","Latitude"))
+
+# remove 300 step lengths of 'NA'
+data_hmm <- data_hmm %>% 
+    drop_na(step) 
+
+# filter out all steps > 15mph (removes 70 points)
+data_hmm <- data_hmm %>% 
+    filter(step < 1.207008)
+```
+
+Scale covariates.
+```{r}
+head(data_hmm)
+data_hmm$rugged49_scale <- scale(data_hmm$rugged49.clean)
+data_hmm$rugged25_scale <- scale(data_hmm$rugged25.clean)
+data_hmm$rugged9_scale <- scale(data_hmm$rugged9.clean)
+data_hmm$hq_scale <- scale(data_hmm$hq_dist)
+data_hmm$view_scale <- scale(data_hmm$view_for_kg_proj)
+data_hmm$road_scale <- scale(data_hmm$road.dist.clean)
+data_hmm$grass_scale <- scale(data_hmm$grass_120m)
+data_hmm$chap_scale <- scale(data_hmm$chap_120m)
+data_hmm$wood_scale <- scale(data_hmm$wood_120m)
+data_hmm$time_scale <- scale(data_hmm$Elapsed_Time)
+data_hmm$sunrise_scale <- scale(data_hmm$Elapsed_Time_Sunrise)
+data_hmm$sunriseset_scale <- scale(data_hmm$Elapsed_Time_SunriseOrSet)
+head(data_hmm)
+```
+
+
+Look at step lengths and turn angles.
+```{r}
+hist(data_hmm$step)
+hist(data_hmm$angle)
+
+# what about the small steps? zoom in
+data_hmm_small <- data_hmm %>% 
+  filter(step < 0.15)
+hist(data_hmm_small$step)
+
+# determine proportion of step lengths equal to 0
+whichzero <- which(data_hmm$step == 0)
+length(whichzero)/nrow(data_hmm)
+```
+
+
+## TWO STATE MODELS
+
+Determine and set initial parameters for mu0 and sigma0 based on observation of histograms.
+See this guide for setting parameters: https://cran.r-project.org/web/packages/moveHMM/vignettes/moveHMM-starting-values.pdf
+```{r}
+mu0_2state <- c(0.01, 0.3) # step mean (two parameters: one for each state)
+sigma0_2state <- c(0.01, 0.3) # step SD
+zeromass0_2state <- c(0.50, 0.10) # step zero-mass
+stepPar0_2state <- c(mu0_2state,sigma0_2state,zeromass0_2state)
+
+angleMean0_2state <- c(0,pi) # angle mean
+kappa0_2state <- c(1,1) # angle concentration
+anglePar0_2state <- c(angleMean0_2state,kappa0_2state)
+
+angleMean0_2state <- c(0,0) # angle mean
+kappa0_2state <- c(0.5,1) # angle concentration
+anglePar0_2state <- c(angleMean0_2state,kappa0_2state)
+```
+
+### Null model
+```{r}
+model0 <- fitHMM(data=data_hmm, 
+                 nbStates=2, 
+                 stepPar0=stepPar0_2state, 
+                 anglePar0=anglePar0_2state)
+
+model0 # model summary
+plot(model0) # hit escape to get out of the long list
+
+# proportion of time spent in each state
+states <- viterbi(model0)
+prop.table(table(states)) 
+
+# plot states for a given individual
+plotStates(model0, animals="080815_01")
+
+AIC(model0) # AIC = 105,028
+```
+
+
+### Ruggedness
+```{r}
+model1 <- fitHMM(data=data_hmm, 
+                 nbStates=2, 
+                 stepPar0=stepPar0_2state, 
+                 anglePar0=anglePar0_2state,
+                 formula = ~rugged25_scale)
+model1 # model summary
+AIC(model1) # AIC = 104937.6
+
+model2 <- fitHMM(data=data_hmm, 
+                 nbStates=2, 
+                 stepPar0=stepPar0_2state, 
+                 anglePar0=anglePar0_2state,
+                 formula = ~rugged49_scale)
+model2 # model summary
+AIC(model2) # AIC = 104971.9
+
+model3 <- fitHMM(data=data_hmm, 
+                 nbStates=2, 
+                 stepPar0=stepPar0_2state, 
+                 anglePar0=anglePar0_2state,
+                 formula = ~rugged9_scale)
+model3 # model summary
+AIC(model3) # AIC = 104893.4 - best with rugged9
+```
+
+### Viewshed
+```{r}
+model4 <- fitHMM(data=data_hmm, 
+                 nbStates=2, 
+                 stepPar0=stepPar0_2state, 
+                 anglePar0=anglePar0_2state,
+                 formula = ~view)
+model4 # model summary
+AIC(model4) # AIC = 104864.9
+```
+
+### Distance to road
+```{r}
+model5 <- fitHMM(data=data_hmm, 
+                 nbStates=2, 
+                 stepPar0=stepPar0_2state, 
+                 anglePar0=anglePar0_2state,
+                 formula = ~road.dist.clean)
+model5 # model summary
+AIC(model5) # AIC = 103029.9
+```
+
+### Vegetation type
+Probably shouldn't use—this is a numeric variable, but really should be treated as categorical (and model doesn't allow for categorical variables)
+```{r}
+model6 <- fitHMM(data=data_hmm, 
+                 nbStates=2, 
+                 stepPar0=stepPar0_2state, 
+                 anglePar0=anglePar0_2state,
+                 formula = ~vegetation.coarser.clean2)
+model6 # model summary
+AIC(model6) # AIC = 104875.3
+```
+
+### Chaparral within 120 meters
+```{r}
+model7 <- fitHMM(data=data_hmm, 
+                 nbStates=2, 
+                 stepPar0=stepPar0_2state, 
+                 anglePar0=anglePar0_2state,
+                 formula = ~chap_120m)
+model7 # model summary
+AIC(model7) # AIC = 105027
+```
+
+### Grassland within 120 meters
+```{r}
+model8 <- fitHMM(data=data_hmm, 
+                 nbStates=2, 
+                 stepPar0=stepPar0_2state, 
+                 anglePar0=anglePar0_2state,
+                 formula = ~grass_120m)
+model8 # model summary
+AIC(model8) # AIC = 104916.7
+```
+
+### Woodland within 120 meters
+```{r}
+model9 <- fitHMM(data=data_hmm, 
+                 nbStates=2, 
+                 stepPar0=stepPar0_2state, 
+                 anglePar0=anglePar0_2state,
+                 formula = ~wood_120m)
+model9 # model summary
+AIC(model9) # AIC = 104898.5
+```
+
+### Distance to headquarters
+```{r}
+model10 <- fitHMM(data=data_hmm, 
+                 nbStates=2, 
+                 stepPar0=stepPar0_2state, 
+                 anglePar0=anglePar0_2state,
+                 formula = ~hq_dist)
+model10 # model summary
+AIC(model10) # AIC = 104948
+```
+
+Compare the two-state models
+```{r}
+AIC(model0, model1, model2, model3, model4, model5, model6, model7, model8, model9, model10)
+# best is model 5 = road.dist.clean
+```
