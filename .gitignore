@@ -46,3 +46,5 @@ Data/
 *.pptx
 *.pdf
 *.Rds
+
+results/
