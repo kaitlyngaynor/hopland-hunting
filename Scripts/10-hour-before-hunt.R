@@ -81,9 +81,9 @@ habitat_all <- data_hmm %>%
     dplyr::select(ID, vegetation.coarser.clean2, DateTime, Harvest) %>% 
     left_join(dplyr::select(hunting_cluster_all, ID, Cluster)) %>% 
     mutate(Habitat = fct_recode(as.factor(vegetation.coarser.clean2), 
-                                Shrubland = "3",
+                                Shrubland = "1",
                                 Woodland = "2",
-                                Grassland = "1")) %>% 
+                                Grassland = "3")) %>% 
     dplyr::select(-vegetation.coarser.clean2) %>% 
     mutate(ID_DateTime = paste(ID, DateTime, sep = " "))
 
@@ -123,9 +123,61 @@ habitat_summary_long_pct <- habitat_summary %>%
 habitat_summary_long <- left_join(habitat_summary_long, habitat_summary_long_pct) %>% 
     mutate(HourHarvest = paste(HourHarvest, Harvest, sep = "_"))
 
-### left off here
-# Plot percent of time in each habitat, by cluster
-ggplot(harvest_summary_long, aes(x = Cluster, y = Percent, fill = Habitat)) +
+# Plot percent of time in each habitat, by cluster & hunting time/success
+ggplot(habitat_summary_long, aes(x = Cluster, y = Percent, fill = HourHarvest)) +
+    facet_grid(~Habitat) +
     geom_boxplot() + 
-    theme_bw()
+    theme_bw() +
+    ggtitle("Habitat use by hunting mode, in hour before kill",
+            subtitle = "Compared to other times for both successful and unsuccessful hunters") +
+    ylab("Percent Time Spent in Habitat")
+
+# Cluster by success ONLY in hour before hunt
+habitat_summary_long %>% 
+    filter(HourHarvest == "HourBefore_Y") %>% 
+    ggplot(aes(x = Habitat, y = Percent, fill = Cluster)) +
+    geom_boxplot() + 
+    theme_bw() +
+    ggtitle("What were successful hunters doing in the hour before harvest?") +
+    ylab("Percent Time Spent in Habitat")
+
+
+# Just look at success vs. not, but ignore hour before hunt
+
+habitat_summary2 <- habitat_all %>% 
+    count(ID, Habitat, Cluster, Harvest) %>% 
+    pivot_wider(names_from = Habitat, values_from = n) %>% 
+    # fill NAs with 0s
+    replace_na(list(Shrubland = 0, Woodland = 0, Grassland = 0)) %>% 
+    mutate(Total = Shrubland + Woodland + Grassland) %>% 
+    mutate(Shrubland_pct = Shrubland/Total, Woodland_pct = Woodland/Total, Grassland_pct = Grassland/Total)
+
+habitat_summary_long2 <- habitat_summary2 %>% 
+    dplyr::select(ID, Harvest, Cluster, Shrubland, Woodland, Grassland) %>% 
+    pivot_longer(cols = c(Shrubland, Woodland, Grassland),
+                 names_to = "Habitat",
+                 values_to = "Count")
+habitat_summary_long_pct2 <- habitat_summary %>% 
+    dplyr::select(ID, Harvest, Cluster, Shrubland_pct, Woodland_pct, Grassland_pct) %>% 
+    rename("Shrubland" = Shrubland_pct, "Woodland" = Woodland_pct, "Grassland" = Grassland_pct) %>% 
+    pivot_longer(cols = c(Shrubland, Woodland, Grassland),
+                 names_to = "Habitat",
+                 values_to = "Percent")
+habitat_summary_long2 <- left_join(habitat_summary_long2, habitat_summary_long_pct2)
+
+# Cluster by habitat
+ggplot(habitat_summary_long, aes(x = Habitat, y = Percent, fill = Cluster)) +
+    geom_boxplot() + 
+    theme_bw() +
+    ggtitle("How did habitat use vary across hunting modes?") +
+    ylab("Percent Time Spent in Habitat")
+
+# Cluster success by habitat x success
+ggplot(habitat_summary_long, aes(x = Cluster, y = Percent, fill = Harvest)) +
+    facet_grid(~Habitat) +
+    geom_boxplot() + 
+    theme_bw() +
+    ggtitle("How did habitat use vary across hunting modes & success?") +
+    ylab("Percent Time Spent in Habitat")
+
 
