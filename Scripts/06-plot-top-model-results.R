@@ -1,6 +1,7 @@
 # Explore results of the movement model
 
 library(moveHMM)
+library(ggplot2)
 
 # Import model and explore results ----------------------------------------
 
@@ -34,4 +35,3 @@ ks.test(x=pr$angleRes,y='pnorm',alternative='two.sided')
 # time series, qq-plots, and ACF of the pseudo-residuals
 plotPR(m)
 
-# TO DO - make these plots publication-quality!
