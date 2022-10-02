@@ -21,10 +21,7 @@ data_hmm_sf <- sf::st_as_sf(data_hmm,
 sf::sf_use_s2(FALSE)
 huntable <- read_sf("Data/Spatial data/huntable.shp") %>% 
     sf::st_transform(crs = "+proj=utm +zone=10 +datum=WGS84")
-reference <- sf::create_raster(huntable, cell_size = 100) 
-
-# alternatively, use 10m x 10m raster
-# reference <- raster("Data/Spatial data/Cleaned rasters/road.dist.clean.tif")
+reference <- SpatialKDE::create_raster(huntable, cell_size = 100) 
 
 
 # Approach 1: KDE for points sorted by most likely state ------------------
@@ -58,6 +55,27 @@ writeRaster(driving_dens_unweighted, "Results/KDE/driving_dens_unweighted.tif")
 writeRaster(stationary_dens_unweighted, "Results/KDE/stationary_dens_unweighted.tif")
 
 # Weighted
-writeRaster(walking_dens_weighted, "Results/KDE/walking_dens_weighted.tif")
-writeRaster(driving_dens_weighted, "Results/KDE/driving_dens_weighted.tif")
-writeRaster(stationary_dens_weighted, "Results/KDE/stationary_dens_weighted.tif")
+raster::writeRaster(walking_dens_weighted, "Results/KDE/walking_dens_weighted.tif")
+raster::writeRaster(driving_dens_weighted, "Results/KDE/driving_dens_weighted.tif")
+raster::writeRaster(stationary_dens_weighted, "Results/KDE/stationary_dens_weighted.tif")
+
+
+
+
+# Approach 3: 10m x 10m KDE for all points weighted_fine by probability -----------
+reference_fine <- raster("Data/Spatial data/Cleaned rasters/road.dist.clean.tif")
+
+walking_dens_weighted_fine <- SpatialKDE::kde(data_hmm_sf, band_width = 400, grid = reference_fine,
+                                              weights = data_hmm_sf$Walking_Prob)
+raster::writeRaster(walking_dens_weighted_fine, "Results/KDE/walking_dens_weighted_fine.tif")
+
+stationary_dens_weighted_fine <- SpatialKDE::kde(data_hmm_sf, band_width = 400, grid = reference_fine,
+                                                 weights = data_hmm_sf$Stationary_Prob)
+raster::writeRaster(driving_dens_weighted_fine, "Results/KDE/driving_dens_weighted_fine.tif")
+
+driving_dens_weighted_fine <- SpatialKDE::kde(data_hmm_sf, band_width = 400, grid = reference_fine,
+                                              weights = data_hmm_sf$Driving_Prob)
+raster::writeRaster(stationary_dens_weighted_fine, "Results/KDE/stationary_dens_weighted_fine.tif")
+
+
+
