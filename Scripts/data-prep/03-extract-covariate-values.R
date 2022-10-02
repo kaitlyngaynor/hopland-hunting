@@ -47,5 +47,21 @@ for(i in 1:nrow(igotu_data_covariates)) {
                                                        igotu_data_covariates$Elapsed_Time_Sunset[i])
 }
 
+
+# Select columns of interest for final model
+igotu_data_fewer <- igotu_data %>% 
+    dplyr::select(ID, Longitude, Latitude, DateTime,
+                  rugged9.clean, view_for_kg_proj,
+                  vegetation.coarser.clean2, 
+                  road.dist.clean,
+                  chap_120m, wood_120m,
+                  Elapsed_Time_Sunrise, Harvest) %>% 
+    dplyr::rename(Viewshed = view_for_kg_proj,
+                  Ruggedness = rugged9.clean,
+                  Habitat = vegetation.coarser.clean2,
+                  Road_Distance = road.dist.clean,
+                  Chaparral_120m = chap_120m,
+                  Woodland_120m = wood_120m)
+
 # Export
 write.csv(igotu_data_covariates, "Data/igotu_data_3min_covariates.csv", row.names = F)
