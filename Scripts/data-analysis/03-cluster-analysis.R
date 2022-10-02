@@ -96,7 +96,6 @@ success_rate <- hunter_cluster_success %>%
                   Success_Rate = Y/Total,
                   Failure_rate = N/Total)
 
-
 # Model success rate as function of dominant mode
 hunter_cluster_success <- hunter_cluster_success %>%
     dplyr::mutate(Harvest01 = ifelse(Harvest == "N",0,1))
@@ -107,45 +106,7 @@ summary(fit)
 sjPlot::plot_model(fit)
 
 
-
-# Export data -------------------------------------------------------------
-
+# Export data
 write.csv(hunter_cluster_success, "Results/hunters_by_cluster_with_success.csv", row.names = FALSE)
-
-
-# Plots -------------------------------------------------------------------
-
-
-# Histogram of percentage of time spent in each state (across all hunters)
-ggplot(hunter_percentages_long, aes(x = Percentage)) +
-    facet_wrap(~State, nrow = 3) +
-    geom_histogram() +
-    theme_bw() +
-    xlab("Percentage of Time Spent in Behavioral State")
-
-# Make histogram of time spent in each state across clusters
-ggplot(hunter_percentages_long, aes(x = Percentage, fill = State)) +
-    facet_grid(State~Cluster) +
-    geom_histogram() +
-    theme_bw() +
-    xlab("Percentage of Time Spent in Behavioral State")
-
-# Boxplot of time spent in each state BY Cluster
-ggplot(hunter_cluster_success_long, aes(y = Percentage,
-                                        x = Cluster,
-                                        fill = State)) +
-    geom_boxplot() +
-    theme_bw()
-
-# Boxplot of time spent in each state BY success
-ggplot(hunter_cluster_success_long, aes(y = Percentage,
-                                        x = State,
-                                        fill = Harvest)) +
-    geom_boxplot() +
-    theme_bw()
-
-# Plot success by cluster
-ggplot(hunter_cluster_success, aes(x = Cluster, fill = Harvest)) +
-    geom_bar(stat = "count") + 
-    theme_bw() +
-    xlab("Hunting Mode")
+write.csv(hunter_percentages_long, "Results/hunter_percentages_long.csv", row.names = FALSE)
+write.csv(hunter_cluster_success_long, "Results/hunter_cluster_success_long.csv", row.names = FALSE)
