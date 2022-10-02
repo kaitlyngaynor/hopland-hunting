@@ -41,19 +41,19 @@ igotu.raster <- as.data.frame(raster::extract(raster.stack, igotu_data_cropped))
 igotu_data_covariates <- cbind(st_drop_geometry(igotu_data_cropped), igotu.raster) 
 
 # Select columns of interest for final model
-igotu_data_fewer <- igotu_data %>% 
+igotu_data_fewer <- igotu_data_covariates %>% 
     dplyr::select(ID, Longitude, Latitude, DateTime,
-                  rugged9.clean, view_for_kg_proj,
+                  rugged9.clean, view,
                   vegetation.coarser.clean2, 
                   road.dist.clean,
-                  chap_120m, wood_120m,
+                  layer.1, layer.4,
                   Elapsed_Time_Sunrise, Harvest) %>% 
-    dplyr::rename(Viewshed = view_for_kg_proj,
+    dplyr::rename(Viewshed = view,
                   Ruggedness = rugged9.clean,
                   Habitat = vegetation.coarser.clean2,
                   Road_Distance = road.dist.clean,
-                  Chaparral_120m = chap_120m,
-                  Woodland_120m = wood_120m)
+                  Chaparral_120m = layer.1,
+                  Woodland_120m = layer.4)
 
 # Export
-write.csv(igotu_data_covariates, "Data/igotu_data_3min_covariates.csv", row.names = F)
+write.csv(igotu_data_fewer, "Data/igotu_data_3min_covariates.csv", row.names = F)
