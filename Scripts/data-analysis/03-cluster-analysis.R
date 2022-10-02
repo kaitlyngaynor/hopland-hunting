@@ -3,6 +3,7 @@
 library(dplyr)
 library(ggplot2)
 library(tidyr)
+library(sjPlot)
 
 # Import data -------------------------------------------------------------
 
@@ -12,25 +13,25 @@ data_hmm <- read.csv("Results/hmm-data-with-model-predictions.csv")
 
 # For each hunter, calculate number of points in each state
 hunter_summary <- data_hmm %>% 
-    group_by(ID) %>% 
-    count(state) 
+    dplyr::group_by(ID) %>% 
+    dplyr::count(state) 
 
 # Calculate percent of time spent in each state for each hunter
 hunter_percentages <- hunter_summary %>% 
-    pivot_wider(names_from = state, values_from = n) %>% 
-    replace_na(list(Stationary = 0, Walking = 0, Driving = 0)) %>% 
-    mutate(Total = sum(Stationary, Walking, Driving),
-           Stationary_pct = Stationary/Total,
-           Walking_pct = Walking/Total,
-           Driving_pct = Driving/Total) %>% 
+    tidyr::pivot_wider(names_from = state, values_from = n) %>% 
+    tidyr::replace_na(list(Stationary = 0, Walking = 0, Driving = 0)) %>% 
+    dplyr::mutate(Total = sum(Stationary, Walking, Driving),
+                  Stationary_pct = Stationary/Total,
+                  Walking_pct = Walking/Total,
+                  Driving_pct = Driving/Total) %>% 
     dplyr::select(-c(Stationary, Walking, Driving, Total)) %>% 
-    ungroup()
+    dplyr::ungroup()
 
 # Create long version of datafrae
 hunter_percentages_long <- hunter_percentages %>% 
-    pivot_longer(cols = c(Stationary_pct, Walking_pct, Driving_pct),
-                 names_to = "State",
-                 values_to = "Percentage")
+    tidyr::pivot_longer(cols = c(Stationary_pct, Walking_pct, Driving_pct),
+                        names_to = "State",
+                        values_to = "Percentage")
 
 # K-means clustering----------------------------------------------
 
@@ -72,8 +73,8 @@ hunter_percentages$Cluster = factor(k3$cluster)
 levels(hunter_percentages$Cluster) <- c("Drivers", "Walkers", "Waiters") # change factor level names
 
 # Join assigned clusters with long data also
-hunter_percentages_long <- left_join(hunter_percentages_long,
-                                     dplyr::select(hunter_percentages, ID, Cluster))
+hunter_percentages_long <- dplyr::left_join(hunter_percentages_long,
+                                            dplyr::select(hunter_percentages, ID, Cluster))
 
 
 # Examine success rates ---------------------------------------------------
@@ -82,28 +83,28 @@ hunter_percentages_long <- left_join(hunter_percentages_long,
 hunter_success <- data_hmm %>% 
     dplyr::select(ID, Harvest) %>% 
     unique()
-hunter_cluster_success <- left_join(hunter_percentages, hunter_success)
-hunter_cluster_success_long <- left_join(hunter_percentages_long, hunter_success)
+hunter_cluster_success <- dplyr::left_join(hunter_percentages, hunter_success)
+hunter_cluster_success_long <- dplyr::left_join(hunter_percentages_long, hunter_success)
 
 # Calculate success rate by cluster
 success_rate <- hunter_cluster_success %>%
-    count(Cluster, Harvest) %>% 
-    pivot_wider(id_cols = Cluster,
-                names_from = Harvest,
-                values_from = n) %>% 
-    mutate(Total = N + Y,
-           Success_Rate = Y/Total,
-           Failure_rate = N/Total)
+    dplyr::count(Cluster, Harvest) %>% 
+    tidyr::pivot_wider(id_cols = Cluster,
+                       names_from = Harvest,
+                       values_from = n) %>% 
+    dplyr::mutate(Total = N + Y,
+                  Success_Rate = Y/Total,
+                  Failure_rate = N/Total)
 
 
 # Model success rate as function of dominant mode
 hunter_cluster_success <- hunter_cluster_success %>%
-    mutate(Harvest01 = ifelse(Harvest == "N",0,1))
+    dplyr::mutate(Harvest01 = ifelse(Harvest == "N",0,1))
 fit <- glm(Harvest01 ~ Cluster, data = hunter_cluster_success,
            family = binomial)
 summary(fit)
-library(sjPlot)
-plot_model(fit)
+
+sjPlot::plot_model(fit)
 
 
 
