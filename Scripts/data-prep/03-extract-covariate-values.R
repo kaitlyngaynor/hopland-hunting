@@ -1,88 +1,51 @@
----
-title: "Extract covariate values at points"
-author: "Kaitlyn"
-date: "8/24/2020"
-output: html_document
-editor_options: 
-  chunk_output_type: console
----
+# Extract covariate values at points
 
-Bring in raster layers and iGotU tracks and extract covariate values.
-
-```{r}
+# Load libraries
 library(raster)
 library(dplyr)
 library(sf)
 library(rgdal)
-```
 
-#### Bring in points
-
-```{r}
+# Bring in points
 igotu_data <- read.csv("Data/igotu_data_3min.csv")
-#igotu_data <- read.csv("Data/igotu_data_5min.csv")
 
 # convert coordinates to spatial object
 igotu_data <- st_as_sf(igotu_data, 
                        coords = c("Longitude", "Latitude"),
                        crs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs",
                        remove = FALSE)
-```
 
-#### Clip points to huntable area
-
-```{r}
-# create polygon with huntable area only (subtract no hunt from entire boundary)
+# Clip points to huntable area
 hrec_boundary <- readOGR("Data/Spatial data/Raw from Alex", "HREC_boundary") %>% 
-  spTransform("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+    spTransform("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 no_hunting <- readOGR("Data/Spatial data/Raw from Alex", "hunt_zone") %>% 
-  spTransform("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+    spTransform("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 huntable <- hrec_boundary - no_hunting
 writeOGR(obj=huntable, dsn="Data/Spatial data", layer="huntable", driver="ESRI Shapefile", overwrite_layer = TRUE)
-
 sf::sf_use_s2(FALSE) # turn off to avoid errors
 huntable_sf <- read_sf("Data/Spatial data/huntable.shp") %>% 
     st_transform("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 igotu_data_cropped <- igotu_data[st_intersects(igotu_data, huntable_sf) %>% lengths > 0,]
-```
 
-#### Bring in raster stack
-```{r raster stack}
-# first import all files in a single folder as a list 
+
+# Bring in raster stack
 rastlist <- list.files(path = here::here('Data', 'Spatial data', 'Cleaned rasters'),
                        pattern='.tif$', all.files=TRUE, full.names=FALSE)
-
-# import rasters into raster stack
 raster.stack <- raster::stack(paste0("Data/Spatial data/Cleaned rasters/", rastlist))
-```
 
-#### Extract covariates from raster stack
-
-```{r raster extract}
+# Extract covariates from raster stack
 igotu.raster <- as.data.frame(raster::extract(raster.stack, igotu_data_cropped)) 
-```
 
-
-Combine raster metadata with the other data 
-
-Note that I use cbind here, so it's important that the rows be in the same order (they should be...)
-```{r combine metadata}
+# Combine raster metadata with the other data 
+# Note that I use cbind here, so it's important that the rows be in the same order (they should be...)
 igotu_data_covariates <- cbind(st_drop_geometry(igotu_data_cropped), igotu.raster) 
-```
 
-Also calculate time to sunrise OR sunset—whichever is closer.
-```{r}
+# Also calculate time to sunrise OR sunset—whichever is closer.
 igotu_data_covariates$Elapsed_Time_SunriseOrSet <- NA
 for(i in 1:nrow(igotu_data_covariates)) {
     igotu_data_covariates$Elapsed_Time_SunriseOrSet[i] <- min(igotu_data_covariates$Elapsed_Time_Sunrise[i],
                                                        igotu_data_covariates$Elapsed_Time_Sunset[i])
 }
-```
 
-
-Export
-```{r}
+# Export
 write.csv(igotu_data_covariates, "Data/igotu_data_3min_covariates.csv", row.names = F)
-#write.csv(igotu_data_covariates, "Data/igotu_data_5min_covariates.csv", row.names = F)
-```
-
