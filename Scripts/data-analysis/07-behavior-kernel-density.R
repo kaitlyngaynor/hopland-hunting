@@ -1,4 +1,4 @@
-# Map the distribution of the three states
+# Export spatial maps of each state
 
 # Set up --------------------------------------------------------
 
