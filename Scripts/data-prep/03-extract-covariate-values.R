@@ -40,14 +40,6 @@ igotu.raster <- as.data.frame(raster::extract(raster.stack, igotu_data_cropped))
 # Note that I use cbind here, so it's important that the rows be in the same order (they should be...)
 igotu_data_covariates <- cbind(st_drop_geometry(igotu_data_cropped), igotu.raster) 
 
-# Also calculate time to sunrise OR sunset—whichever is closer.
-igotu_data_covariates$Elapsed_Time_SunriseOrSet <- NA
-for(i in 1:nrow(igotu_data_covariates)) {
-    igotu_data_covariates$Elapsed_Time_SunriseOrSet[i] <- min(igotu_data_covariates$Elapsed_Time_Sunrise[i],
-                                                       igotu_data_covariates$Elapsed_Time_Sunset[i])
-}
-
-
 # Select columns of interest for final model
 igotu_data_fewer <- igotu_data %>% 
     dplyr::select(ID, Longitude, Latitude, DateTime,
