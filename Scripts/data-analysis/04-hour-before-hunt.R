@@ -67,7 +67,7 @@ unique(harvest_hour$ID) # 20 harvesters with behavioral data & harvest times
 unique(metadata$ID) # 31 harvesters in total with harvest times (with & without behavioral data)
 
 # harvesters with recovered data and harvest - 33 of them
-metadata_yes <- metadata_raw %>% filter(Harvest == "Y") %>% filter(Usable_hunter_data == "Y")
+metadata_yes <- metadata_raw %>% filter(Harvest == "Y") %>% filter(Use_track == "Y")
 missing <- metadata_yes %>% filter(ID %notin% harvest_hour$ID)
 
 
@@ -76,13 +76,12 @@ missing <- metadata_yes %>% filter(ID %notin% harvest_hour$ID)
 
 # Look at habitat for hunting modes, independent of harvest
 habitat_all <- data_hmm %>% 
-    dplyr::select(ID, vegetation.coarser.clean2, DateTime, Harvest) %>% 
+    dplyr::select(ID, Habitat, DateTime, Harvest) %>% 
     left_join(dplyr::select(hunting_cluster_all, ID, Cluster)) %>% 
-    mutate(Habitat = fct_recode(as.factor(vegetation.coarser.clean2), 
+    mutate(Habitat = fct_recode(as.factor(Habitat), 
                                 Shrubland = "1",
                                 Woodland = "2",
                                 Grassland = "3")) %>% 
-    dplyr::select(-vegetation.coarser.clean2) %>% 
     mutate(ID_DateTime = paste(ID, DateTime, sep = " "))
 
 # Inelegant way to determine whether each observation was within the hour before a hunt
