@@ -45,8 +45,4 @@ resample_hunt_tracks <- function(minutes_resample) {
     
 }
 
-resample_hunt_tracks(1)
 resample_hunt_tracks(3)
-resample_hunt_tracks(5)
-resample_hunt_tracks(10)
-
