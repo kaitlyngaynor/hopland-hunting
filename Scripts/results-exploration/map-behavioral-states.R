@@ -1,5 +1,7 @@
 library(viridis)
 library(raster)
+library(rgdal)
+library(sf)
 
 # Import rasters ----------------------------------------------------------
 
@@ -12,6 +14,22 @@ stationary_dens_unweighted <- raster::raster("Results/KDE/stationary_dens_unweig
 walking_dens_weighted <- raster::raster("Results/KDE/walking_dens_weighted.tif")
 driving_dens_weighted <- raster::raster("Results/KDE/driving_dens_weighted.tif")
 stationary_dens_weighted <- raster::raster("Results/KDE/stationary_dens_weighted.tif")
+
+
+
+# Crop to HREC boundary ---------------------------------------------------
+
+
+# crop to boundary
+hrec_boundary <- readOGR("Data/Spatial data/Raw from Alex", "HREC_boundary") %>% 
+    spTransform("+proj=utm +zone=10 +datum=WGS84 +units=m +no_defs")
+
+walking_dens_unweighted <- mask(crop(walking_dens_unweighted, extent(hrec_boundary)), hrec_boundary)
+driving_dens_unweighted <- mask(crop(driving_dens_unweighted, extent(hrec_boundary)), hrec_boundary)
+stationary_dens_unweighted <- mask(crop(stationary_dens_unweighted, extent(hrec_boundary)), hrec_boundary)
+walking_dens_weighted <- mask(crop(walking_dens_weighted, extent(hrec_boundary)), hrec_boundary)
+driving_dens_weighted <- mask(crop(driving_dens_weighted, extent(hrec_boundary)), hrec_boundary)
+stationary_dens_weighted <- mask(crop(stationary_dens_weighted, extent(hrec_boundary)), hrec_boundary)
 
 
 # Comparison plots --------------------------------------------------------
@@ -80,3 +98,20 @@ plot(driving_dens_weighted,
      col = viridis(1e3), 
      zlim=c(0,400),
      main = "Driving (Weighted)")
+
+# All 3 weighted states - different scales
+
+par(mfrow=c(1,3))
+plot(stationary_dens_weighted, 
+     col = viridis(1e3), 
+     zlim=c(0,350),
+     main = "Stationary (Weighted)")
+plot(walking_dens_weighted, 
+     col = viridis(1e3), 
+     zlim=c(0,300),
+     main = "Walking (Weighted)")
+plot(driving_dens_weighted, 
+     col = viridis(1e3), 
+     zlim=c(0,700),
+     main = "Driving (Weighted)")
+
