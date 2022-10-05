@@ -50,14 +50,20 @@ driving_dens_weighted <- SpatialKDE::kde(data_hmm_sf, band_width = 400, grid = r
 # Export rasters ----------------------------------------------------------
 
 # Unweighted
-writeRaster(walking_dens_unweighted, "Results/KDE/walking_dens_unweighted.tif")
-writeRaster(driving_dens_unweighted, "Results/KDE/driving_dens_unweighted.tif")
-writeRaster(stationary_dens_unweighted, "Results/KDE/stationary_dens_unweighted.tif")
+writeRaster(walking_dens_unweighted, "Results/KDE/walking_dens_unweighted.tif",
+            overwrite = TRUE)
+writeRaster(driving_dens_unweighted, "Results/KDE/driving_dens_unweighted.tif",
+            overwrite = TRUE)
+writeRaster(stationary_dens_unweighted, "Results/KDE/stationary_dens_unweighted.tif",
+            overwrite = TRUE)
 
 # Weighted
-raster::writeRaster(walking_dens_weighted, "Results/KDE/walking_dens_weighted.tif")
-raster::writeRaster(driving_dens_weighted, "Results/KDE/driving_dens_weighted.tif")
-raster::writeRaster(stationary_dens_weighted, "Results/KDE/stationary_dens_weighted.tif")
+raster::writeRaster(walking_dens_weighted, "Results/KDE/walking_dens_weighted.tif",
+                    overwrite = TRUE)
+raster::writeRaster(driving_dens_weighted, "Results/KDE/driving_dens_weighted.tif",
+                    overwrite = TRUE)
+raster::writeRaster(stationary_dens_weighted, "Results/KDE/stationary_dens_weighted.tif",
+                    overwrite = TRUE)
 
 
 
