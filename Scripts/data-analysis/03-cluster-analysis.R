@@ -7,7 +7,7 @@ library(sjPlot)
 
 # Import data -------------------------------------------------------------
 
-data_hmm <- read.csv("Results/hmm-data-with-model-predictions.csv")
+data_hmm <- read.csv("Results/hmm-data-with-model-predictions-2022-10-04.csv")
 
 # Calculate time spent in states across hunters -----------------------------
 
@@ -53,24 +53,21 @@ plot(1:k.max, wss,
      ylab="Total within-clusters sum of squares")
 
 # Run K-means cluster analysis with k=3 clusters
-set.seed(1234)
+set.seed(321)
 k3 <- kmeans(as.matrix(hunter_percentages_noID), centers = 3, nstart = 25)
 k3
 
-# K-means clustering with 3 clusters of sizes 85, 65, 75
+# K-means clustering with 3 clusters of sizes 66, 70, 90
 # 
 # Cluster means:
 #     Stationary_pct Walking_pct Driving_pct
-# 1      0.2073040   0.2034379   0.5892581
-# 2      0.2695095   0.4529574   0.2775332
-# 3      0.4939986   0.1879199   0.3180815
-
-# Out of curiosity, 4 clusters
-k4 <- kmeans(as.matrix(hunter_percentages_noID), centers = 4, nstart = 25)
+# 1      0.2620318   0.4485732   0.2893950
+# 2      0.5130728   0.1932013   0.2937259
+# 3      0.2175774   0.2019768   0.5804458
 
 # Assign cluster to each point
 hunter_percentages$Cluster = factor(k3$cluster)
-levels(hunter_percentages$Cluster) <- c("Drivers", "Walkers", "Waiters") # change factor level names
+levels(hunter_percentages$Cluster) <- c("Walkers", "Waiters", "Drivers") # change factor level names
 
 # Join assigned clusters with long data also
 hunter_percentages_long <- dplyr::left_join(hunter_percentages_long,
