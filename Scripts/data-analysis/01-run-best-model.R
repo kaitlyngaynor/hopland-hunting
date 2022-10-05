@@ -7,6 +7,7 @@ library(dplyr)
 library(moveHMM)
 library(tidyr)
 library(vroom)
+set.seed(1234)
 
 # Load cleaned data
 igotu_data <- vroom::vroom("Data/igotu_data_3min_covariates.csv")
@@ -43,7 +44,6 @@ anglePar0_3state <- c(angleMean0_3state,kappa0_3state)
 
 # see vignette https://cran.r-project.org/web/packages/moveHMM/vignettes/moveHMM-guide.pdf
 # run full model
-set.seed(1234)
 m <- moveHMM::fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
                    formula = ~Road_Distance_scale + Viewshed_scale + Woodland_120m_scale + Ruggedness_scale + Chaparral_120m_scale + Elapsed_Time_Sunrise)
 
