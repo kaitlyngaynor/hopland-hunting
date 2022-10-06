@@ -37,4 +37,14 @@ ggplot(hunter_cluster_success_long, aes(y = Percentage,
 ggplot(hunter_cluster_success, aes(x = Cluster, fill = Harvest)) +
     geom_bar(stat = "count") + 
     theme_bw() +
-    xlab("Hunting Mode")
+    xlab("") +
+    ylab("Number of Hunters") +
+    scale_fill_manual(values = c("#C0C0C0", "#71797E")) 
+ggsave("Figures/cluster-success-count.pdf", width = 3, height = 2)
+
+count(hunter_cluster_success, Cluster, Harvest)
+count(hunter_cluster_success, Cluster)
+
+# 8 of 90 drivers (9%)
+# 9 of 70 waiters (13%)
+# 5 of 66 walkers (8%)
