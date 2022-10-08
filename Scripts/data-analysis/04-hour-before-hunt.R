@@ -121,13 +121,19 @@ habitat_summary_long <- left_join(habitat_summary_long, habitat_summary_long_pct
     mutate(HourHarvest = paste(HourHarvest, Harvest, sep = "_"))
 
 # Plot percent of time in each habitat, by cluster & hunting time/success
-ggplot(habitat_summary_long, aes(x = Cluster, y = Percent, fill = HourHarvest)) +
+key <- data.frame(HourHarvest = c("HourBefore_Y", "OtherTime_N", "OtherTime_Y"),
+                  HourHarvest2 = c("Hour Before Harvest", "Other Times (Unsuccessful)", "Other Times (Successful"))
+habitat_summary_long <- left_join(habitat_summary_long, key)
+ggplot(habitat_summary_long, aes(x = Cluster, y = Percent, fill = HourHarvest2)) +
     facet_grid(~Habitat) +
     geom_boxplot() + 
     theme_bw() +
-    ggtitle("Habitat use by hunting mode, in hour before kill",
+    xlab("") +
+    ggtitle("Habitat use by hunting mode, in hour before harvest",
             subtitle = "Compared to other times for both successful and unsuccessful hunters") +
-    ylab("Percent Time Spent in Habitat")
+    ylab("Percent Time Spent in Habitat") +
+    scale_fill_manual(values = c("#6D8B74", "#D0C9C0", "#EFEAD8")) 
+ggsave("Figures/habitat-hour-before.pdf", width = 8, height = 4)
 
 # Cluster by success ONLY in hour before hunt
 habitat_summary_long %>% 
@@ -177,4 +183,11 @@ ggplot(habitat_summary_long, aes(x = Cluster, y = Percent, fill = Harvest)) +
     ggtitle("How did habitat use vary across hunting modes & success?") +
     ylab("Percent Time Spent in Habitat")
 
-
+library(ggridges)
+# Cluster success by habitat x success
+ggplot(habitat_summary_long, aes(x = Percent, y = Cluster, fill = Harvest)) +
+    facet_grid(~Habitat) +
+    geom_density_ridges() + 
+    theme_ridges() +
+    ggtitle("How did habitat use vary across hunting modes & success?") +
+    ylab("Percent Time Spent in Habitat")
