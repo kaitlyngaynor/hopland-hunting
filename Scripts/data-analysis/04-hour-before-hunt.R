@@ -56,10 +56,10 @@ harvest_hour <- left_join(harvest_hour, hunting_cluster)
 # Looking into sample size discrepancies ----------------------------------
 
 count(hunting_cluster, Cluster)
-# 22 hunters harvested deer - 8 drivers, 8 waiters, 6 walkers
+# 34 hunters harvested deer - 13 drivers, 12 waiters, 9 walkers
 
-# Two individuals are missing hour-before-hunt data but have cluster data
-# these are both waiters (081416_10 and 082116_09), and both have "tbd" harvest times
+# One individual is missing hour-before-hunt data but have cluster data
+# 081416_19 (waiter) - missing data from around the harvest time
 hunting_cluster %>% 
     filter(ID %notin% harvest_hour$ID)
 
