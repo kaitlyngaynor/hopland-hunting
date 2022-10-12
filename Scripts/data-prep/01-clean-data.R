@@ -30,7 +30,7 @@ igotu_data_all <- igotu_raw %>%
     select(-c(FileName, Altitude, Speed, Distance, Essential, Track, Course, Type))
 
 # add the metadata
-metadata <- read.csv(here::here("Data/Hunting/igotu_metadata_times_cleaned_19Jan2022.csv")) %>% 
+metadata <- read.csv(here::here("Data/Hunting/igotu_metadata_times_cleaned_11Oct2022.csv")) %>% 
     mutate(Start_time = paste0(Start_time, ":00"),
            End_time = paste0(End_time, ":00"),
            Date = as.Date(Date, format = "%m/%d/%y"))
@@ -52,9 +52,9 @@ igotu_data_all <- left_join(igotu_data_all, metadata)
 # format time
 igotu_data_all$Time <- format(igotu_data_all$DateTime, format = "%H:%M:%S")
 
-# remove tracks with issues, or duplicates from same hunting party
+# remove tracks with issues
 igotu_data_all <- igotu_data_all %>% 
-    filter(Use_track == "Y") 
+    filter(Good_track == "Y") 
 
 # remove points before start or after end, export cleaned data
 for(i in unique(igotu_data_all$ID)) {
