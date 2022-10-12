@@ -11,7 +11,7 @@ library(forcats)
 `%notin%` <- Negate(`%in%`)
 
 # Bring in model results
-data_hmm <- read.csv("Results/hmm-data-with-model-predictions.csv") 
+data_hmm <- read.csv("Results/hmm-data-with-model-predictions-2022-10-11.csv") 
 
 # Separate time into its own row
 data_hmm <- separate(data = data_hmm, 
@@ -21,7 +21,7 @@ data_hmm <- separate(data = data_hmm,
                      remove = FALSE) 
 
 # Identify harvest tracks with associated time
-metadata_raw <- read.csv("Data/Hunting/igotu_metadata_times_cleaned_19Jan2022.csv") 
+metadata_raw <- read.csv("Data/Hunting/igotu_metadata_times_cleaned_11Oct2022.csv") 
 metadata <- metadata_raw %>% 
     filter(Harvest == "Y") %>% 
     dplyr::select(ID, Harvest_time)
