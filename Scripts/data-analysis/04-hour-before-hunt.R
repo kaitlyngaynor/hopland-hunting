@@ -56,20 +56,14 @@ harvest_hour <- left_join(harvest_hour, hunting_cluster)
 # Looking into sample size discrepancies ----------------------------------
 
 count(hunting_cluster, Cluster)
-# 34 hunters harvested deer - 13 drivers, 12 waiters, 9 walkers
+# 33 hunters harvested deer - 13 drivers, 11 waiters, 9 walkers
 
 # One individual is missing hour-before-hunt data but have cluster data
 # 081416_19 (waiter) - missing data from around the harvest time
 hunting_cluster %>% 
     filter(ID %notin% harvest_hour$ID)
 
-unique(harvest_hour$ID) # 20 harvesters with behavioral data & harvest times
-unique(metadata$ID) # 31 harvesters in total with harvest times (with & without behavioral data)
-
-# harvesters with recovered data and harvest - 33 of them
-metadata_yes <- metadata_raw %>% filter(Harvest == "Y") %>% filter(Use_track == "Y")
-missing <- metadata_yes %>% filter(ID %notin% harvest_hour$ID)
-
+unique(harvest_hour$ID) # 32 harvesters with behavioral data & harvest times
 
 # Investigate characteristics of pre-hunt hour ----------------------------
 
@@ -134,6 +128,20 @@ ggplot(habitat_summary_long, aes(x = Cluster, y = Percent, fill = HourHarvest2))
     ylab("Percent Time Spent in Habitat") +
     scale_fill_manual(values = c("#6D8B74", "#D0C9C0", "#EFEAD8")) 
 ggsave("Figures/habitat-hour-before.pdf", width = 8, height = 4)
+
+habitat_summary_long %>% filter(Harvest == "Y") %>% 
+ggplot(aes(x = ID, y = Percent, fill = Habitat)) +
+    geom_bar(position = "stack", stat = "identity") +
+    facet_grid(HourHarvest~Cluster, scales = "free", space = "free") +
+    theme_minimal() +
+    ylab("Percent of Time in Habitat") +
+    xlab("Successful Hunters") +
+    theme(axis.text.x=element_blank(),
+          axis.ticks.x=element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          strip.text.x = element_text(size = 12)) +
+    
 
 # Cluster by success ONLY in hour before hunt
 habitat_summary_long %>% 
