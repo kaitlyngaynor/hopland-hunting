@@ -57,17 +57,17 @@ set.seed(321)
 k3 <- kmeans(as.matrix(hunter_percentages_noID), centers = 3, nstart = 25)
 k3
 
-# K-means clustering with 3 clusters of sizes 110, 95, 101
+# K-means clustering with 3 clusters of sizes 95, 112, 97
 # 
 # Cluster means:
 #     Stationary_pct Walking_pct Driving_pct
-# 1      0.2169406   0.1763221   0.6067373
-# 2      0.5293178   0.1604730   0.3102092
-# 3      0.2695041   0.4235863   0.3069096
+# 1      0.5282485   0.1623360   0.3094156
+# 2      0.2201562   0.1807955   0.5990483
+# 3      0.2695882   0.4290605   0.3013514
 
 # Assign cluster to each point
 hunter_percentages$Cluster = factor(k3$cluster)
-levels(hunter_percentages$Cluster) <- c("Drivers", "Waiters", "Walkers") # change factor level names
+levels(hunter_percentages$Cluster) <- c("Waiters", "Drivers", "Walkers") # change factor level names
 
 # Join assigned clusters with long data also
 hunter_percentages_long <- dplyr::left_join(hunter_percentages_long,
