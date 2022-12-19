@@ -11,7 +11,7 @@ library(forcats)
 `%notin%` <- Negate(`%in%`)
 
 # Bring in model results
-data_hmm <- read.csv("Results/hmm-data-with-model-predictions-2022-10-11.csv") 
+data_hmm <- read.csv("Results/hmm-data-with-model-predictions-2022-12-05.csv") 
 
 # Separate time into its own row
 data_hmm <- separate(data = data_hmm, 
@@ -25,6 +25,11 @@ metadata_raw <- read.csv("Data/Hunting/igotu_metadata_times_cleaned_11Oct2022.cs
 metadata <- metadata_raw %>% 
     filter(Harvest == "Y") %>% 
     dplyr::select(ID, Harvest_time)
+metadata_raw2 <- read.csv("Data/Hunting/igotu_metadata_2019_2020_28Nov2022.csv") 
+metadata2 <- metadata_raw2 %>% 
+    filter(Harvest == "Y") %>% 
+    dplyr::select(ID, Harvest_time)
+metadata <- bind_rows(metadata, metadata2)
 
 # Filter tracks to just those with harvest times, join harvest times
 data_hmm_harvest <- data_hmm %>% 
@@ -56,7 +61,7 @@ harvest_hour <- left_join(harvest_hour, hunting_cluster)
 # Looking into sample size discrepancies ----------------------------------
 
 count(hunting_cluster, Cluster)
-# 33 hunters harvested deer - 13 drivers, 11 waiters, 9 walkers
+# 56 hunters harvested deer - 31 drivers, 15 waiters, 10 walkers
 
 # One individual is missing hour-before-hunt data but have cluster data
 # 081416_19 (waiter) - missing data from around the harvest time
@@ -132,16 +137,16 @@ ggsave("Figures/habitat-hour-before.pdf", width = 8, height = 4)
 habitat_summary_long %>% filter(Harvest == "Y") %>% 
 ggplot(aes(x = ID, y = Percent, fill = Habitat)) +
     geom_bar(position = "stack", stat = "identity") +
-    facet_grid(HourHarvest~Cluster, scales = "free", space = "free") +
+    facet_grid(Cluster~HourHarvest, scales = "free", space = "free") +
     theme_minimal() +
     ylab("Percent of Time in Habitat") +
     xlab("Successful Hunters") +
-    theme(axis.text.x=element_blank(),
-          axis.ticks.x=element_blank(),
+    theme(axis.text.y=element_blank(),
+          axis.ticks.y=element_blank(),
           panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
-          strip.text.x = element_text(size = 12)) +
-    
+          strip.text.y = element_text(size = 12)) +
+    coord_flip()
 
 # Cluster by success ONLY in hour before hunt
 habitat_summary_long %>% 
