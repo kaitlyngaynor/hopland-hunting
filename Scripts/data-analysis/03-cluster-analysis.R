@@ -27,10 +27,35 @@ hunter_percentages <- hunter_summary %>%
     dplyr::select(-c(Stationary, Walking, Driving, Total)) %>% 
     dplyr::ungroup()
 
-# Create long version of datafrae
+# Create long version of dataframe
 hunter_percentages_long <- hunter_percentages %>% 
     tidyr::pivot_longer(cols = c(Stationary_pct, Walking_pct, Driving_pct),
                         names_to = "State",
+                        values_to = "Percentage")
+
+# Calculate time spent in states across hunters for FOUR states (2 stationary) -----------------------------
+
+# For each hunter, calculate number of points in each state
+hunter_summary_4state <- data_hmm %>% 
+    dplyr::group_by(ID) %>% 
+    dplyr::count(state_2stationary) 
+
+# Calculate percent of time spent in each state for each hunter
+hunter_percentages_4state <- hunter_summary_4state %>% 
+    tidyr::pivot_wider(names_from = state_2stationary, values_from = n) %>% 
+    tidyr::replace_na(list(Stationary_offroad = 0, Stationary_road = 0, Walking = 0, Driving = 0)) %>% 
+    dplyr::mutate(Total = sum(Stationary_offroad, Stationary_road, Walking, Driving),
+                  Stationary_offroad_pct = Stationary_offroad/Total,
+                  Stationary_road_pct = Stationary_road/Total,
+                  Walking_pct = Walking/Total,
+                  Driving_pct = Driving/Total) %>% 
+    dplyr::select(-c(Stationary_offroad, Stationary_road, Walking, Driving, Total)) %>% 
+    dplyr::ungroup()
+
+# Create long version of dataframe
+hunter_percentages_long_4state <- hunter_percentages_4state %>% 
+    tidyr::pivot_longer(cols = c(Stationary_offroad_pct, Stationary_road_pct, Walking_pct, Driving_pct),
+                        names_to = "State_4state",
                         values_to = "Percentage")
 
 # K-means clustering----------------------------------------------
@@ -38,12 +63,15 @@ hunter_percentages_long <- hunter_percentages %>%
 # Prep for K-means cluster analysis
 hunter_percentages_noID <- hunter_percentages %>% 
     dplyr::select(-ID) 
+hunter_percentages_noID_4state <- hunter_percentages_4state %>% 
+    dplyr::select(-ID) 
 
 # Elbow Method for finding the optimal number of clusters (k=2 to k=15)
 # THREE CLUSTERS IS OPTIMAL
 set.seed(4321)
 k.max <- 15
 data <- hunter_percentages_noID
+#data <- hunter_percentages_noID_4state
 wss <- sapply(1:k.max, 
               function(k){kmeans(data, k, nstart=25,iter.max = 15 )$tot.withinss})
 wss
@@ -72,8 +100,38 @@ levels(hunter_percentages$Cluster) <- c("Waiters", "Walkers", "Drivers") # chang
 
 # Join assigned clusters with long data also
 hunter_percentages_long <- dplyr::left_join(hunter_percentages_long,
-                                            dplyr::select(hunter_percentages, ID, Cluster))
+                                            dplyr::select(hunter_percentages, ID, Cluster)) 
 
+
+# Do that for the 4-states
+k3_4state <- kmeans(as.matrix(hunter_percentages_noID_4state), centers = 3, nstart = 25)
+k3_4state
+# K-means clustering with 3 clusters of sizes 227, 111, 89
+# 
+# Cluster means:
+#     Stationary_offroad_pct Stationary_road_pct Walking_pct Driving_pct
+# 1             0.08984035           0.1472511   0.1854634   0.5774451
+# 2             0.15772224           0.1065848   0.4450873   0.2906057
+# 3             0.37255626           0.1844699   0.1854782   0.2574955
+hunter_percentages_4state$Cluster4 = factor(k3_4state$cluster)
+levels(hunter_percentages_4state$Cluster4) <- c("Drivers", "Walkers", "Waiters") # change factor level names
+
+# Join assigned clusters with long data also
+hunter_percentages_long_4state <- dplyr::left_join(hunter_percentages_long_4state,
+                                            dplyr::select(hunter_percentages_4state, ID, Cluster4)) 
+
+# Look at correlations between clusters
+hunter_percentages_all <- dplyr::left_join(hunter_percentages, hunter_percentages_4state)
+different <- dplyr::filter(hunter_percentages_all, Cluster != Cluster4)
+nrow(different) # 49 of the 427 changed cluster
+count(different, Cluster, Cluster4)
+# Cluster Cluster4     n
+# <fct>   <fct>    <int>
+#     1 Waiters Drivers     35
+#     2 Waiters Walkers      2
+#     3 Walkers Drivers      4
+#     4 Walkers Waiters      4
+#     5 Drivers Walkers      4
 
 # Examine success rates ---------------------------------------------------
 
