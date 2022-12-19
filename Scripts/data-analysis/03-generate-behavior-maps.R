@@ -8,7 +8,7 @@ library(SpatialKDE)
 library(dplyr)
 
 # Bring in data with model results
-data_hmm <- read.csv("Results/hmm-data-with-model-predictions-2022-12-05.csv")
+data_hmm <- read.csv("Results/hmm-data-with-model-predictions-annotated-2022-12-19.csv")
 
 # Convert to spatial object & transform to UTM
 data_hmm_sf <- sf::st_as_sf(data_hmm,

@@ -7,7 +7,7 @@ library(sjPlot)
 
 # Import data -------------------------------------------------------------
 
-data_hmm <- read.csv("Results/hmm-data-with-model-predictions-2022-12-05.csv")
+data_hmm <- read.csv("Results/hmm-data-with-model-predictions-annotated-2022-12-19.csv")
 
 # Calculate time spent in states across hunters -----------------------------
 
