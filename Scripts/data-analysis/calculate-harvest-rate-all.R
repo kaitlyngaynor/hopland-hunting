@@ -20,6 +20,7 @@ count(hunters, Harvest)
 
 # How many to use?
 count(hunters, Good_track)
+# 410 total tracks
 # 386 good tracks, 24 tracks not good
 
 # How many successful/unsuccessful used?
