@@ -8,7 +8,7 @@ library(stringr)
 
 # RAW TRACKS ----------------------------------------------------------
 
-igotu_file_names <- list.files(path = "Data/Hunting/igotu_raw/",
+igotu_file_names <- list.files(path = "Data/Hunting/igotu_raw_2019_2020_cleaner/",
                                pattern = "*.csv", full.names = TRUE, recursive = TRUE) 
 igotu_raw_dfs <- lapply(igotu_file_names, read.csv) 
 names(igotu_raw_dfs) <- igotu_file_names
@@ -18,7 +18,7 @@ igotu_raw <- bind_rows(igotu_raw_dfs, .id = "FileName") %>%
                                  tz = "America/Los_Angeles"),
            ID = str_replace(FileName, "Data/Hunting/igotu_raw//", ""),
            ID = str_replace(ID, ".csv", "")) %>% 
-    select(-c(FileName, Altitude, Speed, Distance, Essential, Track, Course, Type))
+    select(-c(FileName, Altitude, Speed, Distance, Essential, Course, Type))
 igotu_raw_sf <- st_as_sf(igotu_raw,
                      coords = c("Longitude", "Latitude"),
                      crs = "+proj=longlat +ellps=WGS84")
@@ -46,7 +46,7 @@ igotu_raw_plots <- lapply(sort(unique(igotu_raw_sf$ID)), function(i) {
 })
 
 # print all plots to pdf
-pdf("igotu_raw-plots.pdf")
+pdf("igotu_raw-plots-2019-2020.pdf")
 for (i in 1:length(igotu_raw_plots)) {
     print(igotu_raw_plots[[i]])
 }
@@ -86,7 +86,7 @@ igotu_plots <- lapply(sort(unique(igotu_sf$ID)), function(i) {
 })
 
 # print all plots to pdf
-pdf("igotu-plots.pdf")
+pdf("igotu-plots-2019-2020.pdf")
 for (i in 1:length(igotu_plots)) {
     print(igotu_plots[[i]])
 }
