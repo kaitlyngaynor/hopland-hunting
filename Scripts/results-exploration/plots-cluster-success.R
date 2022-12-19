@@ -45,6 +45,7 @@ ggsave("Figures/cluster-success-count.pdf", width = 3, height = 2)
 count(hunter_cluster_success, Cluster, Harvest)
 count(hunter_cluster_success, Cluster)
 
-# 13 of 110 drivers (11.2%)
-# 12 of 95 waiters (12.6%)
-# 9 of 101 walkers (8.9%)
+# 31 of 192 drivers (16.1%)
+# 15 of 122 waiters (12.3%)
+# 10 of 113 walkers (8.8%)
+

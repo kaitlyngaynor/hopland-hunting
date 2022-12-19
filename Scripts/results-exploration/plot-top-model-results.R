@@ -5,7 +5,7 @@ library(ggplot2)
 
 # Import model and explore results ----------------------------------------
 
-m <- readRDS("Results/hmm-top-model.Rds")
+m <- readRDS("Results/hmm-top-model-2022-12-05.Rds")
 
 # model summary
 m 
