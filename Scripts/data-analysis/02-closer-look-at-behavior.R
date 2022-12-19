@@ -15,7 +15,9 @@ hist(stationary$Road_Distance) # if you look closely, big peak between 5-10 mete
 # Create new column with 4 categories
 data_hmm <- data_hmm %>% 
     dplyr::mutate(state_2stationary = if_else((state == "Stationary" & Road_Distance < 10),
-                                              "Stationary_road", state))
+                                              "Stationary_road", state)) %>% 
+    dplyr::mutate(state_2stationary = if_else((state_2stationary == "Stationary"),
+                                              "Stationary_offroad", state_2stationary))
 
 # Calculate duration of bouts ---------------------------------------------
 
