@@ -63,4 +63,3 @@ data_hmm <- cbind(data_hmm, state_probs)
 
 # Write file
 write.csv(data_hmm, "Results/hmm-data-with-model-predictions-2022-12-05.csv", row.names = FALSE)
-a

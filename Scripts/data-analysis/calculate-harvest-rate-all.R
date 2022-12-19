@@ -17,3 +17,15 @@ count(hunters, Harvest)
 
 # 47 YES HARVEST
 # 363 NO HARVEST
+
+# How many to use?
+count(hunters, Good_track)
+# 386 good tracks, 24 tracks not good
+
+# How many successful/unsuccessful used?
+hunters %>% 
+    group_by(Good_track) %>%
+    count(Harvest)
+
+# 386 good tracks = 41 harvest, 330 no harvest, 15 unknown
+# 24 bad tracks = 4 harvest, 20 no harvest
