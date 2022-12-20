@@ -67,3 +67,14 @@ predictorEffect("Hunt_weekend", fit5) %>%
     scale_fill_manual(values = c("#d8b365", "#969696", "#4d938a")) +
     scale_color_manual(values = c("#d8b365", "#969696", "#4d938a")) +
     theme_bw()
+
+# Same plot as above, but facet-wrapped
+predictorEffect("Hunt_weekend", fit5) %>% 
+    as_tibble() %>% 
+    ggplot(aes(x = Hunt_weekend, y = fit)) +
+    geom_line() +
+    geom_ribbon(aes(ymin = lower, ymax = upper), 
+                alpha = 0.2) +
+    facet_wrap(~Cluster4) +
+    labs(y = "Harvest probability", x = "Hunt weekend") +
+    theme_bw()
