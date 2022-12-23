@@ -1,6 +1,5 @@
 library(dplyr)
-library(glmulti)
-library(MuMIn)
+library(jtools)
 
 # Bring in datasets
 available <- read.csv("Data/all-available-point-cov.csv")
@@ -32,17 +31,34 @@ used_avail_driving <- used_avail %>%
 
 # Run separate RSF for each behavioral state
 # Explored dredging full model - the full model is best
-fit_stat <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Habitat + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale,
+fit_stat <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale,
                     data = used_avail_stationary,
                     family = binomial) 
-fit_walk <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Habitat + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale,
+fit_walk <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale,
                     data = used_avail_walking,
                     family = binomial) 
-fit_driv <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Habitat + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale,
+fit_driv <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale,
                     data = used_avail_driving,
                     family = binomial) 
+# getting message that fitted probabilities equal to 0 or 1 occurred - likely because driving is SO tied to roads. model not converging
+fit_driv <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale,
+                data = used_avail_driving,
+                family = binomial) # version without road distance in it - but doesn't make much sense
+
+# Run one RSF for all combined
+fit_all <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale,
+                data = used_avail,
+                family = binomial) 
+
 summary(fit_stat)
 summary(fit_walk)
 summary(fit_driv)
+summary(fit_all)
 
-library(sjPlot)
+# Plot the estimates
+jtools::plot_summs(fit_stat, fit_walk)
+jtools::plot_summs(fit_stat, fit_walk, fit_driv,
+                   model.names = c("Stationary", "Walking", "Driving"))
+jtools::plot_summs(fit_stat, fit_walk, fit_all,
+                   model.names = c("Stationary", "Walking", "All states"))
+
