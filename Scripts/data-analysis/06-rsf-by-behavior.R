@@ -35,28 +35,28 @@ used_avail_stationary_offroad <- used_avail %>%
 
 # Run separate RSF for each behavioral state
 # Explored dredging full model - the full model is best
-fit_stat <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale + HQ_Distance_scale,
+fit_stat <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale,
                     data = used_avail_stationary,
                     family = binomial) 
-fit_stat_road <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + HQ_Distance_scale,
+fit_stat_road <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale,
                 data = used_avail_stationary_road,
                 family = binomial) # can't use road in this, doesn't converge
-fit_stat_offroad <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale + HQ_Distance_scale,
+fit_stat_offroad <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale,
                 data = used_avail_stationary_offroad,
                 family = binomial) 
-fit_walk <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale + HQ_Distance_scale,
+fit_walk <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale,
                     data = used_avail_walking,
                     family = binomial) 
-fit_driv <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale + HQ_Distance_scale,
+fit_driv <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale,
                     data = used_avail_driving,
                     family = binomial) 
 # getting message that fitted probabilities equal to 0 or 1 occurred - likely because driving is SO tied to roads. model not converging
-fit_driv <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + HQ_Distance_scale,
+fit_driv <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale,
                 data = used_avail_driving,
                 family = binomial) # version without road distance in it (but seems inappropriate)
 
 # Run one RSF for all combined
-fit_all <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale + HQ_Distance_scale,
+fit_all <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale,
                 data = used_avail,
                 family = binomial) 
 
@@ -68,9 +68,6 @@ summary(fit_driv)
 summary(fit_all)
 
 # Plot the estimates
-jtools::plot_summs(fit_stat, fit_walk)
-jtools::plot_summs(fit_stat, fit_walk, fit_driv,
-                   model.names = c("Stationary", "Walking", "Driving"))
 jtools::plot_summs(fit_stat_offroad, fit_stat_road, fit_walk, fit_driv, fit_all,
                    model.names = c("Stationary (Offroad only)", "Stationary (Road)", "Walking", "Driving", "All states"))
 
