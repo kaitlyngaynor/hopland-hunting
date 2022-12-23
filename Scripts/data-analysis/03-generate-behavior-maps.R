@@ -30,11 +30,18 @@ reference <- SpatialKDE::create_raster(huntable, cell_size = 100)
 walking <- dplyr::filter(data_hmm_sf, state == "Walking") 
 stationary <- dplyr::filter(data_hmm_sf, state == "Stationary") 
 driving <- dplyr::filter(data_hmm_sf, state == "Driving") 
+stationary_road <- dplyr::filter(data_hmm_sf, state_2stationary == "Stationary_road") 
+stationary_offroad <- dplyr::filter(data_hmm_sf, state_2stationary == "Stationary_offroad") 
+
+road <- dplyr::filter(data_hmm_sf, Road_Distance < 10)
+offroad <- dplyr::filter(data_hmm_sf, Road_Distance >= 10)
 
 # Calculate kernel density for each behavioral state
 walking_dens_unweighted <- SpatialKDE::kde(walking, band_width = 400, grid = reference)
 driving_dens_unweighted <- SpatialKDE::kde(driving, band_width = 400, grid = reference)
 stationary_dens_unweighted <- SpatialKDE::kde(stationary, band_width = 400, grid = reference)
+stationary_road_dens_unweighted <- SpatialKDE::kde(stationary_road, band_width = 400, grid = reference)
+stationary_offroad_dens_unweighted <- SpatialKDE::kde(stationary_offroad, band_width = 400, grid = reference)
 
 
 # Approach 2: KDE for all points weighted by probability -----------
@@ -45,7 +52,10 @@ stationary_dens_weighted <- SpatialKDE::kde(data_hmm_sf, band_width = 400, grid 
                                          weights = data_hmm_sf$Stationary_Prob)
 driving_dens_weighted <- SpatialKDE::kde(data_hmm_sf, band_width = 400, grid = reference,
                                             weights = data_hmm_sf$Driving_Prob)
-
+stationary_road_dens_weighted <- SpatialKDE::kde(road, band_width = 400, grid = reference,
+                                            weights = road$Stationary_Prob)
+stationary_offroad_dens_weighted <- SpatialKDE::kde(offroad, band_width = 400, grid = reference,
+                                                 weights = offroad$Stationary_Prob)
 
 # Export rasters ----------------------------------------------------------
 
@@ -56,6 +66,10 @@ writeRaster(driving_dens_unweighted, "Results/KDE/driving_dens_unweighted.tif",
             overwrite = TRUE)
 writeRaster(stationary_dens_unweighted, "Results/KDE/stationary_dens_unweighted.tif",
             overwrite = TRUE)
+writeRaster(stationary_road_dens_unweighted, "Results/KDE/stationary_road_dens_unweighted.tif",
+            overwrite = TRUE)
+writeRaster(stationary_offroad_dens_unweighted, "Results/KDE/stationary_offroad_dens_unweighted.tif",
+            overwrite = TRUE)
 
 # Weighted
 raster::writeRaster(walking_dens_weighted, "Results/KDE/walking_dens_weighted.tif",
@@ -64,7 +78,10 @@ raster::writeRaster(driving_dens_weighted, "Results/KDE/driving_dens_weighted.ti
                     overwrite = TRUE)
 raster::writeRaster(stationary_dens_weighted, "Results/KDE/stationary_dens_weighted.tif",
                     overwrite = TRUE)
-
+raster::writeRaster(stationary_road_dens_weighted, "Results/KDE/stationary_road_dens_weighted.tif",
+                    overwrite = TRUE)
+raster::writeRaster(stationary_offroad_dens_weighted, "Results/KDE/stationary_offroad_dens_weighted.tif",
+                    overwrite = TRUE)
 
 
 

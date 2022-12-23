@@ -10,11 +10,15 @@ library(ggplot2)
 walking_dens_unweighted <- raster::raster("Results/KDE/walking_dens_unweighted.tif")
 driving_dens_unweighted <- raster::raster("Results/KDE/driving_dens_unweighted.tif")
 stationary_dens_unweighted <- raster::raster("Results/KDE/stationary_dens_unweighted.tif")
+stationary_road_dens_unweighted <- raster::raster("Results/KDE/stationary_road_dens_unweighted.tif")
+stationary_offroad_dens_unweighted <- raster::raster("Results/KDE/stationary_offroad_dens_unweighted.tif")
 
 # Weighted
 walking_dens_weighted <- raster::raster("Results/KDE/walking_dens_weighted.tif")
 driving_dens_weighted <- raster::raster("Results/KDE/driving_dens_weighted.tif")
 stationary_dens_weighted <- raster::raster("Results/KDE/stationary_dens_weighted.tif")
+stationary_road_dens_weighted <- raster::raster("Results/KDE/stationary_road_dens_weighted.tif")
+stationary_offroad_dens_weighted <- raster::raster("Results/KDE/stationary_offroad_dens_weighted.tif")
 
 
 
@@ -28,16 +32,19 @@ hrec_boundary <- readOGR("Data/Spatial data/Raw from Alex", "HREC_boundary") %>%
 walking_dens_unweighted <- mask(crop(walking_dens_unweighted, extent(hrec_boundary)), hrec_boundary)
 driving_dens_unweighted <- mask(crop(driving_dens_unweighted, extent(hrec_boundary)), hrec_boundary)
 stationary_dens_unweighted <- mask(crop(stationary_dens_unweighted, extent(hrec_boundary)), hrec_boundary)
+stationary_road_dens_unweighted <- mask(crop(stationary_road_dens_unweighted, extent(hrec_boundary)), hrec_boundary)
+stationary_offroad_dens_unweighted <- mask(crop(stationary_offroad_dens_unweighted, extent(hrec_boundary)), hrec_boundary)
 walking_dens_weighted <- mask(crop(walking_dens_weighted, extent(hrec_boundary)), hrec_boundary)
 driving_dens_weighted <- mask(crop(driving_dens_weighted, extent(hrec_boundary)), hrec_boundary)
 stationary_dens_weighted <- mask(crop(stationary_dens_weighted, extent(hrec_boundary)), hrec_boundary)
-
+stationary_road_dens_weighted <- mask(crop(stationary_road_dens_weighted, extent(hrec_boundary)), hrec_boundary)
+stationary_offroad_dens_weighted <- mask(crop(stationary_offroad_dens_weighted, extent(hrec_boundary)), hrec_boundary)
 
 # Comparison plots --------------------------------------------------------
 
 # Weighted vs unweighted for each behavioral state
 
-# Stationary
+# Walking
 par(mfrow=c(1,2))
 plot(walking_dens_unweighted, 
      col = viridis(1e3), 
@@ -47,17 +54,6 @@ plot(walking_dens_weighted,
      col = viridis(1e3), 
      zlim=c(0,400),
      main = "Walking Weighted")
-
-# Walking
-par(mfrow=c(1,2))
-plot(stationary_dens_unweighted, 
-     col = viridis(1e3), 
-     zlim=c(0,400),
-     main = "Stationary Unweighted")
-plot(stationary_dens_weighted, 
-     col = viridis(1e3), 
-     zlim=c(0,400),
-     main = "Stationary Weighted")
 
 # Driving
 par(mfrow=c(1,2))
@@ -69,6 +65,54 @@ plot(driving_dens_weighted,
      col = viridis(1e3), 
      zlim=c(0,400),
      main = "Driving Weighted")
+
+# Stationary
+par(mfrow=c(1,2))
+plot(stationary_dens_unweighted, 
+     col = viridis(1e3), 
+     zlim=c(0,400),
+     main = "Stationary Unweighted")
+plot(stationary_dens_weighted, 
+     col = viridis(1e3), 
+     zlim=c(0,400),
+     main = "Stationary Weighted")
+
+# Stationary Road
+par(mfrow=c(1,2))
+plot(stationary_road_dens_unweighted, 
+     col = viridis(1e3), 
+     zlim=c(0,400),
+     main = "Stationary Road Unweighted")
+plot(stationary_road_dens_weighted, 
+     col = viridis(1e3), 
+     zlim=c(0,400),
+     main = "Stationary Road Weighted")
+
+# Stationary Off Road
+par(mfrow=c(1,2))
+plot(stationary_offroad_dens_unweighted, 
+     col = viridis(1e3), 
+     zlim=c(0,400),
+     main = "Stationary Off-Road Unweighted")
+plot(stationary_offroad_dens_weighted, 
+     col = viridis(1e3), 
+     zlim=c(0,400),
+     main = "Stationary Off-Road Weighted")
+
+# Stationary On vs Off Road (and combined)
+par(mfrow=c(1,3))
+plot(stationary_dens_unweighted, 
+     col = viridis(1e3), 
+     zlim=c(0,400),
+     main = "Stationary - All")
+plot(stationary_road_dens_unweighted, 
+     col = viridis(1e3), 
+     zlim=c(0,400),
+     main = "Stationary - On Road")
+plot(stationary_offroad_dens_unweighted, 
+     col = viridis(1e3), 
+     zlim=c(0,400),
+     main = "Stationary - Off Road")
 
 # All 3 unweighted states
 par(mfrow=c(1,3))
