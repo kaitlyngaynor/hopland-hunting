@@ -21,6 +21,9 @@ data_hmm <- data_hmm %>%
     tidyr::drop_na(step) %>% 
     filter(step < 1.207008)
 
+# How many removed?
+nrow(igotu_data) - nrow(data_hmm) # 
+
 # Scale covariates
 data_hmm$Ruggedness_scale <- scale(data_hmm$Ruggedness)
 data_hmm$Viewshed_scale <- scale(data_hmm$Viewshed)
