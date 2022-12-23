@@ -47,13 +47,15 @@ igotu_data_fewer <- igotu_data_covariates %>%
                   vegetation.coarser.clean2, 
                   road.dist.clean,
                   layer.1, layer.4,
+                  hq_dist,
                   Elapsed_Time_Sunrise, Harvest) %>% 
     dplyr::rename(Viewshed = view,
                   Ruggedness = rugged9.clean,
                   Habitat = vegetation.coarser.clean2,
                   Road_Distance = road.dist.clean,
                   Chaparral_120m = layer.1,
-                  Woodland_120m = layer.4)
+                  Woodland_120m = layer.4,
+                  HQ_Distance = hq_dist)
 
 # Export
 write.csv(igotu_data_fewer, "Data/igotu_data_3min_covariates.csv", row.names = F)

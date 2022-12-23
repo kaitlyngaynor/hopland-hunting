@@ -39,13 +39,15 @@ sampled_points_cov <- sampled_points_cov %>%
     dplyr::select(rugged9.clean, view,
                   vegetation.coarser.clean2, 
                   road.dist.clean,
-                  layer.1, layer.4) %>% 
+                  layer.1, layer.4,
+                  hq_dist) %>% 
     dplyr::rename(Viewshed = view,
                   Ruggedness = rugged9.clean,
                   Habitat = vegetation.coarser.clean2,
                   Road_Distance = road.dist.clean,
                   Chaparral_120m = layer.1,
-                  Woodland_120m = layer.4)
+                  Woodland_120m = layer.4,
+                  HQ_Distance = hq_dist)
 
 # Export for analysis
 write.csv(sampled_points_cov, "Data/all-available-point-cov.csv", row.names = FALSE)
