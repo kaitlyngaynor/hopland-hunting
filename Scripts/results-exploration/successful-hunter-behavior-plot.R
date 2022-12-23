@@ -3,7 +3,7 @@ library(dplyr)
 library(tidyr)
 library(forcats)
 
-data_hmm <- read.csv("Results/hmm-data-with-model-predictions.csv")
+data_hmm <- read.csv("Results/hmm-data-with-model-predictions-annotated-2022-12-19.csv")
 
 # Get number of points per individual
 n_indiv <- data_hmm %>% 
