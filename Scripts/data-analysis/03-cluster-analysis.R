@@ -153,16 +153,6 @@ success_rate <- hunter_cluster_success %>%
                   Success_Rate = Y/Total,
                   Failure_rate = N/Total)
 
-# Model success rate as function of dominant mode
-hunter_cluster_success <- hunter_cluster_success %>%
-    dplyr::mutate(Harvest01 = ifelse(Harvest == "N",0,1))
-fit <- glm(Harvest01 ~ Cluster4, data = hunter_cluster_success,
-           family = binomial)
-summary(fit)
-
-sjPlot::plot_model(fit)
-
-
 # Export data
 write.csv(hunter_cluster_success, "Results/hunters_by_cluster_with_success.csv", row.names = FALSE)
 write.csv(hunter_percentages_long_4state, "Results/hunter_percentages_long_4state.csv", row.names = FALSE)
