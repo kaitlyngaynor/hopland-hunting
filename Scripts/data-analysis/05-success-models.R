@@ -36,8 +36,18 @@ weekend$relative_risk <- predict(fit3, weekend, type = "response")
 
 # Plot model predictions --------------------------------------------------
 
+# Hunting success by year
+effects::predictorEffect("Year", fit2) %>% 
+    as_tibble() %>% 
+    ggplot(aes(x = Year, y = fit))+
+    geom_line()+
+    geom_ribbon(aes(ymin = lower, ymax = upper), 
+                alpha = 0.2) +
+    labs(y = "Harvest probability", x = "Year") +
+    theme_bw()
+
 # Hunting success by weekend
-predictorEffect("Hunt_weekend", fit3) %>% 
+effects::predictorEffect("Hunt_weekend", fit3) %>% 
     as_tibble() %>% 
     ggplot(aes(x = Hunt_weekend, y = fit))+
     geom_line()+
@@ -47,7 +57,7 @@ predictorEffect("Hunt_weekend", fit3) %>%
     theme_bw()
 
 # Hunting success by day - not as good of a fit as weekend
-predictorEffect("Hunt_day", fit4) %>% 
+effects::predictorEffect("Hunt_day", fit4) %>% 
     as_tibble() %>% 
     ggplot(aes(x = Hunt_day, y = fit))+
     geom_line()+
@@ -57,7 +67,7 @@ predictorEffect("Hunt_day", fit4) %>%
     theme_bw()
 
 # Hunting success by weekend * cluster
-predictorEffect("Hunt_weekend", fit5) %>% 
+effects::predictorEffect("Hunt_weekend", fit5) %>% 
     as_tibble() %>% 
     ggplot(aes(x = Hunt_weekend, y = fit, group = Cluster4))+
     geom_line(aes(colour = Cluster4))+
@@ -69,7 +79,7 @@ predictorEffect("Hunt_weekend", fit5) %>%
     theme_bw()
 
 # Same plot as above, but facet-wrapped
-predictorEffect("Hunt_weekend", fit5) %>% 
+effects::predictorEffect("Hunt_weekend", fit5) %>% 
     as_tibble() %>% 
     ggplot(aes(x = Hunt_weekend, y = fit)) +
     geom_line() +
