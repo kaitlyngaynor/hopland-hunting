@@ -44,10 +44,10 @@ hunter_cluster_success %>%
     scale_fill_manual(values = c("#C0C0C0", "#71797E")) 
 ggsave("Figures/cluster-success-count.pdf", width = 3, height = 2)
 
-count(filter(hunter_cluster_success, Harvest != "unknown"), Cluster, Harvest)
-count(filter(hunter_cluster_success, Harvest != "unknown"), Cluster)
+count(filter(hunter_cluster_success, Harvest != "unknown"), Cluster4, Harvest)
+count(filter(hunter_cluster_success, Harvest != "unknown"), Cluster4)
 
-# 25 of 182 drivers (13.7%)
-# 14 of 118 waiters (11.9%)
-# 9 of 112 walkers (8.0%)
+# 28 of 215 drivers (13.0%)
+# 11 of 87 waiters (12.6)
+# 9 of 110 walkers (8.2%)
 
