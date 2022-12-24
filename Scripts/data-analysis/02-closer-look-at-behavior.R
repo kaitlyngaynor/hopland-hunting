@@ -49,22 +49,42 @@ hmm_bouts <- data_hmm %>%
     dplyr::mutate(bout_length_min = bout_length * 3)
 
 # Plot histogram of bout lengths by behavior
-ggplot(hmm_bouts, aes(x = bout_length)) +
+ggplot(hmm_bouts, aes(x = bout_length_min)) +
     geom_histogram() +
     facet_wrap(~state, nrow=3) +
     theme_bw()
 
 # Plot boxplot
-ggplot(hmm_bouts, aes(x = state, y = bout_length)) +
+ggplot(hmm_bouts, aes(x = state, y = bout_length_min)) +
     geom_boxplot() +
     theme_bw()
 
 # calculate mean bout length per individual for each state
-hmm_bouts %>% 
+mean_bouts <- hmm_bouts %>% 
     group_by(ID, state) %>% 
-    summarize(mean_bout = mean(bout_length))
+    summarize(mean_bout = mean(bout_length_min))
 
+mean_bouts_wide <- mean_bouts %>% 
+    tidyr::pivot_wider(names_from = state, values_from = mean_bout) %>% 
+    dplyr::rename(Driv_bout_mean = Driving,
+                  Stat_bout_mean = Stationary,
+                  Walk_bout_mean = Walking)
 
+# and for all states
+mean_bouts_all <- hmm_bouts %>% 
+    group_by(ID) %>% 
+    summarize(All_bout_mean = mean(bout_length_min))
+mean_bouts_wide <- dplyr::left_join(mean_bouts_wide, mean_bouts_all)
+
+# and calculate number of unique bouts
+bout_counts <- hmm_bouts %>% 
+    count(ID, state) %>% 
+    tidyr::pivot_wider(names_from = state, values_from = n) %>% 
+    dplyr::rename(Driv_bout_n = Driving,
+                  Stat_bout_n = Stationary,
+                  Walk_bout_n = Walking) %>% 
+    dplyr::mutate(All_bout_n = Driv_bout_n + Stat_bout_n + Walk_bout_n)
+mean_bouts_wide <- dplyr::left_join(mean_bouts_wide, bout_counts)
 
 # Export behavioral states with extra column, bout length
 write.csv(data_hmm, "Results/hmm-data-with-model-predictions-annotated-2022-12-19.csv", row.names = FALSE)
@@ -72,3 +92,5 @@ write.csv(data_hmm, "Results/hmm-data-with-model-predictions-annotated-2022-12-1
 # Export bouts
 write.csv(hmm_bouts, "Results/hmm-modeled-activity-bouts-2022-12-19.csv")
 
+# Export long bounts
+write.csv(mean_bouts_wide, "Results/ID-mean-bout-length.csv", row.names = F)
