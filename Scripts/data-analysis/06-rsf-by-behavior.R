@@ -12,8 +12,8 @@ head(used)
 
 # Join into single dataframe and scale covariates
 used_avail <- dplyr::bind_rows(used, available) %>% 
-    dplyr::select(Ruggedness, Viewshed, Road_Distance, Chaparral_120m, Woodland_120m, HQ_Distance,
-                  Used, state, state_2stationary) %>% 
+    dplyr::select(ID, Ruggedness, Viewshed, Road_Distance, Chaparral_120m, Woodland_120m, HQ_Distance,
+                  Used, Harvest, state, state_2stationary) %>% 
     dplyr::mutate(Ruggedness_scale = scale(Ruggedness),
                   Viewshed_scale = scale(Viewshed),
                   Road_Distance_scale = scale(Road_Distance),
@@ -71,3 +71,83 @@ summary(fit_all)
 jtools::plot_summs(fit_stat_offroad, fit_stat_road, fit_walk, fit_driv, fit_all,
                    model.names = c("Stationary (Offroad only)", "Stationary (Road)", "Walking", "Driving", "All states"))
 
+
+
+# RSF by success ----------------------------------------------------------
+
+# Split used by success (retain all available)
+used_avail_success <- used_avail %>% dplyr::filter(Harvest == "Y" | Used == 0)
+used_avail_unsuccess <- used_avail %>% dplyr::filter(Harvest == "N" | Used == 0)
+
+fit_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+               data = used_avail_success,
+               family = binomial) 
+fit_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+                   data = used_avail_unsuccess,
+                   family = binomial) 
+jtools::plot_summs(fit_success, fit_unsuccess,
+                   model.names = c("Successful", "Unsuccessful"))
+
+
+# RSF by hunting mode -----------------------------------------
+
+# bring in clusters
+clusters <- read.csv("Results/hunters_by_cluster_with_success.csv") %>% 
+    dplyr::select(ID, Cluster4)
+used_avail <- dplyr::left_join(used_avail, clusters)
+
+used_avail_drivers <- used_avail %>% 
+    dplyr::filter((Cluster4 != "Walkers" & Cluster4 != "Waiters") | Used == 0)
+used_avail_walkers <- used_avail %>% 
+    dplyr::filter((Cluster4 != "Drivers" & Cluster4 != "Waiters") | Used == 0)
+used_avail_waiters <- used_avail %>% 
+    dplyr::filter((Cluster4 != "Walkers" & Cluster4 != "Drivers") | Used == 0)
+
+fit_drivers <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+                     data = used_avail_drivers,
+                     family = binomial) 
+fit_walkers <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+                   data = used_avail_walkers,
+                   family = binomial) 
+fit_waiters <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+                   data = used_avail_waiters,
+                   family = binomial) 
+
+jtools::plot_summs(fit_drivers, fit_walkers, fit_waiters, 
+                   model.names = c("Drivers", "Walkers", "Waiters"))
+
+
+# RSF by hunting mode * success -------------------------------------------
+
+used_avail_drivers_success <- used_avail_drivers %>% dplyr::filter(Harvest == "Y" | Used == 0)
+used_avail_walkers_success <- used_avail_walkers %>% dplyr::filter(Harvest == "Y" | Used == 0)
+used_avail_waiters_success <- used_avail_waiters %>% dplyr::filter(Harvest == "Y" | Used == 0)
+used_avail_drivers_unsuccess <- used_avail_drivers %>% dplyr::filter(Harvest == "N" | Used == 0)
+used_avail_walkers_unsuccess <- used_avail_walkers %>% dplyr::filter(Harvest == "N" | Used == 0)
+used_avail_waiters_unsuccess <- used_avail_waiters %>% dplyr::filter(Harvest == "N" | Used == 0)
+
+fit_drivers_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+                   data = used_avail_drivers_success,
+                   family = binomial) 
+fit_walkers_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+                   data = used_avail_walkers_success,
+                   family = binomial) 
+fit_waiters_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+                   data = used_avail_waiters_success,
+                   family = binomial) 
+fit_drivers_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+                           data = used_avail_drivers_unsuccess,
+                           family = binomial) 
+fit_walkers_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+                           data = used_avail_walkers_unsuccess,
+                           family = binomial) 
+fit_waiters_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+                           data = used_avail_waiters_unsuccess,
+                           family = binomial) 
+
+jtools::plot_summs(fit_drivers_success, fit_drivers_unsuccess, 
+                   fit_walkers_success, fit_walkers_unsuccess, 
+                   fit_waiters_success, fit_waiters_unsuccess,
+                   model.names = c("Drivers - Success", "Drivers - Not",
+                                   "Walkers - Success", "Walkers - Not",
+                                   "Waiters - Success", "Waiters - Not"))
