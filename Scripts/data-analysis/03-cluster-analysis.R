@@ -178,3 +178,30 @@ success_rate <- hunter_cluster_success %>%
 write.csv(hunter_cluster_success, "Results/hunters_by_cluster_with_success.csv", row.names = FALSE)
 write.csv(hunter_percentages_long_4state, "Results/hunter_percentages_long_4state.csv", row.names = FALSE)
 write.csv(hunter_cluster_success_long, "Results/hunter_cluster_success_long.csv", row.names = FALSE)
+
+
+# Look at clusters with bout length? --------------------------------------
+
+bouts <- read.csv("Results/ID-mean-bout-length.csv")
+
+bouts_noID <- bouts %>% 
+  #  dplyr::left_join(hunter_percentages) %>% 
+    dplyr::select(-ID) %>% 
+    tidyr::drop_na()
+
+set.seed(4321)
+k.max <- 15
+data <- bouts_noID
+wss <- sapply(1:k.max, 
+              function(k){kmeans(data, k, nstart=25,iter.max = 15 )$tot.withinss})
+wss
+plot(1:k.max, wss,
+     type="b", pch = 19, frame = FALSE, 
+     xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares")
+
+# Run K-means cluster analysis with k=3 clusters
+set.seed(321)
+k3_bout <- kmeans(as.matrix(bouts_noID), centers = 3, nstart = 25)
+k3_bout
+
