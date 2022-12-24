@@ -11,7 +11,7 @@ library(forcats)
 `%notin%` <- Negate(`%in%`)
 
 # Bring in model results
-data_hmm <- read.csv("Results/hmm-data-with-model-predictions-2022-12-05.csv") 
+data_hmm <- read.csv("Results/hmm-data-with-model-predictions-annotated-2022-12-19.csv") 
 
 # Separate time into its own row
 data_hmm <- separate(data = data_hmm, 
@@ -21,7 +21,7 @@ data_hmm <- separate(data = data_hmm,
                      remove = FALSE) 
 
 # Identify harvest tracks with associated time
-metadata_raw <- read.csv("Data/Hunting/igotu_metadata_times_cleaned_11Oct2022.csv") 
+metadata_raw <- read.csv("Data/Hunting/igotu_metadata_times_cleaned_28Nov2022.csv") 
 metadata <- metadata_raw %>% 
     filter(Harvest == "Y") %>% 
     dplyr::select(ID, Harvest_time)
@@ -60,43 +60,129 @@ harvest_hour <- left_join(harvest_hour, hunting_cluster)
 
 # Looking into sample size discrepancies ----------------------------------
 
-count(hunting_cluster, Cluster)
+count(hunting_cluster, Cluster4)
 # 56 hunters harvested deer - 31 drivers, 15 waiters, 10 walkers
+## 2022-12-23 - now I'm seeing 48? 28 drivers, 11 waiters, 9 walkers
 
-# One individual is missing hour-before-hunt data but have cluster data
-# 081416_19 (waiter) - missing data from around the harvest time
 hunting_cluster %>% 
     filter(ID %notin% harvest_hour$ID)
 
-unique(harvest_hour$ID) # 32 harvesters with behavioral data & harvest times
+# Two individuals are missing hour-before-hunt data but have cluster data
+# 081416_19 (waiter) - missing data from around the harvest time
+# 081819_01 (driver) - not sure of harvest time
+
+length(unique(harvest_hour$ID)) # 46 harvesters with behavioral data & harvest times
+
 
 # Investigate characteristics of pre-hunt hour ----------------------------
 
-
-# Look at habitat for hunting modes, independent of harvest
-habitat_all <- data_hmm %>% 
-    dplyr::select(ID, Habitat, DateTime, Harvest) %>% 
-    left_join(dplyr::select(hunting_cluster_all, ID, Cluster)) %>% 
-    mutate(Habitat = fct_recode(as.factor(Habitat), 
-                                Shrubland = "1",
-                                Woodland = "2",
-                                Grassland = "3")) %>% 
-    mutate(ID_DateTime = paste(ID, DateTime, sep = " "))
+# Join cluster with movement data
+data_hmm <- data_hmm %>% 
+    left_join(dplyr::select(hunting_cluster_all, ID, Cluster4)) %>% 
+    mutate(ID_DateTime = paste(ID, DateTime, sep = " "),
+           Used = 1)
 
 # Inelegant way to determine whether each observation was within the hour before a hunt
 harvest_hour_ID_DateTime <- paste(harvest_hour$ID, harvest_hour$DateTime, sep = " ")
-habitat_all$HourHarvest <- NA
-for(i in 1:nrow(habitat_all)) {
-    if(habitat_all$ID_DateTime[i] %in% harvest_hour_ID_DateTime) {
-        habitat_all$HourHarvest[i] <- "HourBefore"
+data_hmm$HourHarvest <- NA
+for(i in 1:nrow(data_hmm)) {
+    if(data_hmm$ID_DateTime[i] %in% harvest_hour_ID_DateTime) {
+        data_hmm$HourHarvest[i] <- "HourBefore"
     } else {
-        habitat_all$HourHarvest[i] <- "OtherTime"
+        data_hmm$HourHarvest[i] <- "OtherTime"
     }
 }
 
+
+# RSF in hour before ------------------------------------------------------
+
+# Bring in available points
+available <- read.csv("Data/all-available-point-cov.csv") %>% 
+    mutate(Used = 0)
+
+# Join used and available together, scale covariates
+used_avail <- dplyr::bind_rows(available, data_hmm) %>% 
+    dplyr::select(ID, Ruggedness, Viewshed, Road_Distance, Chaparral_120m, Woodland_120m, HQ_Distance, Habitat,
+                  Used, Cluster4, Harvest, HourHarvest, state, state_2stationary) %>% 
+    dplyr::mutate(Habitat = fct_recode(as.factor(Habitat), 
+                                Shrubland = "1",
+                                Woodland = "2",
+                                Grassland = "3"),
+                  Ruggedness_scale = scale(Ruggedness),
+                  Viewshed_scale = scale(Viewshed),
+                  Road_Distance_scale = scale(Road_Distance),
+                  Chaparral_120m_scale = scale(Chaparral_120m),
+                  Woodland_120m_scale = scale(Woodland_120m),
+                  HQ_Distance_scale = scale(HQ_Distance))
+
+# Subset by hunting mode & time in relation to harvest
+used_avail_drivers_hourbefore <- used_avail %>% 
+    dplyr::filter((Cluster4 != "Walkers" & Cluster4 != "Waiters") | Used == 0) %>% 
+    dplyr::filter(HourHarvest == "HourBefore" | Used == 0)
+used_avail_walkers_hourbefore <- used_avail %>% 
+    dplyr::filter((Cluster4 != "Drivers" & Cluster4 != "Waiters") | Used == 0) %>% 
+    dplyr::filter(HourHarvest == "HourBefore" | Used == 0)
+used_avail_waiters_hourbefore <- used_avail %>% 
+    dplyr::filter((Cluster4 != "Walkers" & Cluster4 != "Drivers") | Used == 0) %>% 
+    dplyr::filter(HourHarvest == "HourBefore" | Used == 0)
+used_avail_drivers_othertime <- used_avail %>% 
+    dplyr::filter((Cluster4 != "Walkers" & Cluster4 != "Waiters") | Used == 0) %>% 
+    dplyr::filter(HourHarvest == "OtherTime" | Used == 0)
+used_avail_walkers_othertime <- used_avail %>% 
+    dplyr::filter((Cluster4 != "Drivers" & Cluster4 != "Waiters") | Used == 0) %>% 
+    dplyr::filter(HourHarvest == "OtherTime" | Used == 0)
+used_avail_waiters_othertime <- used_avail %>% 
+    dplyr::filter((Cluster4 != "Walkers" & Cluster4 != "Drivers") | Used == 0) %>% 
+    dplyr::filter(HourHarvest == "OtherTime" | Used == 0)
+
+fit_drivers_hourbefore <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale,
+                           data = used_avail_drivers_hourbefore,
+                           family = binomial) # causing problems with convergence when road is included
+fit_walkers_hourbefore <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+                           data = used_avail_walkers_hourbefore,
+                           family = binomial) 
+fit_waiters_hourbefore <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+                           data = used_avail_waiters_hourbefore,
+                           family = binomial) 
+fit_drivers_othertime <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+                             data = used_avail_drivers_othertime,
+                             family = binomial) 
+fit_walkers_othertime <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+                             data = used_avail_walkers_othertime,
+                             family = binomial) 
+fit_waiters_othertime <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+                             data = used_avail_waiters_othertime,
+                             family = binomial) 
+
+jtools::plot_summs(fit_drivers_hourbefore, fit_drivers_othertime, 
+                   fit_walkers_hourbefore, fit_walkers_othertime, 
+                   fit_waiters_hourbefore, fit_waiters_othertime,
+                   model.names = c("Drivers - Hour Before", "Drivers - Other Time",
+                                   "Walkers - Hour Before", "Walkers - Other Time",
+                                   "Waiters - Hour Before", "Waiters - Other Time"))
+
+fit_drivers_hourbefore2 <- glm(Used ~ Habitat, data = used_avail_drivers_hourbefore, family = binomial) 
+fit_walkers_hourbefore2 <- glm(Used ~ Habitat, data = used_avail_walkers_hourbefore, family = binomial) 
+fit_waiters_hourbefore2 <- glm(Used ~ Habitat, data = used_avail_waiters_hourbefore, family = binomial) 
+fit_drivers_othertime2 <- glm(Used ~ Habitat, data = used_avail_drivers_othertime, family = binomial) 
+fit_walkers_othertime2 <- glm(Used ~ Habitat, data = used_avail_walkers_othertime, family = binomial) 
+fit_waiters_othertime2 <- glm(Used ~ Habitat, data = used_avail_waiters_othertime, family = binomial) 
+
+jtools::plot_summs(fit_drivers_hourbefore2, fit_drivers_othertime2, 
+                   #fit_walkers_hourbefore2, fit_walkers_othertime2, 
+                   fit_waiters_hourbefore2, fit_waiters_othertime2,
+                   model.names = c("Drivers - Hour Before", "Drivers - Other Time",
+                                   #"Walkers - Hour Before", "Walkers - Other Time",
+                                   "Waiters - Hour Before", "Waiters - Other Time"))
+
+
+
+
+# OLD CODE ----------------------------------------------------------------
+
 # Summarize by ID, HourHarvest
-habitat_summary <- habitat_all %>% 
-    count(ID, Habitat, HourHarvest, Cluster, Harvest) %>% 
+habitat_summary <- data_hmm %>% 
+    count(ID, Habitat, HourHarvest, Cluster4, Harvest) %>% 
     pivot_wider(names_from = Habitat, values_from = n) %>% 
     # fill NAs with 0s
     replace_na(list(Shrubland = 0, Woodland = 0, Grassland = 0)) %>% 
@@ -121,7 +207,7 @@ habitat_summary_long <- left_join(habitat_summary_long, habitat_summary_long_pct
 
 # Plot percent of time in each habitat, by cluster & hunting time/success
 key <- data.frame(HourHarvest = c("HourBefore_Y", "OtherTime_N", "OtherTime_Y"),
-                  HourHarvest2 = c("Hour Before Harvest", "Other Times (Unsuccessful)", "Other Times (Successful"))
+                  HourHarvest2 = c("Hour Before Harvest", "Other Times (Unsuccessful)", "Other Times (Successful)"))
 habitat_summary_long <- left_join(habitat_summary_long, key)
 ggplot(habitat_summary_long, aes(x = Cluster, y = Percent, fill = HourHarvest2)) +
     facet_grid(~Habitat) +
