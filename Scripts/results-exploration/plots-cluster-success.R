@@ -36,13 +36,17 @@ hunter_cluster_success_long %>%
 # Plot success by cluster
 hunter_cluster_success %>% 
     dplyr::filter(Harvest != "unknown") %>% 
-    ggplot(aes(x = Cluster4, fill = Harvest)) +
+    ggplot(aes(x = Cluster4, alpha = Harvest, fill = Cluster4)) +
     geom_bar(stat = "count") + 
+    geom_text(label = c(2, 4, 9), vjust = -0.5) +
     theme_bw() +
+    theme(panel.grid.major = element_blank()) +
     xlab("") +
     ylab("Number of Hunters") +
-    scale_fill_manual(values = c("#C0C0C0", "#71797E")) 
-ggsave("Figures/cluster-success-count.pdf", width = 3, height = 2)
+    scale_fill_manual(values = c("#1b9e77", "#d95f02", "#7570b3")) +
+    scale_alpha_manual(values = c(0.4, 1)) +
+    guides(fill = "none")
+ggsave("Figures/cluster-success-count.pdf", width = 4, height = 3)
 
 count(filter(hunter_cluster_success, Harvest != "unknown"), Cluster4, Harvest)
 count(filter(hunter_cluster_success, Harvest != "unknown"), Cluster4)
