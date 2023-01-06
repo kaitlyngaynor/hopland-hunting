@@ -5,16 +5,17 @@ library(gtable)
 library(lemon)
 
 all_rsf_results <- read.csv("Results/rsf-results-by-mode-success.csv") %>% 
-    dplyr::filter(Predictor != "Intercept")
+    dplyr::filter(Predictor != "Intercept") %>% 
+    dplyr::rename("Hunting Mode" = "Hunting.Mode")
 head(all_rsf_results)
 
 # without road distance
 all_rsf_results %>% 
     dplyr::filter(Predictor != "Road Distance") %>% 
-    ggplot(aes(x = Predictor, y = Coefficient, col = Hunting_Mode, shape = Harvest, group = Hunting_Mode)) + 
+    ggplot(aes(x = Predictor, y = Coefficient, col = `Hunting Mode`, shape = Harvest, group = `Hunting Mode`)) + 
     geom_hline(aes(yintercept = 0), linetype="dashed", size = 0.5, color = "darkgrey") +
-    geom_errorbar(aes(ymin = LCI, ymax = UCI), width=0, position = position_dodge(width = 1), alpha=.5) +
-    geom_point(position = position_dodge(width = 1), size = 3, stroke = 1) +
+    geom_errorbar(aes(ymin = LCI, ymax = UCI), width=0, position = position_dodge(width = 1), alpha=.8) +
+    geom_point(position = position_dodge(width = 1), size = 3, stroke = 1, alpha = .75) +
     theme(axis.title.y = element_blank(),
           legend.key = element_rect(fill = alpha("white", 0.0)),
           strip.background = element_blank(),
@@ -33,15 +34,15 @@ all_rsf_results %>%
     scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3"),
                        guide = guide_legend(reverse = TRUE)) +
     facet_grid(Predictor~., scales = "free")
-ggsave("Figures/rsf-coefficients-1.pdf", width = 10, height = 6)
+ggsave("Figures/rsf-coefficients-1.pdf", width = 8, height = 4)
 
 # only road distance
 all_rsf_results %>% 
     dplyr::filter(Predictor == "Road Distance") %>% 
-    ggplot(aes(x = Predictor, y = Coefficient, col = Hunting_Mode, shape = Harvest, group = Hunting_Mode)) + 
+    ggplot(aes(x = Predictor, y = Coefficient, col = `Hunting Mode`, shape = Harvest, group = `Hunting Mode`)) + 
     geom_hline(aes(yintercept = 0), linetype="dashed", size = 0.5, color = "darkgrey") +
-    geom_errorbar(aes(ymin = LCI, ymax = UCI), width=0, position = position_dodge(width = 1), alpha=.5) +
-    geom_point(position = position_dodge(width = 1), size = 3, stroke = 1) +
+    geom_errorbar(aes(ymin = LCI, ymax = UCI), width=0, position = position_dodge(width = 1), alpha=.8) +
+    geom_point(position = position_dodge(width = 1), size = 3, stroke = 1, alpha = .75) +
     theme(axis.title.y = element_blank(),
           legend.key = element_rect(fill = alpha("white", 0.0)),
           strip.background = element_blank(),
@@ -60,10 +61,10 @@ all_rsf_results %>%
     scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3"),
                        guide = guide_legend(reverse = TRUE)) +
     facet_grid(Predictor~., scales = "free") 
-ggsave("Figures/rsf-coefficients-2.pdf", width = 10, height = 2.5)
+ggsave("Figures/rsf-coefficients-2.pdf", width = 8.15, height = 1.3)
 
 
-  # Facet wrap section ------------------------------------------------------
+  # Facet wrap version ------------------------------------------------------
 
 # Create function to move legend into facet
 shift_legend2 <- function(p) {
