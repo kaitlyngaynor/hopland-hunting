@@ -44,22 +44,24 @@ success %>%
     ggplot(aes(x = Sunrise_elapsed_min)) +
     geom_histogram() +
     facet_wrap(~Cluster4, nrow = 3) +
-    theme_bw()
+    theme_bw() 
 success %>% 
     dplyr::filter(Harvest == "Y") %>%
     ggplot(aes(x = Sunrise_elapsed_min, fill = Cluster4)) +
     geom_histogram() +
-    theme_bw()
+    theme_bw() +
+    scale_fill_manual(values = c("#1b9e77", "#d95f02", "#7570b3"))
 
 set.seed(23)
 success %>% 
     dplyr::filter(Harvest == "Y") %>%
     ggplot(aes(x = Sunrise_elapsed_min/60, y = Cluster4, col = Cluster4)) +
-    geom_point(size = 3, alpha = 0.5, position = position_jitter(w = 0.15, h = 0.15)) +
+    geom_point(size = 3, alpha = 0.75, position = position_jitter(w = 0.15, h = 0.15)) +
     theme_bw() +
     ylab("Hunting Mode") +
     xlab("Time From Sunrise (hours)") +
-    theme(legend.position = "none")
+    theme(legend.position = "none") +
+    scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3"))
 
 # See if time of day varies by hunting mode
 fit <- aov(Sunrise_elapsed_min_scale ~ Cluster4, data = success)
