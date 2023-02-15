@@ -8,7 +8,7 @@ library(sf)
 library(suncalc)
 
 # import all data and join into single dataframe
-igotu_file_names <- list.files(path = "Data/Hunting/igotu_raw/",
+igotu_file_names <- list.files(path = "Data/Hunting/igotu_raw_2015_2017/",
                                pattern = "*.csv", full.names = TRUE, recursive = TRUE) 
 
 # read all individual csvs into a list
@@ -25,7 +25,7 @@ igotu_data_all <- igotu_raw %>%
     mutate(DateTime = as.POSIXct(paste(Date, Time, sep = ""), 
                                  "%m/%d/%y %H:%M:%S",
                                  tz = "America/Los_Angeles"),
-           ID = str_replace(FileName, "Data/Hunting/igotu_raw//", ""),
+           ID = str_replace(FileName, "Data/Hunting/igotu_raw_2015_2017//", ""),
            ID = str_replace(ID, ".csv", "")) %>% 
     select(-c(FileName, Altitude, Speed, Distance, Essential, Track, Course, Type))
 
