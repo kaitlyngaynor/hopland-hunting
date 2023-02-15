@@ -49,8 +49,8 @@ anglePar0_3state <- c(angleMean0_3state,kappa0_3state)
 m <- moveHMM::fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
                    formula = ~Road_Distance_scale + Viewshed_scale + Woodland_120m_scale + Ruggedness_scale + Chaparral_120m_scale + Elapsed_Time_Sunrise)
 
-saveRDS(m, "Results/hmm-top-model-2022-12-05.Rds")
-# m <- readRDS("Results/hmm-top-model-2022-12-05.Rds") # to read back in
+saveRDS(m, "Results/hmm-top-model-2023-02-15.Rds")
+# m <- readRDS("Results/hmm-top-model-2023-02-15.Rds") # to read back in
 
 
 # Export movement data with predicted states ------------------------------
@@ -65,4 +65,4 @@ names(state_probs) <- c("Stationary_Prob", "Walking_Prob", "Driving_Prob")
 data_hmm <- cbind(data_hmm, state_probs)
 
 # Write file
-write.csv(data_hmm, "Results/hmm-data-with-model-predictions-2022-12-05.csv", row.names = FALSE)
+write.csv(data_hmm, "Results/hmm-top-model-2023-02-15.csv", row.names = FALSE)
