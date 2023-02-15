@@ -8,7 +8,7 @@ library(sf)
 library(suncalc)
 
 # import all data and join into single dataframe
-igotu_file_names <- list.files(path = "Data/Hunting/igotu_raw_2019_2020_cleaner/",
+igotu_file_names <- list.files(path = "Data/Hunting/igotu_raw_2019_2022_cleaner/",
                                pattern = "*.csv", full.names = TRUE, recursive = TRUE) 
 
 # read all individual csvs into a list
@@ -25,12 +25,12 @@ igotu_data_all <- igotu_raw %>%
     mutate(DateTime = as.POSIXct(paste(Date, Time, sep = ""), 
                                  "%m/%d/%y %H:%M:%S",
                                  tz = "America/Los_Angeles"),
-           ID = str_replace(FileName, "Data/Hunting/igotu_raw_2019_2020_cleaner//", ""),
+           ID = str_replace(FileName, "Data/Hunting/igotu_raw_2019_2022_cleaner//", ""),
            ID = str_replace(ID, ".csv", "")) %>% 
     select(-c(FileName, Altitude, Speed, Distance, Essential, Course, Type))
 
 # add the metadata
-metadata <- read.csv(here::here("Data/Hunting/igotu_metadata_2019_2020_28Nov2022.csv")) %>% 
+metadata <- read.csv(here::here("Data/Hunting/igotu_metadata_2019_2022_29Jan2023.csv")) %>% 
     mutate(Start_time = paste0(Start_time, ":00"),
            End_time = paste0(End_time, ":00"),
            Date = as.Date(Date, format = "%m/%d/%y"))
