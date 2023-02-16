@@ -11,7 +11,7 @@ library(forcats)
 `%notin%` <- Negate(`%in%`)
 
 # Bring in model results
-data_hmm <- read.csv("Results/hmm-data-with-model-predictions-annotated-2022-12-19.csv") 
+data_hmm <- read.csv("Results/hmm-data-with-model-predictions-annotated-2023-02-15.csv") 
 
 # Separate time into its own row
 data_hmm <- separate(data = data_hmm, 
@@ -25,7 +25,7 @@ metadata_raw <- read.csv("Data/Hunting/igotu_metadata_times_cleaned_28Nov2022.cs
 metadata <- metadata_raw %>% 
     filter(Harvest == "Y") %>% 
     dplyr::select(ID, Harvest_time)
-metadata_raw2 <- read.csv("Data/Hunting/igotu_metadata_2019_2020_28Nov2022.csv") 
+metadata_raw2 <- read.csv("Data/Hunting/igotu_metadata_2019_2022_29Jan2023.csv") 
 metadata2 <- metadata_raw2 %>% 
     filter(Harvest == "Y") %>% 
     dplyr::select(ID, Harvest_time)
@@ -102,17 +102,17 @@ available <- read.csv("Data/all-available-point-cov.csv") %>%
 
 # Join used and available together, scale covariates
 used_avail <- dplyr::bind_rows(available, data_hmm) %>% 
-    dplyr::select(ID, Ruggedness, Viewshed, Road_Distance, Chaparral_120m, Woodland_120m, HQ_Distance, Habitat,
+    dplyr::select(ID, Ruggedness, Viewshed, Road_Distance, Chaparral_120m, Grassland_120m, HQ_Distance, Habitat,
                   Used, Cluster4, Harvest, HourHarvest, state, state_2stationary) %>% 
     dplyr::mutate(Habitat = fct_recode(as.factor(Habitat), 
                                 Shrubland = "1",
-                                Woodland = "2",
+                                Grassland = "2",
                                 Grassland = "3"),
                   Ruggedness_scale = scale(Ruggedness),
                   Viewshed_scale = scale(Viewshed),
                   Road_Distance_scale = scale(Road_Distance),
                   Chaparral_120m_scale = scale(Chaparral_120m),
-                  Woodland_120m_scale = scale(Woodland_120m),
+                  Grassland_120m_scale = scale(Grassland_120m),
                   HQ_Distance_scale = scale(HQ_Distance))
 
 # Subset by hunting mode & time in relation to harvest
@@ -135,22 +135,22 @@ used_avail_waiters_othertime <- used_avail %>%
     dplyr::filter((Cluster4 != "Walkers" & Cluster4 != "Drivers") | Used == 0) %>% 
     dplyr::filter(HourHarvest == "OtherTime" | Used == 0)
 
-fit_drivers_hourbefore <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale,
+fit_drivers_hourbefore <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Grassland_120m_scale,
                            data = used_avail_drivers_hourbefore,
                            family = binomial) # causing problems with convergence when road is included
-fit_walkers_hourbefore <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+fit_walkers_hourbefore <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Grassland_120m_scale + Road_Distance_scale,
                            data = used_avail_walkers_hourbefore,
                            family = binomial) 
-fit_waiters_hourbefore <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+fit_waiters_hourbefore <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Grassland_120m_scale + Road_Distance_scale,
                            data = used_avail_waiters_hourbefore,
                            family = binomial) 
-fit_drivers_othertime <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+fit_drivers_othertime <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Grassland_120m_scale + Road_Distance_scale,
                              data = used_avail_drivers_othertime,
                              family = binomial) 
-fit_walkers_othertime <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+fit_walkers_othertime <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Grassland_120m_scale + Road_Distance_scale,
                              data = used_avail_walkers_othertime,
                              family = binomial) 
-fit_waiters_othertime <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+fit_waiters_othertime <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Grassland_120m_scale + Road_Distance_scale,
                              data = used_avail_waiters_othertime,
                              family = binomial) 
 
