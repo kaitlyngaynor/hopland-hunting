@@ -1,7 +1,7 @@
 library(dplyr)
 
 metadata1 <- read.csv("Data/Hunting/igotu_metadata_times_cleaned_28Nov2022.csv")
-metadata2 <- read.csv("Data/Hunting/igotu_metadata_2019_2020_28Nov2022.csv")
+metadata2 <- read.csv("Data/Hunting/igotu_metadata_2019_2020_29Jan2023.csv")
 
 metadata <- bind_rows(metadata1, metadata2)
 
