@@ -46,7 +46,7 @@ igotu_data_fewer <- igotu_data_covariates %>%
                   rugged9.clean, view,
                   vegetation.coarser.clean2, 
                   road.dist.clean,
-                  layer.1, layer.4,
+                  layer.1, layer.2, layer.4,
                   hq_dist,
                   Elapsed_Time_Sunrise, Harvest) %>% 
     dplyr::rename(Viewshed = view,
@@ -54,6 +54,7 @@ igotu_data_fewer <- igotu_data_covariates %>%
                   Habitat = vegetation.coarser.clean2,
                   Road_Distance = road.dist.clean,
                   Chaparral_120m = layer.1,
+                  Grassland_120m = layer.2,
                   Woodland_120m = layer.4,
                   HQ_Distance = hq_dist)
 
