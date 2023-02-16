@@ -7,7 +7,7 @@ library(sjPlot)
 
 # Import data -------------------------------------------------------------
 
-data_hmm <- read.csv("Results/hmm-data-with-model-predictions-annotated-2022-12-19.csv")
+data_hmm <- read.csv("Results/hmm-data-with-model-predictions-annotated-2023-02-15.csv")
 
 # Calculate time spent in states across hunters -----------------------------
 
@@ -85,27 +85,18 @@ set.seed(321)
 k3 <- kmeans(as.matrix(hunter_percentages_noID), centers = 3, nstart = 25)
 k3
 
-# K-means clustering with 3 clusters of sizes 122, 113, 192
+# K-means clustering with 3 clusters of sizes 145, 135, 203
 # 
 # Cluster means:
 #     Stationary_pct Walking_pct Driving_pct
-# 1      0.5195945   0.1675685   0.3128369 # WAITERS
-# 2      0.2730276   0.4427382   0.2842342 # WALKERS
-# 3      0.2004715   0.1955191   0.6040094 # DRIVERS
+# 1      0.2716043   0.4310003   0.2973954 # WALKERS
+# 2      0.5160306   0.1700541   0.3139152 # WAITERS
+# 3      0.1890853   0.1877691   0.6231456 # DRIVERS
 
-# Make dataframe manually for plotting
-cluster_times1 <- data.frame(Mode = c("Waiters", "Walkers", "Drivers"),
-                            Stationary = c(0.5195945, 0.2730276, 0.2004715),
-                            Walking_pct = c(0.1675685, 0.4427382, 0.1955191),
-                            Driving_pct = c(0.3128369, 0.2842342, 0.6040094)) %>% 
-    tidyr::pivot_longer(cols = -Mode, names_to = "State", values_to = "Percent_time")
-ggplot(cluster_times1, aes(x = Mode, y = Percent_time, fill = State)) +
-    geom_bar(stat = "identity") +
-    theme_bw()
 
 # Assign cluster to each point
 hunter_percentages$Cluster = factor(k3$cluster)
-levels(hunter_percentages$Cluster) <- c("Waiters", "Walkers", "Drivers") # change factor level names
+levels(hunter_percentages$Cluster) <- c("Walkers", "Waiters", "Drivers") # change factor level names
 
 # Join assigned clusters with long data also
 hunter_percentages_long <- dplyr::left_join(hunter_percentages_long,
@@ -115,22 +106,24 @@ hunter_percentages_long <- dplyr::left_join(hunter_percentages_long,
 # Do that for the 4-states
 k3_4state <- kmeans(as.matrix(hunter_percentages_noID_4state), centers = 3, nstart = 25)
 k3_4state
-# K-means clustering with 3 clusters of sizes 227, 111, 89
+
+# K-means clustering with 3 clusters of sizes 149, 94, 240
 # 
 # Cluster means:
 #     Stationary_offroad_pct Stationary_road_pct Walking_pct Driving_pct
-# 1             0.08984035           0.1472511   0.1854634   0.5774451
-# 2             0.15772224           0.1065848   0.4450873   0.2906057
-# 3             0.37255626           0.1844699   0.1854782   0.2574955
+# 1              0.1429111           0.1137739   0.4226213   0.3206938 # Walkers
+# 2              0.3919537           0.1629287   0.2093264   0.2357912 # Waiters
+# 3              0.0889380           0.1486706   0.1705093   0.5918820 # Drivers
+
 hunter_percentages_4state$Cluster4 = factor(k3_4state$cluster)
-levels(hunter_percentages_4state$Cluster4) <- c("Drivers", "Walkers", "Waiters") # change factor level names
+levels(hunter_percentages_4state$Cluster4) <- c("Walkers", "Waiters", "Drivers") # change factor level names
 
 # Make dataframe manually for plotting
-cluster_times <- data.frame(Mode = c("Drivers", "Walkers", "Waiters"),
-                            Stationary_offroad = c(0.08984035, 0.15772224, 0.37255626),
-                            Stationary_road = c(0.1472511, 0.1065848, 0.1844699),
-                            Walking_pct = c(0.1854634, 0.4450873, 0.1854782),
-                            Driving_pct = c(0.5774451, 0.2906057, 0.2574955)) %>% 
+cluster_times <- data.frame(Mode = c("Walkers", "Waiters", "Drivers"),
+                            Stationary_offroad = c(0.1429111, 0.3919537, 0.0889380),
+                            Stationary_road = c(0.1137739, 0.1629287, 0.1486706),
+                            Walking_pct = c(0.4226213, 0.2093264, 0.1705093),
+                            Driving_pct = c(0.3206938, 0.2357912, 0.5918820)) %>% 
     tidyr::pivot_longer(cols = -Mode, names_to = "State", values_to = "Percent_time")
 ggplot(cluster_times, aes(x = Mode, y = Percent_time, fill = State)) +
     geom_bar(stat = "identity") +
@@ -144,15 +137,15 @@ hunter_percentages_long_4state <- dplyr::left_join(hunter_percentages_long_4stat
 # Look at correlations between clusters
 hunter_percentages_all <- dplyr::left_join(hunter_percentages, hunter_percentages_4state)
 different <- dplyr::filter(hunter_percentages_all, Cluster != Cluster4)
-nrow(different) # 49 of the 427 changed cluster
+nrow(different) # 75 of the 483 changed cluster
 count(different, Cluster, Cluster4)
 # Cluster Cluster4     n
 # <fct>   <fct>    <int>
-#     1 Waiters Drivers     35
-#     2 Waiters Walkers      2
-#     3 Walkers Drivers      4
-#     4 Walkers Waiters      4
-#     5 Drivers Walkers      4
+#     1 Walkers Waiters     11
+# 2 Walkers Drivers      3
+# 3 Waiters Walkers      9
+# 4 Waiters Drivers     43
+# 5 Drivers Walkers      9
 
 # Examine success rates ---------------------------------------------------
 

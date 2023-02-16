@@ -22,7 +22,7 @@ data_hmm <- data_hmm %>%
     filter(step < 1.207008)
 
 # How many removed?
-nrow(igotu_data) - nrow(data_hmm) # 
+nrow(igotu_data) - nrow(data_hmm) # 2430
 
 # Scale covariates
 data_hmm$Ruggedness_scale <- scale(data_hmm$Ruggedness)
