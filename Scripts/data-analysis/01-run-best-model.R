@@ -29,7 +29,7 @@ data_hmm$Ruggedness_scale <- scale(data_hmm$Ruggedness)
 data_hmm$Viewshed_scale <- scale(data_hmm$Viewshed)
 data_hmm$Road_Distance_scale <- scale(data_hmm$Road_Distance)
 data_hmm$Chaparral_120m_scale <- scale(data_hmm$Chaparral_120m)
-data_hmm$Woodland_120m_scale <- scale(data_hmm$Woodland_120m)
+data_hmm$Grassland_120m_scale <- scale(data_hmm$Grassland_120m)
 data_hmm$Sunrise_Scale <- scale(data_hmm$Elapsed_Time_Sunrise)
 
 # Set initial parameters (determined by 04b-hmm-3state-parameter-select.Rmd)
@@ -47,7 +47,7 @@ anglePar0_3state <- c(angleMean0_3state,kappa0_3state)
 # see vignette https://cran.r-project.org/web/packages/moveHMM/vignettes/moveHMM-guide.pdf
 # run full model
 m <- moveHMM::fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
-                   formula = ~Road_Distance_scale + Viewshed_scale + Woodland_120m_scale + Ruggedness_scale + Chaparral_120m_scale + Elapsed_Time_Sunrise)
+                   formula = ~Road_Distance_scale + Viewshed_scale + Grassland_120m_scale + Ruggedness_scale + Chaparral_120m_scale + Elapsed_Time_Sunrise)
 
 saveRDS(m, "Results/hmm-top-model-2023-02-15.Rds")
 # m <- readRDS("Results/hmm-top-model-2023-02-15.Rds") # to read back in
