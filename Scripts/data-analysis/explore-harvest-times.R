@@ -7,7 +7,7 @@ success <- read.csv("Results/hunters_by_cluster_with_success.csv") %>%
 
 # Bring in metadata
 metadata1 <- read.csv("Data/Hunting/igotu_metadata_times_cleaned_28Nov2022.csv")
-metadata2 <- read.csv("Data/Hunting/igotu_metadata_2019_2020_29Jan2023.csv")
+metadata2 <- read.csv("Data/Hunting/igotu_metadata_2019_2022_29Jan2023.csv")
 metadata <- bind_rows(metadata1, metadata2)
 success <- left_join(success, metadata)
 
