@@ -89,9 +89,9 @@ k3
 # 
 # Cluster means:
 #     Stationary_pct Walking_pct Driving_pct
-# 1      0.2716043   0.4310003   0.2973954 # WALKERS
-# 2      0.5160306   0.1700541   0.3139152 # WAITERS
-# 3      0.1890853   0.1877691   0.6231456 # DRIVERS
+# 1      0.2717603   0.4306191   0.2976206 # WALKERS
+# 2      0.5160010   0.1702030   0.3137960 # WAITERS
+# 3      0.1889848   0.1877314   0.6232838 # DRIVERS
 
 
 # Assign cluster to each point
@@ -107,23 +107,24 @@ hunter_percentages_long <- dplyr::left_join(hunter_percentages_long,
 k3_4state <- kmeans(as.matrix(hunter_percentages_noID_4state), centers = 3, nstart = 25)
 k3_4state
 
-# K-means clustering with 3 clusters of sizes 149, 94, 240
-# 
+# K-means clustering with 3 clusters of sizes 94, 149, 240
+#
 # Cluster means:
 #     Stationary_offroad_pct Stationary_road_pct Walking_pct Driving_pct
-# 1              0.1429111           0.1137739   0.4226213   0.3206938 # Walkers
-# 2              0.3919537           0.1629287   0.2093264   0.2357912 # Waiters
-# 3              0.0889380           0.1486706   0.1705093   0.5918820 # Drivers
+# 1             0.39206900           0.1628040   0.2092473   0.2358797 # WAITERS
+# 2             0.14294515           0.1138345   0.4223284   0.3208920 # WALKERS
+# 3             0.08891252           0.1486336   0.1705436   0.5919102 # DRIVERS
+
 
 hunter_percentages_4state$Cluster4 = factor(k3_4state$cluster)
-levels(hunter_percentages_4state$Cluster4) <- c("Walkers", "Waiters", "Drivers") # change factor level names
+levels(hunter_percentages_4state$Cluster4) <- c("Waiters", "Walkers", "Drivers") # change factor level names
 
 # Make dataframe manually for plotting
 cluster_times <- data.frame(Mode = c("Walkers", "Waiters", "Drivers"),
-                            Stationary_offroad = c(0.1429111, 0.3919537, 0.0889380),
-                            Stationary_road = c(0.1137739, 0.1629287, 0.1486706),
-                            Walking_pct = c(0.4226213, 0.2093264, 0.1705093),
-                            Driving_pct = c(0.3206938, 0.2357912, 0.5918820)) %>% 
+                            Stationary_offroad = c(0.39206900, 0.14294515, 0.08891252),
+                            Stationary_road = c(0.1628040, 0.1138345, 0.1486336),
+                            Walking_pct = c(0.2092473, 0.4223284, 0.1705436),
+                            Driving_pct = c(0.2358797, 0.3208920, 0.5919102)) %>% 
     tidyr::pivot_longer(cols = -Mode, names_to = "State", values_to = "Percent_time")
 ggplot(cluster_times, aes(x = Mode, y = Percent_time, fill = State)) +
     geom_bar(stat = "identity") +
