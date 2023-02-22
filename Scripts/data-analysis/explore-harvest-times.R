@@ -52,7 +52,7 @@ success %>%
     theme_bw() +
     scale_fill_manual(values = c("#1b9e77", "#d95f02", "#7570b3"))
 
-set.seed(23)
+set.seed(678)
 success %>% 
     dplyr::filter(Harvest == "Y") %>%
     ggplot(aes(x = Sunrise_elapsed_min/60, y = Cluster4, col = Cluster4)) +
@@ -62,6 +62,21 @@ success %>%
     xlab("Time From Sunrise (hours)") +
     theme(legend.position = "none") +
     scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3"))
+
+# Density plot with jittered points
+success %>% 
+    dplyr::filter(Harvest == "Y") %>%
+    ggplot(aes(x = Sunrise_elapsed_min/60, fill = Cluster4)) +
+    geom_density(alpha = 0.75) +
+    theme_bw() +
+    facet_wrap(~Cluster4, ncol = 1) +
+    ylab("Density") +
+    xlab("Time From Sunrise (hours)") +
+    theme(legend.position = "none") +
+    geom_jitter(data = success, aes(x = Sunrise_elapsed_min/60, y = -0.0125, col = Cluster4), width = 0.25, height = 0, alpha = 0.5, size = 2) +
+    scale_fill_manual(values = c("#1b9e77", "#d95f02", "#7570b3")) +
+    scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3"))
+
 
 # See if time of day varies by hunting mode
 fit <- aov(Sunrise_elapsed_min_scale ~ Cluster4, data = success)
