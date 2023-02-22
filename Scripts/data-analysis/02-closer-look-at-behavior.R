@@ -1,7 +1,7 @@
 library(dplyr)
 library(ggplot2)
 
-data_hmm <- read.csv("Results/hmm-top-model-2023-02-15.csv")
+data_hmm <- read.csv("Results/hmm-top-model-2023-02-17.csv")
 head(data_hmm)
 
 
@@ -87,10 +87,10 @@ bout_counts <- hmm_bouts %>%
 mean_bouts_wide <- dplyr::left_join(mean_bouts_wide, bout_counts)
 
 # Export behavioral states with extra column, bout length
-write.csv(data_hmm, "Results/hmm-data-with-model-predictions-annotated-2023-02-15.csv", row.names = FALSE)
+write.csv(data_hmm, "Results/hmm-data-with-model-predictions-annotated-2023-02-17.csv", row.names = FALSE)
 
 # Export bouts
-write.csv(hmm_bouts, "Results/hmm-modeled-activity-bouts-2023-02-15.csv")
+write.csv(hmm_bouts, "Results/hmm-modeled-activity-bouts-2023-02-17.csv")
 
 # Export long bounts
-write.csv(mean_bouts_wide, "Results/ID-mean-bout-length-2023-02-15.csv", row.names = F)
+write.csv(mean_bouts_wide, "Results/ID-mean-bout-length-2023-02-17.csv", row.names = F)

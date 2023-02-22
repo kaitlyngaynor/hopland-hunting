@@ -4,7 +4,7 @@ library(jtools)
 # Bring in datasets
 available <- read.csv("Data/all-available-point-cov.csv")
 available$Used <- 0
-used <- read.csv("Results/hmm-data-with-model-predictions-annotated-2023-02-15.csv")
+used <- read.csv("Results/hmm-data-with-model-predictions-annotated-2023-02-17.csv")
 used$Used <- 1
 
 head(available)
@@ -12,13 +12,13 @@ head(used)
 
 # Join into single dataframe and scale covariates
 used_avail <- dplyr::bind_rows(used, available) %>% 
-    dplyr::select(ID, Ruggedness, Viewshed, Road_Distance, Chaparral_120m, Grassland_120m, HQ_Distance,
+    dplyr::select(ID, Ruggedness, Viewshed, Road_Distance, Chaparral_120m, Woodland_120m, HQ_Distance,
                   Used, Harvest, state, state_2stationary) %>% 
     dplyr::mutate(Ruggedness_scale = scale(Ruggedness),
                   Viewshed_scale = scale(Viewshed),
                   Road_Distance_scale = scale(Road_Distance),
                   Chaparral_120m_scale = scale(Chaparral_120m),
-                  Grassland_120m_scale = scale(Grassland_120m),
+                  Woodland_120m_scale = scale(Woodland_120m),
                   HQ_Distance_scale = scale(HQ_Distance))
 
 # Split used by behavior (retain all available)
@@ -35,28 +35,28 @@ used_avail_stationary_offroad <- used_avail %>%
 
 # Run separate RSF for each behavioral state
 # Explored dredging full model - the full model is best
-fit_stat <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Grassland_120m_scale,
+fit_stat <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale,
                     data = used_avail_stationary,
                     family = binomial) 
-fit_stat_road <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Grassland_120m_scale,
+fit_stat_road <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale,
                 data = used_avail_stationary_road,
                 family = binomial) # can't use road in this, doesn't converge
-fit_stat_offroad <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Grassland_120m_scale,
+fit_stat_offroad <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale,
                 data = used_avail_stationary_offroad,
                 family = binomial) 
-fit_walk <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Grassland_120m_scale,
+fit_walk <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale,
                     data = used_avail_walking,
                     family = binomial) 
-fit_driv <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Grassland_120m_scale,
+fit_driv <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale,
                     data = used_avail_driving,
                     family = binomial) 
 # getting message that fitted probabilities equal to 0 or 1 occurred - likely because driving is SO tied to roads. model not converging
-fit_driv <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Grassland_120m_scale,
+fit_driv <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale,
                 data = used_avail_driving,
                 family = binomial) # version without road distance in it (but seems inappropriate)
 
 # Run one RSF for all combined
-fit_all <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Grassland_120m_scale,
+fit_all <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale,
                 data = used_avail,
                 family = binomial) 
 
@@ -79,10 +79,10 @@ jtools::plot_summs(fit_stat_offroad, fit_stat_road, fit_walk, fit_driv, fit_all,
 used_avail_success <- used_avail %>% dplyr::filter(Harvest == "Y" | Used == 0)
 used_avail_unsuccess <- used_avail %>% dplyr::filter(Harvest == "N" | Used == 0)
 
-fit_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Grassland_120m_scale + Road_Distance_scale,
+fit_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
                data = used_avail_success,
                family = binomial) 
-fit_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Grassland_120m_scale + Road_Distance_scale,
+fit_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
                    data = used_avail_unsuccess,
                    family = binomial) 
 jtools::plot_summs(fit_success, fit_unsuccess,
@@ -103,13 +103,13 @@ used_avail_walkers <- used_avail %>%
 used_avail_waiters <- used_avail %>% 
     dplyr::filter((Cluster4 != "Walkers" & Cluster4 != "Drivers") | Used == 0)
 
-fit_drivers <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Grassland_120m_scale + Road_Distance_scale,
+fit_drivers <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
                      data = used_avail_drivers,
                      family = binomial) 
-fit_walkers <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Grassland_120m_scale + Road_Distance_scale,
+fit_walkers <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
                    data = used_avail_walkers,
                    family = binomial) 
-fit_waiters <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Grassland_120m_scale + Road_Distance_scale,
+fit_waiters <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
                    data = used_avail_waiters,
                    family = binomial) 
 
@@ -126,22 +126,22 @@ used_avail_drivers_unsuccess <- used_avail_drivers %>% dplyr::filter(Harvest == 
 used_avail_walkers_unsuccess <- used_avail_walkers %>% dplyr::filter(Harvest == "N" | Used == 0)
 used_avail_waiters_unsuccess <- used_avail_waiters %>% dplyr::filter(Harvest == "N" | Used == 0)
 
-fit_drivers_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Grassland_120m_scale + Road_Distance_scale,
+fit_drivers_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
                    data = used_avail_drivers_success,
                    family = binomial) 
-fit_walkers_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Grassland_120m_scale + Road_Distance_scale,
+fit_walkers_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
                    data = used_avail_walkers_success,
                    family = binomial) 
-fit_waiters_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Grassland_120m_scale + Road_Distance_scale,
+fit_waiters_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
                    data = used_avail_waiters_success,
                    family = binomial) 
-fit_drivers_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Grassland_120m_scale + Road_Distance_scale,
+fit_drivers_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
                            data = used_avail_drivers_unsuccess,
                            family = binomial) 
-fit_walkers_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Grassland_120m_scale + Road_Distance_scale,
+fit_walkers_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
                            data = used_avail_walkers_unsuccess,
                            family = binomial) 
-fit_waiters_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Grassland_120m_scale + Road_Distance_scale,
+fit_waiters_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
                            data = used_avail_waiters_unsuccess,
                            family = binomial) 
 
@@ -165,7 +165,7 @@ drivers_success_ci <- confint(fit_drivers_success) %>%
     tibble::rownames_to_column("Predictor") %>% 
     dplyr::rename("LCI" = "2.5 %", "UCI" = "97.5 %")
 drivers_success_results <- dplyr::left_join(drivers_success_coef, drivers_success_ci) %>% 
-    dplyr::mutate(Predictor = c("Intercept", "Ruggedness", "Viewshed", "Chaparral", "Grassland", "Road Distance"),
+    dplyr::mutate(Predictor = c("Intercept", "Ruggedness", "Viewshed", "Chaparral", "Woodland", "Road Distance"),
                   `Hunting Mode` = "Drivers",
                   Harvest = "Yes",
                   Model = paste(`Hunting Mode`, Harvest, sep = "_"))
@@ -180,7 +180,7 @@ drivers_unsuccess_ci <- confint(fit_drivers_unsuccess) %>%
     tibble::rownames_to_column("Predictor") %>% 
     dplyr::rename("LCI" = "2.5 %", "UCI" = "97.5 %")
 drivers_unsuccess_results <- dplyr::left_join(drivers_unsuccess_coef, drivers_unsuccess_ci) %>% 
-    dplyr::mutate(Predictor = c("Intercept", "Ruggedness", "Viewshed", "Chaparral", "Grassland", "Road Distance"),
+    dplyr::mutate(Predictor = c("Intercept", "Ruggedness", "Viewshed", "Chaparral", "Woodland", "Road Distance"),
                   `Hunting Mode` = "Drivers",
                   Harvest = "No",
                   Model = paste(`Hunting Mode`, Harvest, sep = "_"))
@@ -195,7 +195,7 @@ walkers_success_ci <- confint(fit_walkers_success) %>%
     tibble::rownames_to_column("Predictor") %>% 
     dplyr::rename("LCI" = "2.5 %", "UCI" = "97.5 %")
 walkers_success_results <- dplyr::left_join(walkers_success_coef, walkers_success_ci) %>% 
-    dplyr::mutate(Predictor = c("Intercept", "Ruggedness", "Viewshed", "Chaparral", "Grassland", "Road Distance"),
+    dplyr::mutate(Predictor = c("Intercept", "Ruggedness", "Viewshed", "Chaparral", "Woodland", "Road Distance"),
                   `Hunting Mode` = "Walkers",
                   Harvest = "Yes",
                   Model = paste(`Hunting Mode`, Harvest, sep = "_"))
@@ -210,7 +210,7 @@ walkers_unsuccess_ci <- confint(fit_walkers_unsuccess) %>%
     tibble::rownames_to_column("Predictor") %>% 
     dplyr::rename("LCI" = "2.5 %", "UCI" = "97.5 %")
 walkers_unsuccess_results <- dplyr::left_join(walkers_unsuccess_coef, walkers_unsuccess_ci) %>% 
-    dplyr::mutate(Predictor = c("Intercept", "Ruggedness", "Viewshed", "Chaparral", "Grassland", "Road Distance"),
+    dplyr::mutate(Predictor = c("Intercept", "Ruggedness", "Viewshed", "Chaparral", "Woodland", "Road Distance"),
                   `Hunting Mode` = "Walkers",
                   Harvest = "No",
                   Model = paste(`Hunting Mode`, Harvest, sep = "_"))
@@ -225,7 +225,7 @@ waiters_success_ci <- confint(fit_waiters_success) %>%
     tibble::rownames_to_column("Predictor") %>% 
     dplyr::rename("LCI" = "2.5 %", "UCI" = "97.5 %")
 waiters_success_results <- dplyr::left_join(waiters_success_coef, waiters_success_ci) %>% 
-    dplyr::mutate(Predictor = c("Intercept", "Ruggedness", "Viewshed", "Chaparral", "Grassland", "Road Distance"),
+    dplyr::mutate(Predictor = c("Intercept", "Ruggedness", "Viewshed", "Chaparral", "Woodland", "Road Distance"),
                   `Hunting Mode` = "Waiters",
                   Harvest = "Yes",
                   Model = paste(`Hunting Mode`, Harvest, sep = "_"))
@@ -240,7 +240,7 @@ waiters_unsuccess_ci <- confint(fit_waiters_unsuccess) %>%
     tibble::rownames_to_column("Predictor") %>% 
     dplyr::rename("LCI" = "2.5 %", "UCI" = "97.5 %")
 waiters_unsuccess_results <- dplyr::left_join(waiters_unsuccess_coef, waiters_unsuccess_ci) %>% 
-    dplyr::mutate(Predictor = c("Intercept", "Ruggedness", "Viewshed", "Chaparral", "Grassland", "Road Distance"),
+    dplyr::mutate(Predictor = c("Intercept", "Ruggedness", "Viewshed", "Chaparral", "Woodland", "Road Distance"),
                   `Hunting Mode` = "Waiters",
                   Harvest = "No",
                   Model = paste(`Hunting Mode`, Harvest, sep = "_"))

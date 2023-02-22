@@ -29,7 +29,7 @@ all_rsf_results %>%
     ) +
     coord_flip() + # switch x and y coordinates
     ylab("Coefficient") +
-    ylim(-1.25, 0.5) +
+    ylim(-0.75, 0.3) +
     scale_shape_manual(values=c(1, 19))+
     scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3"),
                        guide = guide_legend(reverse = TRUE)) +
@@ -86,7 +86,7 @@ shift_legend2 <- function(p) {
 }
 
 plot <- all_rsf_results %>% 
-    ggplot(aes(x = Predictor, y = Coefficient, col = Hunting_Mode, shape = Harvest, group = Hunting_Mode)) + 
+    ggplot(aes(x = Predictor, y = Coefficient, col = `Hunting Mode`, shape = Harvest, group = Hunting_Mode)) + 
     geom_hline(aes(yintercept = 0), linetype="dashed", size = 0.5, color = "darkgrey") +
     geom_errorbar(aes(ymin = LCI, ymax = UCI), width=0, position = position_dodge(width = 1), alpha=.4) +
     geom_point(position = position_dodge(width = 1), size = 3) +
