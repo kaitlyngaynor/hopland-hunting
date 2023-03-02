@@ -22,28 +22,25 @@ library(ggplot2)
 Load data & remove outliers.
 ```{r}
 # Load cleaned data
-igotu_data <- read.csv("Data/igotu_data_3min_covariates.csv")
+igotu_data <- vroom::vroom("Data/igotu_data_3min_covariates.csv")
 
-# Select columns of interest
-igotu_data_fewer <- igotu_data %>% 
-    dplyr::select(ID, Party_ID, Longitude, Latitude, DateTime,
-                  rugged49.clean, rugged25.clean, rugged9.clean,
-                  hq_dist, vegetation.coarser.clean2, view,
-                  veg.edges.dist.clean, road.dist.clean,
-                  grass_120m, chap_120m, wood_120m)
-
-# prep data for HMM
-data_hmm <- moveHMM::prepData(igotu_data_fewer, 
+# Prep data for HMM
+data_hmm <- moveHMM::prepData(igotu_data, 
                               type="LL", 
                               coordNames=c("Longitude","Latitude"))
 
-# remove 300 step lengths of 'NA'
+# Filter out all NA steps & steps > 15mph
 data_hmm <- data_hmm %>% 
-    drop_na(step) 
-
-# filter out all steps > 15mph
-data_hmm <- data_hmm %>% 
+    tidyr::drop_na(step) %>% 
     filter(step < 1.207008)
+
+# Scale covariates
+data_hmm$Ruggedness_scale <- scale(data_hmm$Ruggedness)
+data_hmm$Viewshed_scale <- scale(data_hmm$Viewshed)
+data_hmm$Road_Distance_scale <- scale(data_hmm$Road_Distance)
+data_hmm$Chaparral_120m_scale <- scale(data_hmm$Chaparral_120m)
+data_hmm$Woodland_120m_scale <- scale(data_hmm$Woodland_120m)
+data_hmm$Sunrise_Scale <- scale(data_hmm$Elapsed_Time_Sunrise)
 ```
 
 Look at step lengths and turn angles.
@@ -90,7 +87,7 @@ allPar0 <- lapply(as.list(1:niter), function(x) {
     return(list(step = stepPar0, angle = anglePar0))
 })
 # Fit the niter models in parallel
-allm_parallel <- parLapply(cl = cl, X = allPar0, fun = function(par0) { m <- fitHMM(data = data_hmm, nbStates = 3, stepPar0 = par0$step, anglePar0 = par0$angle)
+allm_parallel <- parLapply(cl = cl, X = allPar0, fun = function(par0) { m <- fitHMM(data = data_hmm, nbStates = 3, stepPar0 = par0$step, anglePar0 = par0$angle, formula = ~Road_Distance_scale + Viewshed_scale + Woodland_120m_scale + Ruggedness_scale + Chaparral_120m_scale + Elapsed_Time_Sunrise)
 return(m) })
 
 # Extract likelihoods of fitted models
