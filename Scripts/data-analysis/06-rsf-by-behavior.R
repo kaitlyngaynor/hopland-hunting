@@ -21,81 +21,12 @@ used_avail <- dplyr::bind_rows(used, available) %>%
                   Woodland_120m_scale = scale(Woodland_120m),
                   HQ_Distance_scale = scale(HQ_Distance))
 
-# Split used by behavior (retain all available)
-used_avail_stationary <- used_avail %>% 
-    dplyr::filter((state != "Walking" & state != "Driving") | Used == 0)
-used_avail_walking <- used_avail %>% 
-    dplyr::filter((state != "Stationary" & state != "Driving") | Used == 0)
-used_avail_driving <- used_avail %>% 
-    dplyr::filter((state != "Stationary" & state != "Walking") | Used == 0)
-used_avail_stationary_road <- used_avail %>% 
-    dplyr::filter((state_2stationary != "Driving" & state_2stationary != "Walking" & state_2stationary != "Stationary_offroad") | Used == 0)
-used_avail_stationary_offroad <- used_avail %>% 
-    dplyr::filter((state_2stationary != "Driving" & state_2stationary != "Walking" & state_2stationary != "Stationary_road") | Used == 0)
-
-# Run separate RSF for each behavioral state
-# Explored dredging full model - the full model is best
-fit_stat <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale,
-                    data = used_avail_stationary,
-                    family = binomial) 
-fit_stat_road <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale,
-                data = used_avail_stationary_road,
-                family = binomial) # can't use road in this, doesn't converge
-fit_stat_offroad <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale,
-                data = used_avail_stationary_offroad,
-                family = binomial) 
-fit_walk <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale,
-                    data = used_avail_walking,
-                    family = binomial) 
-fit_driv <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale,
-                    data = used_avail_driving,
-                    family = binomial) 
-# getting message that fitted probabilities equal to 0 or 1 occurred - likely because driving is SO tied to roads. model not converging
-fit_driv <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale,
-                data = used_avail_driving,
-                family = binomial) # version without road distance in it (but seems inappropriate)
-
-# Run one RSF for all combined
-fit_all <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Road_Distance_scale + Chaparral_120m_scale + Woodland_120m_scale,
-                data = used_avail,
-                family = binomial) 
-
-summary(fit_stat)
-summary(fit_stat_road)
-summary(fit_stat_offroad)
-summary(fit_walk)
-summary(fit_driv)
-summary(fit_all)
-
-# Plot the estimates
-jtools::plot_summs(fit_stat_offroad, fit_stat_road, fit_walk, fit_driv, fit_all,
-                   model.names = c("Stationary (Offroad only)", "Stationary (Road)", "Walking", "Driving", "All states"))
-
-
-
-# RSF by success ----------------------------------------------------------
-
-# Split used by success (retain all available)
-used_avail_success <- used_avail %>% dplyr::filter(Harvest == "Y" | Used == 0)
-used_avail_unsuccess <- used_avail %>% dplyr::filter(Harvest == "N" | Used == 0)
-
-fit_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
-               data = used_avail_success,
-               family = binomial) 
-fit_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
-                   data = used_avail_unsuccess,
-                   family = binomial) 
-jtools::plot_summs(fit_success, fit_unsuccess,
-                   model.names = c("Successful", "Unsuccessful"))
-
-
-# RSF by hunting mode -----------------------------------------
-
 # bring in clusters
 clusters <- read.csv("Results/hunters_by_cluster_with_success.csv") %>% 
     dplyr::select(ID, Cluster4)
 used_avail <- dplyr::left_join(used_avail, clusters)
 
+# Split by cluster
 used_avail_drivers <- used_avail %>% 
     dplyr::filter((Cluster4 != "Walkers" & Cluster4 != "Waiters") | Used == 0)
 used_avail_walkers <- used_avail %>% 
@@ -103,22 +34,7 @@ used_avail_walkers <- used_avail %>%
 used_avail_waiters <- used_avail %>% 
     dplyr::filter((Cluster4 != "Walkers" & Cluster4 != "Drivers") | Used == 0)
 
-fit_drivers <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
-                     data = used_avail_drivers,
-                     family = binomial) 
-fit_walkers <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
-                   data = used_avail_walkers,
-                   family = binomial) 
-fit_waiters <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
-                   data = used_avail_waiters,
-                   family = binomial) 
-
-jtools::plot_summs(fit_drivers, fit_walkers, fit_waiters, 
-                   model.names = c("Drivers", "Walkers", "Waiters"))
-
-
-# RSF by hunting mode * success -------------------------------------------
-
+# Filter by cluster & success
 used_avail_drivers_success <- used_avail_drivers %>% dplyr::filter(Harvest == "Y" | Used == 0)
 used_avail_walkers_success <- used_avail_walkers %>% dplyr::filter(Harvest == "Y" | Used == 0)
 used_avail_waiters_success <- used_avail_waiters %>% dplyr::filter(Harvest == "Y" | Used == 0)
