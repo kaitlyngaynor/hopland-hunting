@@ -24,7 +24,7 @@ data_hmm <- data_hmm %>%
 # How many removed?
 nrow(igotu_data) - nrow(data_hmm) # 2430
 
-# Scale covariates
+ # Scale covariates
 data_hmm$Ruggedness_scale <- scale(data_hmm$Ruggedness)
 data_hmm$Viewshed_scale <- scale(data_hmm$Viewshed)
 data_hmm$Road_Distance_scale <- scale(data_hmm$Road_Distance)
