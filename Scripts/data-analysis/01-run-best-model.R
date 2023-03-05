@@ -32,14 +32,14 @@ data_hmm$Chaparral_120m_scale <- scale(data_hmm$Chaparral_120m)
 data_hmm$Woodland_120m_scale <- scale(data_hmm$Woodland_120m)
 data_hmm$Sunrise_Scale <- scale(data_hmm$Elapsed_Time_Sunrise)
 
-# Set initial parameters (determined by 04b-hmm-3state-parameter-select.Rmd)
-mu0_3state <- c(0.01, 0.07, 0.41)
-sigma0_3state <- c(0.010, 0.045, 0.204)
-zeromass0_3state <- c(0.469, 0.047, 0.0028) 
-stepPar0_3state <- c(mu0_3state,sigma0_3state,zeromass0_3state)
-angleMean0_3state <- c(pi,0,0)
-kappa0_3state <- c(0.61,1.20,1.14)
-anglePar0_3state <- c(angleMean0_3state,kappa0_3state)
+# Set initial parameters (determined by 05-identify-hmm-parameters.Rmd)
+mu0_3state <- c(0.07132109, 0.397726187, 0.012096380)
+sigma0_3state <- c(0.04713105, 0.187850100, 0.008903575)
+zeromass0_3state <- c(0.04650203, 0.002483578, 0.502977239) 
+stepPar0_3state <- c(mu0_3state, sigma0_3state, zeromass0_3state)
+angleMean0_3state <- c(0, 0, pi)
+kappa0_3state <- c(1.088494664, 1.13892960, 0.6481289)
+anglePar0_3state <- c(angleMean0_3state, kappa0_3state)
 
 
 # Run & explore model -----------------------------------------------------------------
