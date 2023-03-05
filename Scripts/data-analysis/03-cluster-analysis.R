@@ -7,7 +7,7 @@ library(sjPlot)
 
 # Import data -------------------------------------------------------------
 
-data_hmm <- read.csv("Results/hmm-data-with-model-predictions-annotated-2023-02-17.csv")
+data_hmm <- read.csv("Results/hmm-data-with-model-predictions-annotated-2023-03-04.csv")
 
 # Calculate time spent in states across hunters -----------------------------
 
@@ -70,8 +70,7 @@ hunter_percentages_noID_4state <- hunter_percentages_4state %>%
 # THREE CLUSTERS IS OPTIMAL
 set.seed(4321)
 k.max <- 15
-data <- hunter_percentages_noID
-#data <- hunter_percentages_noID_4state
+data <- hunter_percentages_noID_4state
 wss <- sapply(1:k.max, 
               function(k){kmeans(data, k, nstart=25,iter.max = 15 )$tot.withinss})
 wss
@@ -82,49 +81,27 @@ plot(1:k.max, wss,
 
 # Run K-means cluster analysis with k=3 clusters
 set.seed(321)
-k3 <- kmeans(as.matrix(hunter_percentages_noID), centers = 3, nstart = 25)
-k3
-
-# K-means clustering with 3 clusters of sizes 145, 135, 203
-# 
-# Cluster means:
-#     Stationary_pct Walking_pct Driving_pct
-# 1      0.2717603   0.4306191   0.2976206 # WALKERS
-# 2      0.5160010   0.1702030   0.3137960 # WAITERS
-# 3      0.1889848   0.1877314   0.6232838 # DRIVERS
-
-
-# Assign cluster to each point
-hunter_percentages$Cluster = factor(k3$cluster)
-levels(hunter_percentages$Cluster) <- c("Walkers", "Waiters", "Drivers") # change factor level names
-
-# Join assigned clusters with long data also
-hunter_percentages_long <- dplyr::left_join(hunter_percentages_long,
-                                            dplyr::select(hunter_percentages, ID, Cluster)) 
-
-
-# Do that for the 4-states
 k3_4state <- kmeans(as.matrix(hunter_percentages_noID_4state), centers = 3, nstart = 25)
 k3_4state
 
-# K-means clustering with 3 clusters of sizes 94, 149, 240
-#
+# K-means clustering with 3 clusters of sizes 147, 129, 207
+# 
 # Cluster means:
 #     Stationary_offroad_pct Stationary_road_pct Walking_pct Driving_pct
-# 1             0.39206900           0.1628040   0.2092473   0.2358797 # WAITERS
-# 2             0.14294515           0.1138345   0.4223284   0.3208920 # WALKERS
-# 3             0.08891252           0.1486336   0.1705436   0.5919102 # DRIVERS
+# 1              0.3126273          0.11039971   0.3027784   0.2741946 # WAITERS
+# 2              0.1090912          0.06542713   0.3022608   0.5232210 # DRIVERS
+# 3              0.1051077          0.08267808   0.6207700   0.1914443 # WALKERS
 
 
 hunter_percentages_4state$Cluster4 = factor(k3_4state$cluster)
-levels(hunter_percentages_4state$Cluster4) <- c("Waiters", "Walkers", "Drivers") # change factor level names
+levels(hunter_percentages_4state$Cluster4) <- c("Waiters", "Drivers", "Walkers") # change factor level names
 
 # Make dataframe manually for plotting
-cluster_times <- data.frame(Mode = c("Walkers", "Waiters", "Drivers"),
-                            Stationary_offroad = c(0.39206900, 0.14294515, 0.08891252),
-                            Stationary_road = c(0.1628040, 0.1138345, 0.1486336),
-                            Walking_pct = c(0.2092473, 0.4223284, 0.1705436),
-                            Driving_pct = c(0.2358797, 0.3208920, 0.5919102)) %>% 
+cluster_times <- data.frame(Mode = c("Waiters", "Drivers", "Walkers"),
+                            Stationary_offroad = c(0.3126273, 0.1090912, 0.1051077),
+                            Stationary_road = c(0.11039971, 0.06542713, 0.08267808),
+                            Walking_pct = c(0.3027784, 0.3022608, 0.6207700),
+                            Driving_pct = c(0.2741946, 0.5232210, 0.1914443)) %>% 
     tidyr::pivot_longer(cols = -Mode, names_to = "State", values_to = "Percent_time")
 ggplot(cluster_times, aes(x = Mode, y = Percent_time, fill = State)) +
     geom_bar(stat = "identity") +
@@ -135,18 +112,6 @@ ggplot(cluster_times, aes(x = Mode, y = Percent_time, fill = State)) +
 hunter_percentages_long_4state <- dplyr::left_join(hunter_percentages_long_4state,
                                             dplyr::select(hunter_percentages_4state, ID, Cluster4)) 
 
-# Look at correlations between clusters
-hunter_percentages_all <- dplyr::left_join(hunter_percentages, hunter_percentages_4state)
-different <- dplyr::filter(hunter_percentages_all, Cluster != Cluster4)
-nrow(different) # 75 of the 483 changed cluster
-count(different, Cluster, Cluster4)
-# Cluster Cluster4     n
-# <fct>   <fct>    <int>
-#     1 Walkers Waiters     11
-# 2 Walkers Drivers      3
-# 3 Waiters Walkers      9
-# 4 Waiters Drivers     43
-# 5 Drivers Walkers      9
 
 # Examine success rates ---------------------------------------------------
 
@@ -154,11 +119,10 @@ count(different, Cluster, Cluster4)
 hunter_success <- data_hmm %>% 
     dplyr::select(ID, Harvest) %>% 
     unique()
-hunter_cluster_success <- dplyr::left_join(hunter_percentages_all, hunter_success)
 hunter_cluster_success_long <- dplyr::left_join(hunter_percentages_long_4state, hunter_success)
 
 # Calculate success rate by cluster
-success_rate <- hunter_cluster_success %>%
+success_rate <- hunter_cluster_success_long %>%
     dplyr::filter(Harvest != "unknown") %>% 
     dplyr::count(Cluster4, Harvest) %>% 
     tidyr::pivot_wider(id_cols = Cluster4,
@@ -169,33 +133,5 @@ success_rate <- hunter_cluster_success %>%
                   Failure_rate = N/Total)
 
 # Export data
-write.csv(hunter_cluster_success, "Results/hunters_by_cluster_with_success.csv", row.names = FALSE)
 write.csv(hunter_percentages_long_4state, "Results/hunter_percentages_long_4state.csv", row.names = FALSE)
 write.csv(hunter_cluster_success_long, "Results/hunter_cluster_success_long.csv", row.names = FALSE)
-
-
-# Look at clusters with bout length? --------------------------------------
-
-bouts <- read.csv("Results/ID-mean-bout-length.csv")
-
-bouts_noID <- bouts %>% 
-  #  dplyr::left_join(hunter_percentages) %>% 
-    dplyr::select(-ID) %>% 
-    tidyr::drop_na()
-
-set.seed(4321)
-k.max <- 15
-data <- bouts_noID
-wss <- sapply(1:k.max, 
-              function(k){kmeans(data, k, nstart=25,iter.max = 15 )$tot.withinss})
-wss
-plot(1:k.max, wss,
-     type="b", pch = 19, frame = FALSE, 
-     xlab="Number of clusters K",
-     ylab="Total within-clusters sum of squares")
-
-# Run K-means cluster analysis with k=3 clusters
-set.seed(321)
-k3_bout <- kmeans(as.matrix(bouts_noID), centers = 3, nstart = 25)
-k3_bout
-
