@@ -24,7 +24,7 @@ data_hmm <- data_hmm %>%
 # How many removed?
 nrow(igotu_data) - nrow(data_hmm) # 2430
 
- # Scale covariates
+# Scale covariates
 data_hmm$Ruggedness_scale <- scale(data_hmm$Ruggedness)
 data_hmm$Viewshed_scale <- scale(data_hmm$Viewshed)
 data_hmm$Road_Distance_scale <- scale(data_hmm$Road_Distance)
@@ -49,7 +49,7 @@ anglePar0_3state <- c(angleMean0_3state, kappa0_3state)
 m <- moveHMM::fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
                    formula = ~Road_Distance_scale + Viewshed_scale + Woodland_120m_scale + Ruggedness_scale + Chaparral_120m_scale + Elapsed_Time_Sunrise)
 
-saveRDS(m, "Results/hmm-top-model-2023-02-17.Rds")
+saveRDS(m, "Results/hmm-top-model-2023-03-04.Rds")
 # m <- readRDS("Results/hmm-top-model-2023-02-17.Rds") # to read back in
 
 
@@ -65,4 +65,4 @@ names(state_probs) <- c("Stationary_Prob", "Walking_Prob", "Driving_Prob")
 data_hmm <- cbind(data_hmm, state_probs)
 
 # Write file
-write.csv(data_hmm, "Results/hmm-top-model-2023-02-17.csv", row.names = FALSE)
+write.csv(data_hmm, "Results/hmm-top-model-2023-03-04.csv", row.names = FALSE)
