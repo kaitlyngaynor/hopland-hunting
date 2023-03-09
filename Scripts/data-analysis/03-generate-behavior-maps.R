@@ -8,7 +8,7 @@ library(SpatialKDE)
 library(dplyr)
 
 # Bring in data with model results
-data_hmm <- read.csv("Results/hmm-data-with-model-predictions-annotated-2022-12-19.csv")
+data_hmm <- read.csv("Results/hmm-data-with-model-predictions-annotated-2023-03-04.csv")
 
 # Convert to spatial object & transform to UTM
 data_hmm_sf <- sf::st_as_sf(data_hmm,
@@ -86,6 +86,7 @@ raster::writeRaster(stationary_offroad_dens_weighted, "Results/KDE/stationary_of
 
 
 # Approach 3: 10m x 10m KDE for all points weighted_fine by probability -----------
+# this is taking ages to run!
 reference_fine <- raster("Data/Spatial data/Cleaned rasters/road.dist.clean.tif")
 
 walking_dens_weighted_fine <- SpatialKDE::kde(data_hmm_sf, band_width = 400, grid = reference_fine,
@@ -94,11 +95,16 @@ raster::writeRaster(walking_dens_weighted_fine, "Results/KDE/walking_dens_weight
 
 stationary_dens_weighted_fine <- SpatialKDE::kde(data_hmm_sf, band_width = 400, grid = reference_fine,
                                                  weights = data_hmm_sf$Stationary_Prob)
-raster::writeRaster(driving_dens_weighted_fine, "Results/KDE/driving_dens_weighted_fine.tif")
+raster::writeRaster(stationary_dens_weighted_fine, "Results/KDE/stationary_dens_weighted_fine.tif")
 
 driving_dens_weighted_fine <- SpatialKDE::kde(data_hmm_sf, band_width = 400, grid = reference_fine,
                                               weights = data_hmm_sf$Driving_Prob)
-raster::writeRaster(stationary_dens_weighted_fine, "Results/KDE/stationary_dens_weighted_fine.tif")
+raster::writeRaster(driving_dens_weighted_fine, "Results/KDE/driving_dens_weighted_fine.tif")
 
+stationary_road_dens_weighted_fine <- SpatialKDE::kde(road, band_width = 400, grid = reference_fine,
+                                                 weights = road$Stationary_Prob)
+raster::writeRaster(stationary_road_dens_weighted_fine, "Results/KDE/stationary_road_dens_weighted_fine.tif")
 
-
+stationary_offroad_dens_weighted_fine <- SpatialKDE::kde(offroad, band_width = 400, grid = reference_fine,
+                                                    weights = offroad$Stationary_Prob)
+raster::writeRaster(stationary_offroad_dens_weighted_fine, "Results/KDE/stationary_offroad_dens_weighted_fine.tif")
