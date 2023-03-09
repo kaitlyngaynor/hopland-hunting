@@ -50,7 +50,7 @@ hist(data_hmm$angle)
 
 # determine proportion of step lengths equal to 0
 whichzero <- which(data_hmm$step == 0)
-length(whichzero)/nrow(data_hmm)
+length(whichzero)/nrow(data_hmm) # 0.1677413
 ```
 
 
