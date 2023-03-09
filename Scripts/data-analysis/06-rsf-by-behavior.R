@@ -4,7 +4,7 @@ library(jtools)
 # Bring in datasets
 available <- read.csv("Data/all-available-point-cov.csv")
 available$Used <- 0
-used <- read.csv("Results/hmm-data-with-model-predictions-annotated-2023-02-17.csv")
+used <- read.csv("Results/hmm-data-with-model-predictions-annotated-2023-03-04.csv")
 used$Used <- 1
 
 head(available)
@@ -22,7 +22,8 @@ used_avail <- dplyr::bind_rows(used, available) %>%
                   HQ_Distance_scale = scale(HQ_Distance))
 
 # bring in clusters
-clusters <- read.csv("Results/hunters_by_cluster_with_success.csv") %>% 
+clusters <- read.csv("Results/hunter_cluster_success_long.csv") %>%
+    tidyr::pivot_wider(names_from = "State_4state", values_from = "Percentage") %>% 
     dplyr::select(ID, Cluster4)
 used_avail <- dplyr::left_join(used_avail, clusters)
 
@@ -61,12 +62,13 @@ fit_waiters_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparra
                            data = used_avail_waiters_unsuccess,
                            family = binomial) 
 
-jtools::plot_summs(fit_drivers_success, fit_drivers_unsuccess, 
-                   fit_walkers_success, fit_walkers_unsuccess, 
-                   fit_waiters_success, fit_waiters_unsuccess,
-                   model.names = c("Drivers - Success", "Drivers - Not",
-                                   "Walkers - Success", "Walkers - Not",
-                                   "Waiters - Success", "Waiters - Not"))
+# Plotting all model output together - takes quite a while to run
+# jtools::plot_summs(fit_drivers_success, fit_drivers_unsuccess, 
+#                    fit_walkers_success, fit_walkers_unsuccess, 
+#                    fit_waiters_success, fit_waiters_unsuccess,
+#                    model.names = c("Drivers - Success", "Drivers - Not",
+#                                    "Walkers - Success", "Walkers - Not",
+#                                    "Waiters - Success", "Waiters - Not"))
 
 
 # Export for plotting
@@ -166,22 +168,3 @@ all_rsf_results <- dplyr::bind_rows(drivers_success_results, drivers_unsuccess_r
                                     walkers_success_results, walkers_unsuccess_results,
                                     waiters_success_results, waiters_unsuccess_results)
 write.csv(all_rsf_results, "Results/rsf-results-by-mode-success.csv", row.names = F)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
