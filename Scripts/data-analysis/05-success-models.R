@@ -3,8 +3,9 @@ library(ggplot2)
 library(effects)
 library(egg)
 
-success <- read.csv("Results/hunters_by_cluster_with_success.csv") %>%
-    dplyr::mutate(Harvest01 = ifelse(Harvest == "N",0,1))
+success <- read.csv("Results/hunter_cluster_success_long.csv") %>%
+    dplyr::mutate(Harvest01 = ifelse(Harvest == "N",0,1)) %>% 
+    tidyr::pivot_wider(names_from = "State_4state", values_from = "Percentage")
 
 # Bring in metadata
 metadata1 <- read.csv("Data/Hunting/igotu_metadata_times_cleaned_28Nov2022.csv") %>% 
@@ -19,28 +20,29 @@ success %>%
     ggplot(aes(x = Cluster4, y = n, fill = Hunt_type)) +
     geom_bar(stat = "identity") +
     theme_bw()
-cluster_multiday <- chisq.test(x = success$Hunt_type, y = success$Cluster4)
+chisq.test(x = success$Hunt_type, y = success$Cluster4)
+
 
 # Models ------------------------------------------------------------------
 
 # Hunting cluster
 fit <- glm(Harvest01 ~ Cluster4, data = success, family = binomial)
-summary(fit) # AIC = 370.98
+summary(fit) # AIC = 372.82
 
 sjPlot::plot_model(fit)
 
 # Hunting weekend/day
-fit2 <- glm(Harvest01 ~ Year, data = success, family = binomial) # AIC = 370.05
+fit2 <- glm(Harvest01 ~ Year, data = success, family = binomial) # AIC = 370
 fit3 <- glm(Harvest01 ~ Hunt_weekend, data = success, family = binomial) # AIC = 362.6
 
 # Cluster by weekend
-fit4 <- glm(Harvest01 ~ Hunt_weekend * Cluster4, data = success, family = binomial) # 364.02
+fit4 <- glm(Harvest01 ~ Hunt_weekend * Cluster4, data = success, family = binomial) # 365.8
 
 # Single vs multiday
-fit5 <- glm(Harvest01 ~ Hunt_type, data = success, family = binomial) # 365.65
+fit5 <- glm(Harvest01 ~ Hunt_type, data = success, family = binomial) # 365.7
 
 # Single vs multiday by cluster
-fit6 <- glm(Harvest01 ~ Hunt_type * Cluster4, data = success, family = binomial) # 369.05
+fit6 <- glm(Harvest01 ~ Hunt_type * Cluster4, data = success, family = binomial) # 370.4
 
 
 weekend <- data.frame(Hunt_weekend = seq(min(success$Hunt_weekend, na.rm=T), max(success$Hunt_weekend, na.rm=T), by = .1))
@@ -84,39 +86,6 @@ effects::predictorEffect("Hunt_weekend", fit3) %>%
     geom_line()+
     geom_ribbon(aes(ymin = lower, ymax = upper), 
                 alpha = 0.2) +
-    labs(y = "Harvest probability", x = "Hunt weekend") +
-    theme_bw()
-
-# Hunting success by day - not as good of a fit as weekend
-effects::predictorEffect("Hunt_day", fit4) %>% 
-    as_tibble() %>% 
-    ggplot(aes(x = Hunt_day, y = fit))+
-    geom_line()+
-    geom_ribbon(aes(ymin = lower, ymax = upper), 
-                alpha = 0.2) +
-    labs(y = "Harvest probability", x = "Hunt day") +
-    theme_bw()
-
-# Hunting success by weekend * cluster
-effects::predictorEffect("Hunt_weekend", fit5) %>% 
-    as_tibble() %>% 
-    ggplot(aes(x = Hunt_weekend, y = fit, group = Cluster4))+
-    geom_line(aes(colour = Cluster4))+
-    geom_ribbon(aes(ymin = lower, ymax = upper, fill = Cluster4), 
-                alpha = 0.2) +
-    labs(y = "Harvest probability", x = "Hunt weekend") +
-    scale_fill_manual(values = c("#d8b365", "#969696", "#4d938a")) +
-    scale_color_manual(values = c("#d8b365", "#969696", "#4d938a")) +
-    theme_bw()
-
-# Same plot as above, but facet-wrapped
-effects::predictorEffect("Hunt_weekend", fit5) %>% 
-    as_tibble() %>% 
-    ggplot(aes(x = Hunt_weekend, y = fit)) +
-    geom_line() +
-    geom_ribbon(aes(ymin = lower, ymax = upper), 
-                alpha = 0.2) +
-    facet_wrap(~Cluster4) +
     labs(y = "Harvest probability", x = "Hunt weekend") +
     theme_bw()
 
