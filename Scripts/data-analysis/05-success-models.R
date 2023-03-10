@@ -127,5 +127,5 @@ library(cowplot)
 plot_grid(cluster_fig, hunt_type_fig, year_fig,
           labels = "AUTO",
           nrow = 1)
-ggsave("Figures/harvest-success-model.pdf", width = 8, height = 3)
+ggsave("Figures/harvest-success-model.pdf", width = 6.5, height = 2.5)
 
