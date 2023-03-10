@@ -24,21 +24,25 @@ count(hunters, Good_track)
 # Figure of tracks by year (usable vs not)
 count(hunters, Good_track, Year) %>% 
     #pivot_wider(names_from = Good_track, values_from = n) %>% 
-    ggplot(aes(x = Year, y = n, fill = Good_track)) +
+    ggplot(aes(x = as.factor(Year), y = n, fill = Good_track)) +
     geom_bar(stat = "identity") +
     theme_bw() +
     scale_fill_manual(values = c("#FE7C00", "#4169E1")) +
-    ylab("Number of Hunters")
+    ylab("Number of Hunters") +
+    xlab("Year")
+ggsave("Figures/hunter-tracks-year-failure.pdf", height = 3, width = 6)
 
 # Figure of single vs. multi-day hunters
 hunters %>% 
     filter(Good_track == "Y") %>% 
     count(Year, Hunt_type) %>% 
-    ggplot(aes(x = Year, y = n, fill = Hunt_type)) +
+    ggplot(aes(x = as.factor(Year), y = n, fill = Hunt_type)) +
     geom_bar(stat = "identity") +
     theme_bw() +
-    scale_fill_manual(values = c("#4169E1", "#808080")) +
-    ylab("Number of Hunter Tracks")
+    scale_fill_manual(values = c("black", "#808080")) +
+    ylab("Number of Hunter Tracks") +
+    xlab("Year")
+ggsave("Figures/hunter-tracks-year-multisingleday.pdf", height = 3, width = 6)
 
 # How many successful/unsuccessful used?
 hunters %>% 
