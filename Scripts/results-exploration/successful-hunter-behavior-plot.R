@@ -50,4 +50,4 @@ ggplot(data = successful_long, aes(x = ID, y = Percent, fill = State)) +
           strip.text.x = element_text(size = 12)) +
     scale_fill_manual(values = c("#614124", "gray", "#CC704B", "#E8C07D"),
                       labels = c("Driving", "Stationary (Off-road)", "Stationary (On-road)", "Walking")) 
-ggsave("Figures/successful-behavior.pdf", width = 6, height = 3.5)
+ggsave("Figures/successful-behavior.pdf", width = 7, height = 3.5)
