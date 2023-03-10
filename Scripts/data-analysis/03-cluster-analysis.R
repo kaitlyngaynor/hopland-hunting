@@ -84,24 +84,24 @@ set.seed(321)
 k3_4state <- kmeans(as.matrix(hunter_percentages_noID_4state), centers = 3, nstart = 25)
 k3_4state
 
-# K-means clustering with 3 clusters of sizes 147, 129, 207
+# K-means clustering with 3 clusters of sizes 149, 94, 240
 # 
 # Cluster means:
 #     Stationary_offroad_pct Stationary_road_pct Walking_pct Driving_pct
-# 1              0.3126273          0.11039971   0.3027784   0.2741946 # WAITERS
-# 2              0.1090912          0.06542713   0.3022608   0.5232210 # DRIVERS
-# 3              0.1051077          0.08267808   0.6207700   0.1914443 # WALKERS
+# 1              0.1429111           0.1137739   0.4226213   0.3206938 # WALKERS
+# 2              0.3919537           0.1629287   0.2093264   0.2357912 # WAITERS
+# 3              0.0889380           0.1486706   0.1705093   0.5918820 # DRIVERS
 
 
 hunter_percentages_4state$Cluster4 = factor(k3_4state$cluster)
-levels(hunter_percentages_4state$Cluster4) <- c("Waiters", "Drivers", "Walkers") # change factor level names
+levels(hunter_percentages_4state$Cluster4) <- c("Walkers", "Waiters", "Drivers") # change factor level names
 
 # Make dataframe manually for plotting
-cluster_times <- data.frame(Mode = c("Waiters", "Drivers", "Walkers"),
-                            Stationary_offroad = c(0.3126273, 0.1090912, 0.1051077),
-                            Stationary_road = c(0.11039971, 0.06542713, 0.08267808),
-                            Walking_pct = c(0.3027784, 0.3022608, 0.6207700),
-                            Driving_pct = c(0.2741946, 0.5232210, 0.1914443)) %>% 
+cluster_times <- data.frame(Mode = c("Walkers", "Waiters", "Drivers"),
+                            Stationary_offroad = c(0.1429111, 0.3919537, 0.0889380),
+                            Stationary_road = c(0.1137739, 0.1629287, 0.1486706),
+                            Walking_pct = c(0.4226213, 0.2093264, 0.1705093),
+                            Driving_pct = c(0.3206938, 0.2357912, 0.5918820)) %>% 
     tidyr::pivot_longer(cols = -Mode, names_to = "State", values_to = "Percent_time")
 ggplot(cluster_times, aes(x = Mode, y = Percent_time, fill = State)) +
     geom_bar(stat = "identity") +
