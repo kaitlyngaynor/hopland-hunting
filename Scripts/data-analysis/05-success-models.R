@@ -27,26 +27,19 @@ chisq.test(x = success$Hunt_type, y = success$Cluster4)
 
 # Hunting cluster
 fit <- glm(Harvest01 ~ Cluster4, data = success, family = binomial)
-summary(fit) # AIC = 372.82
+summary(fit) # AIC = 370.98
 
 sjPlot::plot_model(fit)
 
-# Hunting weekend/day
+# Year
 fit2 <- glm(Harvest01 ~ Year, data = success, family = binomial) # AIC = 370
-fit3 <- glm(Harvest01 ~ Hunt_weekend, data = success, family = binomial) # AIC = 362.6
-
-# Cluster by weekend
-fit4 <- glm(Harvest01 ~ Hunt_weekend * Cluster4, data = success, family = binomial) # 365.8
 
 # Single vs multiday
-fit5 <- glm(Harvest01 ~ Hunt_type, data = success, family = binomial) # 365.7
+fit3 <- glm(Harvest01 ~ Hunt_type, data = success, family = binomial) # 365.7
 
 # Single vs multiday by cluster
-fit6 <- glm(Harvest01 ~ Hunt_type * Cluster4, data = success, family = binomial) # 370.4
+fit4 <- glm(Harvest01 ~ Hunt_type * Cluster4, data = success, family = binomial) # 369.1
 
-
-weekend <- data.frame(Hunt_weekend = seq(min(success$Hunt_weekend, na.rm=T), max(success$Hunt_weekend, na.rm=T), by = .1))
-weekend$relative_risk <- predict(fit3, weekend, type = "response")
 
 
 # Plot model predictions --------------------------------------------------
@@ -77,16 +70,6 @@ effects::predictorEffect("Year", fit2) %>%
     geom_ribbon(aes(ymin = lower, ymax = upper), 
                 alpha = 0.2) +
     labs(y = "Harvest probability", x = "Year") +
-    theme_bw()
-
-# Hunting success by weekend
-effects::predictorEffect("Hunt_weekend", fit3) %>% 
-    as_tibble() %>% 
-    ggplot(aes(x = Hunt_weekend, y = fit))+
-    geom_line()+
-    geom_ribbon(aes(ymin = lower, ymax = upper), 
-                alpha = 0.2) +
-    labs(y = "Harvest probability", x = "Hunt weekend") +
     theme_bw()
 
 # Hunting success by duration * cluster
