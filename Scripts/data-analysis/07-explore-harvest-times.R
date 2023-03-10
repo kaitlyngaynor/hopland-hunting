@@ -18,27 +18,6 @@ success$Sunrise_elapsed_min <- as.numeric(difftime(as.POSIXct(success$Harvest_ti
                                                    units = "mins"))
 success$Sunrise_elapsed_min_scale <- scale(success$Sunrise_elapsed_min)
 
-# Bin into three groups (0-5, 5-10, 10-15 hrs from sunrise)
-success$Harvest_time_bin <- NA
-for(i in 1:nrow(success)){
-    if(is.na(success$Sunrise_elapsed_min[i])) {
-        success$Harvest_time_bin[i] <- NA
-    }
-    else if(success$Sunrise_elapsed_min[i] < 300) {
-        success$Harvest_time_bin[i] <- "1_Morning"
-    } else if(success$Sunrise_elapsed_min[i] >= 300 & success$Sunrise_elapsed_min[i] <= 600) {
-        success$Harvest_time_bin[i] <- "2_Midday"
-    } else {
-        success$Harvest_time_bin[i] <- "3_Evening"
-    }
-}
-
-harvest_time_bins <- success %>% 
-    dplyr::filter(Sunrise_elapsed_min >= 0) %>% 
-    dplyr::count(Cluster4, Harvest_time_bin) %>% 
-    tidyr::pivot_wider(names_from = "Harvest_time_bin", values_from = "n") %>% 
-    tibble::column_to_rownames("Cluster4")
-
 
 set.seed(678)
 success %>% 
@@ -77,31 +56,3 @@ waiters <- dplyr::filter(success, Cluster4 == "Waiters", Harvest == "Y")
 set.seed(12)
 ad.test(drivers$Sunrise_elapsed_min, walkers$Sunrise_elapsed_min, waiters$Sunrise_elapsed_min,
         method = "exact", dist = FALSE, Nsim = 1000)
-
-
-
-
-# PARAMETRIC TESTS - DO NOT USE
-
-# ANOVA - probably not a good idea given skew of data
-fit <- aov(Sunrise_elapsed_min_scale ~ Cluster4, data = success)
-summary(fit)
-TukeyHSD(fit, conf.level=.95)
-plot(TukeyHSD(fit, conf.level=.95), las = 2)
-
-# Binned version
-fit2 <- chisq.test(as.matrix(harvest_time_bins), sim = T)
-fit2
-# Pearson's Chi-squared test
-# data:  as.matrix(harvest_time_bins)
-# X-squared = 6.5862, df = 4, p-value = 0.1594
-
-fit3 <- fisher.test(as.matrix(harvest_time_bins))
-fit3
-
-# transformation isn't going to solve the issue
-par(mfrow=c(2,2))
-hist(success$Sunrise_elapsed_min)
-hist(log(success$Sunrise_elapsed_min))
-hist(sqrt(success$Sunrise_elapsed_min))
-hist(scale(success$Sunrise_elapsed_min)
