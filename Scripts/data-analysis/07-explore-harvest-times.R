@@ -66,15 +66,42 @@ success %>%
     scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3"))
 ggsave("Figures/time-of-harvest.pdf", width = 3, height = 5)
 
-# See if time of day varies by hunting mode
+# See if time of day varies by hunting mode - Anderson-Darling test
+
+library(kSamples)
+
+drivers <- dplyr::filter(success, Cluster4 == "Drivers", Harvest == "Y")
+walkers <- dplyr::filter(success, Cluster4 == "Walkers", Harvest == "Y")
+waiters <- dplyr::filter(success, Cluster4 == "Waiters", Harvest == "Y")
+
+set.seed(12)
+ad.test(drivers$Sunrise_elapsed_min, walkers$Sunrise_elapsed_min, waiters$Sunrise_elapsed_min,
+        method = "exact", dist = FALSE, Nsim = 1000)
+
+
+
+
+# PARAMETRIC TESTS - DO NOT USE
+
+# ANOVA - probably not a good idea given skew of data
 fit <- aov(Sunrise_elapsed_min_scale ~ Cluster4, data = success)
 summary(fit)
 TukeyHSD(fit, conf.level=.95)
 plot(TukeyHSD(fit, conf.level=.95), las = 2)
 
 # Binned version
-fit2 <- chisq.test(as.matrix(harvest_time_bins))
+fit2 <- chisq.test(as.matrix(harvest_time_bins), sim = T)
 fit2
 # Pearson's Chi-squared test
 # data:  as.matrix(harvest_time_bins)
 # X-squared = 6.5862, df = 4, p-value = 0.1594
+
+fit3 <- fisher.test(as.matrix(harvest_time_bins))
+fit3
+
+# transformation isn't going to solve the issue
+par(mfrow=c(2,2))
+hist(success$Sunrise_elapsed_min)
+hist(log(success$Sunrise_elapsed_min))
+hist(sqrt(success$Sunrise_elapsed_min))
+hist(scale(success$Sunrise_elapsed_min)
