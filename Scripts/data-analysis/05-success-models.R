@@ -29,6 +29,9 @@ fisher.test(success$Harvest, success$Cluster4)
 
 # Testing three predictors of success: hunting cluster, year, and single vs. multi-day hunter
 
+fit0 <- glm(Harvest01 ~ 1, data = success, family = binomial) # AIC = 372.23
+summary(fit0)
+
 # Hunting cluster
 fit1 <- glm(Harvest01 ~ Cluster4, data = success, family = binomial) # AIC = 370.98
 summary(fit1) 
