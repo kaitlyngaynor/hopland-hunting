@@ -22,6 +22,8 @@ success %>%
     theme_bw()
 chisq.test(x = success$Hunt_type, y = success$Cluster4) # no difference in hunting mode between trophy & public hunts
 
+# Effect of cluster on success
+fisher.test(success$Harvest, success$Cluster4)
 
 # Models ------------------------------------------------------------------
 
@@ -52,25 +54,17 @@ summary(fit4)
 fit5 <- glm(Harvest01 ~ Hunt_type + Cluster4, data = success, family = binomial) # AIC = 365.64
 summary(fit5)
 
-# Year * single vs multiday
-fit6 <- glm(Harvest01 ~ Year * Hunt_type, data = success, family = binomial) # AIC = 367.48
+# Year * cluster
+fit6 <- glm(Harvest01 ~ Year * Cluster4, data = success, family = binomial) # AIC = 372.99
 summary(fit6)
 
-# Year + single vs multiday  - BETTER THAN INTERACTION
-fit7 <- glm(Harvest01 ~ Year + Hunt_type, data = success, family = binomial) # AIC = 366.67
+# Year + cluster - BETTER THAN INTERACTION
+fit7 <- glm(Harvest01 ~ Year + Cluster4, data = success, family = binomial) # AIC = 369.56
 summary(fit7)
 
-# Year * cluster
-fit8 <- glm(Harvest01 ~ Year * Cluster4, data = success, family = binomial) # AIC = 372.99
-summary(fit8)
-
-# Year + cluster - BETTER THAN INTERACTION
-fit9 <- glm(Harvest01 ~ Year + Cluster4, data = success, family = binomial) # AIC = 369.56
-summary(fit9)
-
 # Cluster + Year + Single vs multiday
-fit10 <- glm(Harvest01 ~ Hunt_type + Cluster4 + Year, data = success, family = binomial) # AIC = 366.91
-summary(fit10)
+fit8 <- glm(Harvest01 ~ Hunt_type + Cluster4 + Year, data = success, family = binomial) # AIC = 366.91
+summary(fit8)
 
 # FIT5 IS BEST MODEL (CLUSTER + SINGLE/MULTIDAY)
 
@@ -113,7 +107,7 @@ summary(fit10)
     ylim(c(0, 0.5)))
 
 # Year
-(year_fig <- effects::predictorEffect("Year", fit10) %>% 
+(year_fig <- effects::predictorEffect("Year", fit8) %>% 
     as_tibble() %>% 
     ggplot(aes(x = Year, y = fit))+
     geom_line()+
@@ -132,47 +126,3 @@ plot_grid(cluster_fig, hunt_type_fig, year_fig,
           nrow = 1)
 ggsave("Figures/harvest-success-model.pdf", width = 8, height = 3)
 
-# Plots for excluded models --------------------------------------------------
-
-# Hunting success by year * type
-effects::predictorEffect("Year", fit2.2) %>% 
-    as_tibble() %>% 
-    ggplot(aes(x = Year, y = fit, group = Hunt_type))+
-    geom_line(aes(colour = Hunt_type))+
-    geom_ribbon(aes(ymin = lower, ymax = upper, fill = Hunt_type), 
-                alpha = 0.2) +
-    labs(y = "Harvest probability", x = "Year") +
-    theme_bw()
-
-# Hunting success by type * cluster
-effects::predictorEffect("Hunt_type", fit4) %>% 
-    as_tibble() %>% 
-    ggplot(aes(x = Hunt_type, y = fit, group = Cluster4))+
-    geom_point(aes(colour = Cluster4), 
-               position = position_dodge(width = 0.5),
-               size = 3)+
-    geom_errorbar(aes(ymin = lower, ymax = upper, colour = Cluster4), 
-                width = 0, 
-                position = position_dodge(width = 0.5), 
-                linewidth = 0.75) +
-    labs(y = "Harvest probability", x = "Hunt duration") +
-    scale_fill_manual(values = c("#d8b365", "#969696", "#4d938a")) +
-    scale_color_manual(values = c("#d8b365", "#969696", "#4d938a")) +
-    theme_bw() +
-    theme(panel.grid.major.x = element_blank()) 
-
-# Hunting success by year (factor)
-effects::predictorEffect("Year_factor", fit2.1) %>% 
-    as_tibble() %>% 
-    ggplot(aes(x = Year_factor, y = fit))+
-    geom_point(aes(colour = Year_factor), 
-               position = position_dodge(width = 0.5),
-               size = 3)+
-    geom_errorbar(aes(ymin = lower, ymax = upper, colour = Year_factor), 
-                  linewidth = 0.75,
-                  width = 0) +
-    labs(y = "Harvest probability", x = "Year") +
-    theme_bw() +
-    theme(panel.grid.major.x = element_blank(),
-          legend.position = "none") +
-    ylim(c(0, 0.75))
