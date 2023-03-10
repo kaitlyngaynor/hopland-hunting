@@ -1,7 +1,6 @@
 # Cluster analysis of behavioral modes of hunters
 
 library(dplyr)
-library(ggplot2)
 library(tidyr)
 library(sjPlot)
 
@@ -95,18 +94,6 @@ k3_4state
 
 hunter_percentages_4state$Cluster4 = factor(k3_4state$cluster)
 levels(hunter_percentages_4state$Cluster4) <- c("Walkers", "Waiters", "Drivers") # change factor level names
-
-# Make dataframe manually for plotting
-cluster_times <- data.frame(Mode = c("Walkers", "Waiters", "Drivers"),
-                            Stationary_offroad = c(0.1429111, 0.3919537, 0.0889380),
-                            Stationary_road = c(0.1137739, 0.1629287, 0.1486706),
-                            Walking_pct = c(0.4226213, 0.2093264, 0.1705093),
-                            Driving_pct = c(0.3206938, 0.2357912, 0.5918820)) %>% 
-    tidyr::pivot_longer(cols = -Mode, names_to = "State", values_to = "Percent_time")
-ggplot(cluster_times, aes(x = Mode, y = Percent_time, fill = State)) +
-    geom_bar(stat = "identity") +
-    theme_bw()
-
 
 # Join assigned clusters with long data also
 hunter_percentages_long_4state <- dplyr::left_join(hunter_percentages_long_4state,
