@@ -39,19 +39,6 @@ harvest_time_bins <- success %>%
     tidyr::pivot_wider(names_from = "Harvest_time_bin", values_from = "n") %>% 
     tibble::column_to_rownames("Cluster4")
 
-# Plot harvest times by hunting mode
-success %>% 
-    dplyr::filter(Harvest == "Y") %>%
-    ggplot(aes(x = Sunrise_elapsed_min)) +
-    geom_histogram() +
-    facet_wrap(~Cluster4, nrow = 3) +
-    theme_bw() 
-success %>% 
-    dplyr::filter(Harvest == "Y") %>%
-    ggplot(aes(x = Sunrise_elapsed_min, fill = Cluster4)) +
-    geom_histogram() +
-    theme_bw() +
-    scale_fill_manual(values = c("#1b9e77", "#d95f02", "#7570b3"))
 
 set.seed(678)
 success %>% 
