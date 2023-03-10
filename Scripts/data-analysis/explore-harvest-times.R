@@ -1,7 +1,8 @@
 library(dplyr)
 library(ggplot2)
 
-success <- read.csv("Results/hunters_by_cluster_with_success.csv") %>%
+success <- read.csv("Results/hunter_cluster_success_long.csv") %>%
+    tidyr::pivot_wider(names_from = "State_4state", values_from = "Percentage") %>%
     dplyr::filter(Harvest != "unknown") %>% 
     dplyr::mutate(Harvest01 = ifelse(Harvest == "N",0,1))
 
@@ -76,7 +77,7 @@ success %>%
     geom_jitter(data = success, aes(x = Sunrise_elapsed_min/60, y = -0.0125, col = Cluster4), width = 0.25, height = 0, alpha = 0.5, size = 2) +
     scale_fill_manual(values = c("#1b9e77", "#d95f02", "#7570b3")) +
     scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3"))
-
+ggsave("Figures/time-of-harvest.pdf", width = 3, height = 5)
 
 # See if time of day varies by hunting mode
 fit <- aov(Sunrise_elapsed_min_scale ~ Cluster4, data = success)
