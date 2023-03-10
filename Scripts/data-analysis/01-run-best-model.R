@@ -33,12 +33,12 @@ data_hmm$Woodland_120m_scale <- scale(data_hmm$Woodland_120m)
 data_hmm$Sunrise_Scale <- scale(data_hmm$Elapsed_Time_Sunrise)
 
 # Set initial parameters (determined by 05-identify-hmm-parameters.Rmd)
-mu0_3state <- c(0.07132109, 0.397726187, 0.012096380)
-sigma0_3state <- c(0.04713105, 0.187850100, 0.008903575)
-zeromass0_3state <- c(0.04650203, 0.002483578, 0.502977239) 
+mu0_3state <- c(0.012096380, 0.07132109, 0.397726187)
+sigma0_3state <- c(0.008903575, 0.04713105, 0.187850100)
+zeromass0_3state <- c(0.502977239, 0.04650203, 0.002483578) 
 stepPar0_3state <- c(mu0_3state, sigma0_3state, zeromass0_3state)
-angleMean0_3state <- c(0, 0, pi)
-kappa0_3state <- c(1.088494664, 1.13892960, 0.6481289)
+angleMean0_3state <- c(pi, 0, 0)
+kappa0_3state <- c(0.6481289, 1.088494664, 1.13892960)
 anglePar0_3state <- c(angleMean0_3state, kappa0_3state)
 
 
@@ -50,7 +50,7 @@ m <- moveHMM::fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, angleP
                    formula = ~Road_Distance_scale + Viewshed_scale + Woodland_120m_scale + Ruggedness_scale + Chaparral_120m_scale + Elapsed_Time_Sunrise)
 
 saveRDS(m, "Results/hmm-top-model-2023-03-04.Rds")
-# m <- readRDS("Results/hmm-top-model-2023-02-17.Rds") # to read back in
+# m <- readRDS("Results/hmm-top-model-2023-03-04.Rds") # to read back in
 
 
 # Export movement data with predicted states ------------------------------
