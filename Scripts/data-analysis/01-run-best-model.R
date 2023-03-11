@@ -47,7 +47,7 @@ anglePar0_3state <- c(angleMean0_3state, kappa0_3state)
 # see vignette https://cran.r-project.org/web/packages/moveHMM/vignettes/moveHMM-guide.pdf
 # run full model
 m <- moveHMM::fitHMM(data=data_hmm, nbStates=3, stepPar0=stepPar0_3state, anglePar0=anglePar0_3state,
-                   formula = ~Road_Distance_scale + Viewshed_scale + Woodland_120m_scale + Ruggedness_scale + Chaparral_120m_scale + Elapsed_Time_Sunrise)
+                   formula = ~Road_Distance_scale + Viewshed_scale + Woodland_120m_scale + Ruggedness_scale + Chaparral_120m_scale + Sunrise_Scale)
 
 saveRDS(m, "Results/hmm-top-model-2023-03-04.Rds")
 # m <- readRDS("Results/hmm-top-model-2023-03-04.Rds") # to read back in
@@ -65,4 +65,4 @@ names(state_probs) <- c("Stationary_Prob", "Walking_Prob", "Driving_Prob")
 data_hmm <- cbind(data_hmm, state_probs)
 
 # Write file
-write.csv(data_hmm, "Results/hmm-top-model-2023-03-04.csv", row.names = FALSE)
+write.csv(data_hmm, "Results/hmm-top-model-2023-03-10.csv", row.names = FALSE)
