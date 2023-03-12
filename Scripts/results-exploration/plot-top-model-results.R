@@ -17,6 +17,9 @@ prop.table(table(states))
 # plot model results
 plot(m, plotCI = TRUE)
 
+# Save step length & turn angle plots manually 6"x4"
+# step-length-raw.pdf and turn-angle-raw.pdf
+
 # look at CIs of parameters
 CI(m)
 
