@@ -1,8 +1,7 @@
-library(viridis)
 library(raster)
-library(rgdal)
 library(sf)
 library(ggplot2)
+library(cowplot)
 
 # Import rasters ----------------------------------------------------------
 
@@ -26,8 +25,8 @@ stationary_offroad_dens_weighted <- raster::raster("Results/KDE/stationary_offro
 
 
 # crop to boundary
-hrec_boundary <- readOGR("Data/Spatial data/Raw from Alex", "HREC_boundary") %>% 
-    spTransform("+proj=utm +zone=10 +datum=WGS84 +units=m +no_defs")
+hrec_boundary <- read_sf("Data/Spatial data/Raw from Alex/HREC_boundary.shp") %>% 
+    st_transform(crs = st_crs(walking_dens_unweighted))
 
 walking_dens_unweighted <- mask(crop(walking_dens_unweighted, extent(hrec_boundary)), hrec_boundary)
 driving_dens_unweighted <- mask(crop(driving_dens_unweighted, extent(hrec_boundary)), hrec_boundary)
@@ -40,212 +39,39 @@ stationary_dens_weighted <- mask(crop(stationary_dens_weighted, extent(hrec_boun
 stationary_road_dens_weighted <- mask(crop(stationary_road_dens_weighted, extent(hrec_boundary)), hrec_boundary)
 stationary_offroad_dens_weighted <- mask(crop(stationary_offroad_dens_weighted, extent(hrec_boundary)), hrec_boundary)
 
-# Comparison plots --------------------------------------------------------
+# Create ggplot map theme
+theme_for_maps <- theme_minimal() +
+    theme(legend.position = "none",
+          axis.title=element_blank(),
+          axis.text=element_blank(),
+          axis.ticks=element_blank(),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank())
 
-# Weighted vs unweighted for each behavioral state
+# Make plots --------------------------------------------------------
 
-# Walking
-par(mfrow=c(1,2))
-plot(walking_dens_unweighted, 
-     col = viridis(1e3), 
-     zlim=c(0,400),
-     main = "Walking Unweighted")
-plot(walking_dens_weighted, 
-     col = viridis(1e3), 
-     zlim=c(0,400),
-     main = "Walking Weighted")
+stationary_df <- as.data.frame(stationary_dens_weighted, xy = TRUE)
+stationary_plot <- ggplot() + 
+    geom_raster(data = stationary_df, aes(x = x, y = y, fill = layer)) +
+    scale_fill_gradient(low = "white", high = "#c28722", na.value = "transparent") +
+    coord_equal() +
+    geom_sf(data = hrec_boundary, aes(geometry = geometry), fill = "transparent", linewidth = 1) +
+    theme_for_maps
 
-# Driving
-par(mfrow=c(1,2))
-plot(driving_dens_unweighted, 
-     col = viridis(1e3), 
-     zlim=c(0,400),
-     main = "Driving Unweighted")
-plot(driving_dens_weighted, 
-     col = viridis(1e3), 
-     zlim=c(0,400),
-     main = "Driving Weighted")
+walking_df <- as.data.frame(walking_dens_weighted, xy = TRUE)
+walking_plot <- ggplot() + 
+    geom_raster(data = walking_df, aes(x = x, y = y, fill = layer)) +
+    scale_fill_gradient(low = "white", high = "#ae5113", na.value = "transparent") +
+    coord_equal() +
+    geom_sf(data = hrec_boundary, aes(geometry = geometry), fill = "transparent", linewidth = 1) +
+    theme_for_maps
 
-# Stationary
-par(mfrow=c(1,2))
-plot(stationary_dens_unweighted, 
-     col = viridis(1e3), 
-     zlim=c(0,400),
-     main = "Stationary Unweighted")
-plot(stationary_dens_weighted, 
-     col = viridis(1e3), 
-     zlim=c(0,400),
-     main = "Stationary Weighted")
+driving_df <- as.data.frame(driving_dens_weighted, xy = TRUE)
+driving_plot <- ggplot() + 
+    geom_raster(data = driving_df, aes(x = x, y = y, fill = layer)) +
+    scale_fill_gradient(low = "white", high = "#4e341d", na.value = "white") +
+    coord_equal() +
+    geom_sf(data = hrec_boundary, aes(geometry = geometry), fill = "transparent", linewidth = 1) +
+    theme_for_maps
 
-# Stationary Road
-par(mfrow=c(1,2))
-plot(stationary_road_dens_unweighted, 
-     col = viridis(1e3), 
-     zlim=c(0,400),
-     main = "Stationary Road Unweighted")
-plot(stationary_road_dens_weighted, 
-     col = viridis(1e3), 
-     zlim=c(0,400),
-     main = "Stationary Road Weighted")
-
-# Stationary Off Road
-par(mfrow=c(1,2))
-plot(stationary_offroad_dens_unweighted, 
-     col = viridis(1e3), 
-     zlim=c(0,400),
-     main = "Stationary Off-Road Unweighted")
-plot(stationary_offroad_dens_weighted, 
-     col = viridis(1e3), 
-     zlim=c(0,400),
-     main = "Stationary Off-Road Weighted")
-
-# Stationary On vs Off Road (and combined)
-par(mfrow=c(1,3))
-plot(stationary_dens_unweighted, 
-     col = viridis(1e3), 
-     zlim=c(0,400),
-     main = "Stationary - All")
-plot(stationary_road_dens_unweighted, 
-     col = viridis(1e3), 
-     zlim=c(0,400),
-     main = "Stationary - On Road")
-plot(stationary_offroad_dens_unweighted, 
-     col = viridis(1e3), 
-     zlim=c(0,400),
-     main = "Stationary - Off Road")
-
-# All 3 unweighted states
-par(mfrow=c(1,3))
-plot(stationary_dens_unweighted, 
-     col = viridis(1e3), 
-     zlim=c(0,400),
-     main = "Stationary (Unweighted)")
-plot(walking_dens_unweighted, 
-     col = viridis(1e3), 
-     zlim=c(0,400),
-     main = "Walking (Unweighted)")
-plot(driving_dens_unweighted, 
-     col = viridis(1e3), 
-     zlim=c(0,400),
-     main = "Driving (Unweighted)")
-
-# All 3 weighted states
-par(mfrow=c(1,3))
-plot(stationary_dens_weighted, 
-     col = viridis(1e3), 
-     zlim=c(0,400),
-     main = "Stationary (Weighted)")
-plot(walking_dens_weighted, 
-     col = viridis(1e3), 
-     zlim=c(0,400),
-     main = "Walking (Weighted)")
-plot(driving_dens_weighted, 
-     col = viridis(1e3), 
-     zlim=c(0,400),
-     main = "Driving (Weighted)")
-
-# All 3 weighted states - different scales
-
-par(mfrow=c(1,3))
-plot(stationary_dens_weighted, 
-     col = viridis(1e3), 
-     zlim=c(0,350),
-     main = "Stationary (Weighted)")
-plot(walking_dens_weighted, 
-     col = viridis(1e3), 
-     zlim=c(0,300),
-     main = "Walking (Weighted)")
-plot(driving_dens_weighted, 
-     col = viridis(1e3), 
-     zlim=c(0,700),
-     main = "Driving (Weighted)")
-
-
-
-# For exporting -----------------------------------------------------------
-
-weighted_stack <- raster::stack(stationary_dens_weighted,
-                                walking_dens_weighted,
-                                driving_dens_weighted)
-names(weighted_stack) <- c("Stationary", "Walking", "Driving")
-weighted_stack_df <- weighted_stack %>% 
-    as.data.frame(xy = TRUE) %>% 
-    tidyr::pivot_longer(cols = !c(x, y), 
-                        names_to = 'variable', 
-                        values_to = 'value') %>% 
-    dplyr::filter(value != "NA")
-ggplot() +
-    geom_raster(data = weighted_stack_df, aes(x = x, y = y, fill = value)) + 
-    facet_wrap(~ variable) +
-    theme_minimal()
-
-# Stationary
-#stationary_plot <- 
-stationary_dens_weighted %>% 
-    as.data.frame(xy = TRUE) %>% 
-    tidyr::pivot_longer(cols = !c(x, y), 
-                        names_to = 'variable', 
-                        values_to = 'value') %>% 
-    dplyr::filter(value != "NA") %>% 
-    ggplot() +
-    geom_raster(aes(x = x, y = y, fill = value)) + 
-    theme_bw() + 
-    theme(panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          panel.border = element_blank(),
-          panel.background = element_blank(),
-          axis.ticks = element_blank(),
-          axis.text = element_blank(),
-          axis.title = element_blank(),
-          plot.title = element_text(hjust = 0.5)) +
-   # ggtitle("Stationary") +
-    scale_fill_viridis()
-ggsave("Figures/map-stationary.pdf")
-
-walking_dens_weighted %>% 
-    as.data.frame(xy = TRUE) %>% 
-    tidyr::pivot_longer(cols = !c(x, y), 
-                        names_to = 'variable', 
-                        values_to = 'value') %>% 
-    dplyr::filter(value != "NA") %>% 
-    ggplot() +
-    geom_raster(aes(x = x, y = y, fill = value)) + 
-    theme_bw() + 
-    theme(panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          panel.border = element_blank(),
-          panel.background = element_blank(),
-          axis.ticks = element_blank(),
-          axis.text = element_blank(),
-          axis.title = element_blank(),
-          plot.title = element_text(hjust = 0.5)) +
-   # ggtitle("Walking") +
-    scale_fill_viridis()
-ggsave("Figures/map-walking.pdf")
-
-driving_dens_weighted %>% 
-    as.data.frame(xy = TRUE) %>% 
-    tidyr::pivot_longer(cols = !c(x, y), 
-                        names_to = 'variable', 
-                        values_to = 'value') %>% 
-    dplyr::filter(value != "NA") %>% 
-    ggplot() +
-    geom_raster(aes(x = x, y = y, fill = value)) + 
-    theme_bw() + 
-    theme(panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          panel.border = element_blank(),
-          panel.background = element_blank(),
-          axis.ticks = element_blank(),
-          axis.text = element_blank(),
-          axis.title = element_blank(),
-          plot.title = element_text(hjust = 0.5)) +
-   # ggtitle("Driving") +
-    scale_fill_viridis()
-
-ggsave("Figures/map-driving.pdf")
-
-# bring in roads
-roads <- read_sf("Data/Spatial data/Raw from Alex/roads_densified.shp")
-
-# export
+plot_grid(stationary_plot, walking_plot, driving_plot, labels = "AUTO", nrow = 1)
