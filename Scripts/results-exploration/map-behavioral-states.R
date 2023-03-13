@@ -75,3 +75,4 @@ driving_plot <- ggplot() +
     theme_for_maps
 
 plot_grid(stationary_plot, walking_plot, driving_plot, labels = "AUTO", nrow = 1)
+ggsave("Figures/behavior-maps.pdf", width = 6, height = 3)
