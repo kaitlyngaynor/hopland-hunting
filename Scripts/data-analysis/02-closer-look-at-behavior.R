@@ -2,7 +2,7 @@ library(dplyr)
 library(ggplot2)
 library(cowplot)
 
-data_hmm <- read.csv("Results/hmm-top-model-2023-03-04.csv")
+data_hmm <- read.csv("Results/hmm-top-model-2023-03-10.csv")
 head(data_hmm)
 
 
@@ -38,4 +38,4 @@ data_hmm <- data_hmm %>%
                                               "Stationary_offroad", state_2stationary))
 
 # Export behavioral states with extra column
-write.csv(data_hmm, "Results/hmm-data-with-model-predictions-annotated-2023-03-04.csv", row.names = FALSE)
+write.csv(data_hmm, "Results/hmm-data-with-model-predictions-annotated-2023-03-10.csv", row.names = FALSE)
