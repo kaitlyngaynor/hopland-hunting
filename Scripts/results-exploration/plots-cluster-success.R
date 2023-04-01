@@ -1,18 +1,17 @@
 library(ggplot2)
 library(dplyr)
 
-hunter_percentages_long <- read.csv("Results/hunter_percentages_long_4state.csv")
 hunter_cluster_success_long <- read.csv("Results/hunter_cluster_success_long.csv")
 
 # Histogram of percentage of time spent in each state (across all hunters)
-ggplot(hunter_percentages_long, aes(x = Percentage)) +
+ggplot(hunter_cluster_success_long, aes(x = Percentage)) +
     facet_wrap(~State_4state, nrow = 3) +
     geom_histogram() +
     theme_bw() +
     xlab("Percentage of Time Spent in Behavioral State")
 
 # Make histogram of time spent in each state across clusters
-ggplot(hunter_percentages_long, aes(x = Percentage, fill = State_4state)) +
+ggplot(hunter_cluster_success_long, aes(x = Percentage, fill = State_4state)) +
     facet_grid(Cluster4 ~ State_4state, scales = "free_y") +
     geom_histogram() +
     theme_bw() +
@@ -82,5 +81,9 @@ hunter_cluster_success_long %>%
 # 10 of 94 waiters (10.6%)
 13/149
 # 13 of 149 walkers (8.7%)
+
+# Try to make a 3d plot
+hunter_percentages_wide <- hunter_cluster_success_long %>% 
+    
 
 
