@@ -3,6 +3,7 @@
 library(dplyr)
 library(tidyr)
 library(sjPlot)
+library(factoextra)
 
 # Import data -------------------------------------------------------------
 
@@ -119,5 +120,25 @@ success_rate <- hunter_cluster_success_long %>%
                   Success_Rate = Y/Total,
                   Failure_rate = N/Total)
 
-# Export data
+# Export PCA for plotting -----------------------------------------------------------
+
+# from https://www.datanovia.com/en/blog/k-means-clustering-visualization-in-r-step-by-step-guide/ 
+
+# Dimension reduction using PCA
+percentages.pca <- prcomp(as.matrix(hunter_percentages_noID_4state))
+# Coordinates of individuals
+ind.coord <- as.data.frame(factoextra::get_pca_ind(percentages.pca)$coord)
+# Add clusters obtained using the K-means algorithm
+ind.coord$cluster <- factor(k3_4state$cluster)
+# Data inspection
+head(ind.coord)
+
+hunter_percentages_4state <- cbind(hunter_percentages_4state, ind.coord)
+
+
+# Export ------------------------------------------------------------------
+
+write.csv(hunter_percentages_4state, "Results/hunter_percentages_4state.csv", row.names = FALSE)
 write.csv(hunter_cluster_success_long, "Results/hunter_cluster_success_long.csv", row.names = FALSE)
+
+
