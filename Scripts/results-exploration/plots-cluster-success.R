@@ -81,9 +81,3 @@ hunter_cluster_success_long %>%
 # 10 of 94 waiters (10.6%)
 13/149
 # 13 of 149 walkers (8.7%)
-
-# Try to make a 3d plot
-hunter_percentages_wide <- hunter_cluster_success_long %>% 
-    
-
-
