@@ -120,5 +120,4 @@ success_rate <- hunter_cluster_success_long %>%
                   Failure_rate = N/Total)
 
 # Export data
-write.csv(hunter_percentages_long_4state, "Results/hunter_percentages_long_4state.csv", row.names = FALSE)
 write.csv(hunter_cluster_success_long, "Results/hunter_cluster_success_long.csv", row.names = FALSE)
