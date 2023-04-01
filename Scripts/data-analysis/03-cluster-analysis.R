@@ -135,6 +135,10 @@ head(ind.coord)
 
 hunter_percentages_4state <- cbind(hunter_percentages_4state, ind.coord)
 
+# Percentage of variance explained by dimensions
+eigenvalue <- round(get_eigenvalue(percentages.pca), 1)
+variance.percent <- eigenvalue$variance.percent
+head(eigenvalue)
 
 # Export ------------------------------------------------------------------
 
