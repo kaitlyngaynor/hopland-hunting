@@ -28,143 +28,143 @@ clusters <- read.csv("Results/hunter_cluster_success_long.csv") %>%
 used_avail <- dplyr::left_join(used_avail, clusters)
 
 # Split by cluster
-used_avail_drivers <- used_avail %>% 
-    dplyr::filter((Cluster4 != "Walkers" & Cluster4 != "Waiters") | Used == 0)
-used_avail_walkers <- used_avail %>% 
-    dplyr::filter((Cluster4 != "Drivers" & Cluster4 != "Waiters") | Used == 0)
-used_avail_waiters <- used_avail %>% 
-    dplyr::filter((Cluster4 != "Walkers" & Cluster4 != "Drivers") | Used == 0)
+used_avail_coursing <- used_avail %>% 
+    dplyr::filter((Cluster4 != "Stalking" & Cluster4 != "Sit-and-wait") | Used == 0)
+used_avail_stalking <- used_avail %>% 
+    dplyr::filter((Cluster4 != "Coursing" & Cluster4 != "Sit-and-wait") | Used == 0)
+used_avail_sitandwait <- used_avail %>% 
+    dplyr::filter((Cluster4 != "Stalking" & Cluster4 != "Coursing") | Used == 0)
 
 # Filter by cluster & success
-used_avail_drivers_success <- used_avail_drivers %>% dplyr::filter(Harvest == "Y" | Used == 0)
-used_avail_walkers_success <- used_avail_walkers %>% dplyr::filter(Harvest == "Y" | Used == 0)
-used_avail_waiters_success <- used_avail_waiters %>% dplyr::filter(Harvest == "Y" | Used == 0)
-used_avail_drivers_unsuccess <- used_avail_drivers %>% dplyr::filter(Harvest == "N" | Used == 0)
-used_avail_walkers_unsuccess <- used_avail_walkers %>% dplyr::filter(Harvest == "N" | Used == 0)
-used_avail_waiters_unsuccess <- used_avail_waiters %>% dplyr::filter(Harvest == "N" | Used == 0)
+used_avail_coursing_success <- used_avail_coursing %>% dplyr::filter(Harvest == "Y" | Used == 0)
+used_avail_stalking_success <- used_avail_stalking %>% dplyr::filter(Harvest == "Y" | Used == 0)
+used_avail_sitandwait_success <- used_avail_sitandwait %>% dplyr::filter(Harvest == "Y" | Used == 0)
+used_avail_coursing_unsuccess <- used_avail_coursing %>% dplyr::filter(Harvest == "N" | Used == 0)
+used_avail_stalking_unsuccess <- used_avail_stalking %>% dplyr::filter(Harvest == "N" | Used == 0)
+used_avail_sitandwait_unsuccess <- used_avail_sitandwait %>% dplyr::filter(Harvest == "N" | Used == 0)
 
-fit_drivers_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
-                   data = used_avail_drivers_success,
+fit_coursing_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+                   data = used_avail_coursing_success,
                    family = binomial) 
-fit_walkers_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
-                   data = used_avail_walkers_success,
+fit_stalking_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+                   data = used_avail_stalking_success,
                    family = binomial) 
-fit_waiters_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
-                   data = used_avail_waiters_success,
+fit_sitandwait_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+                   data = used_avail_sitandwait_success,
                    family = binomial) 
-fit_drivers_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
-                           data = used_avail_drivers_unsuccess,
+fit_coursing_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+                           data = used_avail_coursing_unsuccess,
                            family = binomial) 
-fit_walkers_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
-                           data = used_avail_walkers_unsuccess,
+fit_stalking_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+                           data = used_avail_stalking_unsuccess,
                            family = binomial) 
-fit_waiters_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
-                           data = used_avail_waiters_unsuccess,
+fit_sitandwait_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+                           data = used_avail_sitandwait_unsuccess,
                            family = binomial) 
 
 # Plotting all model output together - takes quite a while to run
-# jtools::plot_summs(fit_drivers_success, fit_drivers_unsuccess, 
-#                    fit_walkers_success, fit_walkers_unsuccess, 
-#                    fit_waiters_success, fit_waiters_unsuccess,
-#                    model.names = c("Drivers - Success", "Drivers - Not",
-#                                    "Walkers - Success", "Walkers - Not",
-#                                    "Waiters - Success", "Waiters - Not"))
+# jtools::plot_summs(fit_coursing_success, fit_coursing_unsuccess, 
+#                    fit_stalking_success, fit_stalking_unsuccess, 
+#                    fit_sitandwait_success, fit_sitandwait_unsuccess,
+#                    model.names = c("Coursing - Success", "Coursing - Not",
+#                                    "Stalking - Success", "Stalking - Not",
+#                                    "Sit-and-wait - Success", "Sit-and-wait - Not"))
 
 
 # Export for plotting
 
-# Drivers - success
-drivers_success_coef <- fit_drivers_success$coefficients %>% 
+# Coursing - success
+coursing_success_coef <- fit_coursing_success$coefficients %>% 
     as.data.frame() %>% 
     tibble::rownames_to_column("Predictor") %>% 
     dplyr::rename("Coefficient" = ".")
-drivers_success_ci <- confint(fit_drivers_success) %>% 
+coursing_success_ci <- confint(fit_coursing_success) %>% 
     as.data.frame() %>% 
     tibble::rownames_to_column("Predictor") %>% 
     dplyr::rename("LCI" = "2.5 %", "UCI" = "97.5 %")
-drivers_success_results <- dplyr::left_join(drivers_success_coef, drivers_success_ci) %>% 
+coursing_success_results <- dplyr::left_join(coursing_success_coef, coursing_success_ci) %>% 
     dplyr::mutate(Predictor = c("Intercept", "Ruggedness", "Viewshed", "Chaparral", "Woodland", "Road Distance"),
-                  `Hunting Mode` = "Drivers",
+                  `Hunting Mode` = "Coursing",
                   Harvest = "Yes",
                   Model = paste(`Hunting Mode`, Harvest, sep = "_"))
 
-# Drivers - no success
-drivers_unsuccess_coef <- fit_drivers_unsuccess$coefficients %>% 
+# Coursing - no success
+coursing_unsuccess_coef <- fit_coursing_unsuccess$coefficients %>% 
     as.data.frame() %>% 
     tibble::rownames_to_column("Predictor") %>% 
     dplyr::rename("Coefficient" = ".")
-drivers_unsuccess_ci <- confint(fit_drivers_unsuccess) %>% 
+coursing_unsuccess_ci <- confint(fit_coursing_unsuccess) %>% 
     as.data.frame() %>% 
     tibble::rownames_to_column("Predictor") %>% 
     dplyr::rename("LCI" = "2.5 %", "UCI" = "97.5 %")
-drivers_unsuccess_results <- dplyr::left_join(drivers_unsuccess_coef, drivers_unsuccess_ci) %>% 
+coursing_unsuccess_results <- dplyr::left_join(coursing_unsuccess_coef, coursing_unsuccess_ci) %>% 
     dplyr::mutate(Predictor = c("Intercept", "Ruggedness", "Viewshed", "Chaparral", "Woodland", "Road Distance"),
-                  `Hunting Mode` = "Drivers",
+                  `Hunting Mode` = "Coursing",
                   Harvest = "No",
                   Model = paste(`Hunting Mode`, Harvest, sep = "_"))
 
-# Walkers - success
-walkers_success_coef <- fit_walkers_success$coefficients %>% 
+# Stalking - success
+stalking_success_coef <- fit_stalking_success$coefficients %>% 
     as.data.frame() %>% 
     tibble::rownames_to_column("Predictor") %>% 
     dplyr::rename("Coefficient" = ".")
-walkers_success_ci <- confint(fit_walkers_success) %>% 
+stalking_success_ci <- confint(fit_stalking_success) %>% 
     as.data.frame() %>% 
     tibble::rownames_to_column("Predictor") %>% 
     dplyr::rename("LCI" = "2.5 %", "UCI" = "97.5 %")
-walkers_success_results <- dplyr::left_join(walkers_success_coef, walkers_success_ci) %>% 
+stalking_success_results <- dplyr::left_join(stalking_success_coef, stalking_success_ci) %>% 
     dplyr::mutate(Predictor = c("Intercept", "Ruggedness", "Viewshed", "Chaparral", "Woodland", "Road Distance"),
-                  `Hunting Mode` = "Walkers",
+                  `Hunting Mode` = "Stalking",
                   Harvest = "Yes",
                   Model = paste(`Hunting Mode`, Harvest, sep = "_"))
 
-# Walkers - no success
-walkers_unsuccess_coef <- fit_walkers_unsuccess$coefficients %>% 
+# Stalking - no success
+stalking_unsuccess_coef <- fit_stalking_unsuccess$coefficients %>% 
     as.data.frame() %>% 
     tibble::rownames_to_column("Predictor") %>% 
     dplyr::rename("Coefficient" = ".")
-walkers_unsuccess_ci <- confint(fit_walkers_unsuccess) %>% 
+stalking_unsuccess_ci <- confint(fit_stalking_unsuccess) %>% 
     as.data.frame() %>% 
     tibble::rownames_to_column("Predictor") %>% 
     dplyr::rename("LCI" = "2.5 %", "UCI" = "97.5 %")
-walkers_unsuccess_results <- dplyr::left_join(walkers_unsuccess_coef, walkers_unsuccess_ci) %>% 
+stalking_unsuccess_results <- dplyr::left_join(stalking_unsuccess_coef, stalking_unsuccess_ci) %>% 
     dplyr::mutate(Predictor = c("Intercept", "Ruggedness", "Viewshed", "Chaparral", "Woodland", "Road Distance"),
-                  `Hunting Mode` = "Walkers",
+                  `Hunting Mode` = "Stalking",
                   Harvest = "No",
                   Model = paste(`Hunting Mode`, Harvest, sep = "_"))
 
-# Waiters - success
-waiters_success_coef <- fit_waiters_success$coefficients %>% 
+# Sit-and-wait - success
+sitandwait_success_coef <- fit_sitandwait_success$coefficients %>% 
     as.data.frame() %>% 
     tibble::rownames_to_column("Predictor") %>% 
     dplyr::rename("Coefficient" = ".")
-waiters_success_ci <- confint(fit_waiters_success) %>% 
+sitandwait_success_ci <- confint(fit_sitandwait_success) %>% 
     as.data.frame() %>% 
     tibble::rownames_to_column("Predictor") %>% 
     dplyr::rename("LCI" = "2.5 %", "UCI" = "97.5 %")
-waiters_success_results <- dplyr::left_join(waiters_success_coef, waiters_success_ci) %>% 
+sitandwait_success_results <- dplyr::left_join(sitandwait_success_coef, sitandwait_success_ci) %>% 
     dplyr::mutate(Predictor = c("Intercept", "Ruggedness", "Viewshed", "Chaparral", "Woodland", "Road Distance"),
-                  `Hunting Mode` = "Waiters",
+                  `Hunting Mode` = "Sit-and-wait",
                   Harvest = "Yes",
                   Model = paste(`Hunting Mode`, Harvest, sep = "_"))
 
-# Waiters - no success
-waiters_unsuccess_coef <- fit_waiters_unsuccess$coefficients %>% 
+# Sit-and-wait - no success
+sitandwait_unsuccess_coef <- fit_sitandwait_unsuccess$coefficients %>% 
     as.data.frame() %>% 
     tibble::rownames_to_column("Predictor") %>% 
     dplyr::rename("Coefficient" = ".")
-waiters_unsuccess_ci <- confint(fit_waiters_unsuccess) %>% 
+sitandwait_unsuccess_ci <- confint(fit_sitandwait_unsuccess) %>% 
     as.data.frame() %>% 
     tibble::rownames_to_column("Predictor") %>% 
     dplyr::rename("LCI" = "2.5 %", "UCI" = "97.5 %")
-waiters_unsuccess_results <- dplyr::left_join(waiters_unsuccess_coef, waiters_unsuccess_ci) %>% 
+sitandwait_unsuccess_results <- dplyr::left_join(sitandwait_unsuccess_coef, sitandwait_unsuccess_ci) %>% 
     dplyr::mutate(Predictor = c("Intercept", "Ruggedness", "Viewshed", "Chaparral", "Woodland", "Road Distance"),
-                  `Hunting Mode` = "Waiters",
+                  `Hunting Mode` = "Sit-and-wait",
                   Harvest = "No",
                   Model = paste(`Hunting Mode`, Harvest, sep = "_"))
 
 # Combine into a single dataframe for exporting
-all_rsf_results <- dplyr::bind_rows(drivers_success_results, drivers_unsuccess_results,
-                                    walkers_success_results, walkers_unsuccess_results,
-                                    waiters_success_results, waiters_unsuccess_results)
+all_rsf_results <- dplyr::bind_rows(coursing_success_results, coursing_unsuccess_results,
+                                    stalking_success_results, stalking_unsuccess_results,
+                                    sitandwait_success_results, sitandwait_unsuccess_results)
 write.csv(all_rsf_results, "Results/rsf-results-by-mode-success.csv", row.names = F)
