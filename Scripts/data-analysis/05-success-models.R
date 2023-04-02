@@ -87,6 +87,7 @@ summary(fit8)
     labs(y = "Harvest probability", x = "Cluster") +
     scale_fill_manual(values = c("#1b9e77", "#d95f02", "#7570b3")) +
     scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3")) +
+    scale_x_discrete(guide = guide_axis(angle = 25)) +
     theme_bw() +
     theme(panel.grid.major.x = element_blank(),
           legend.position = "none") +
@@ -101,6 +102,7 @@ summary(fit8)
     geom_errorbar(aes(ymin = lower, ymax = upper), 
                   linewidth = 0.75,
                   width = 0) +
+    scale_x_discrete(guide = guide_axis(angle = 25)) +
     labs(y = "", x = "Hunt type") +
     theme_bw() +
     theme(panel.grid.major.x = element_blank(),
@@ -126,6 +128,7 @@ summary(fit8)
 library(cowplot)
 plot_grid(cluster_fig, hunt_type_fig, year_fig,
           labels = "AUTO",
-          nrow = 1)
-ggsave("Figures/harvest-success-model.pdf", width = 6.5, height = 2.5)
+          nrow = 1,
+          align = "h")
+ggsave("Figures/harvest-success-model.pdf", width = 6.5, height = 3)
 
