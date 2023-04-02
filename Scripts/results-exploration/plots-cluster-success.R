@@ -1,5 +1,8 @@
 library(ggplot2)
 library(dplyr)
+library(plyr)
+library(cowplot)
+library(ggfortify)
 
 hunter_cluster_success_long <- read.csv("Results/hunter_cluster_success_long.csv")
 
@@ -20,7 +23,7 @@ ggplot(hunter_cluster_success_long, aes(x = Percentage, fill = State_4state)) +
                       labels=c("Driving", "Stationary (off-road)", "Stationary (on-road)", "Walking"))
 
 # Boxplot of time spent in each state BY Cluster
-ggplot(hunter_cluster_success_long, aes(y = Percentage,
+(boxplot_behavior <- ggplot(hunter_cluster_success_long, aes(y = Percentage,
                                         x = Cluster4,
                                         fill = State_4state)) +
     geom_boxplot() +
@@ -29,7 +32,7 @@ ggplot(hunter_cluster_success_long, aes(y = Percentage,
                       values = c("#614124", "#E8C07D", "gray", "#CC704B"),
                       labels=c("Driving", "Stationary (off-road)", "Stationary (on-road)", "Walking")) +
     xlab("Hunting Mode") +
-    ylab("Percent Time") 
+    ylab("Percent Time"))
 ggsave("Figures/behavior-state-by-cluster-boxplot.pdf", width = 7, height = 3)
 
 # Also make a plot of time in cluster (data come from model output in 03-cluster-analysis.R)
@@ -81,3 +84,39 @@ hunter_cluster_success_long %>%
 # 10 of 94 waiters (10.6%)
 13/149
 # 13 of 149 walkers (8.7%)
+
+
+# Cluster plot ------------------------------------------------------------
+
+
+# from 03-cluster-analysis
+# eigenvalue variance.percent cumulative.variance.percent
+# Dim.1        0.1             61.4                        61.4
+# Dim.2        0.0             26.0                        87.4
+# Dim.3        0.0             12.6                       100.0
+# Dim.4        0.0              0.0                       100.0
+
+hunter_percentages_4state <- read.csv("Results/hunter_percentages_4state.csv")
+
+#getting the convex hull of each unique point set
+find_hull <- function(df) df[chull(df$Dim.1, df$Dim.2), ]
+hulls <- plyr::ddply(hunter_percentages_4state, "Cluster4", find_hull)
+
+# Clusters of hunters
+(cluster_biplot <- ggplot(data = hunter_percentages_4state, 
+       aes(x = Dim.1, y = Dim.2, colour = Cluster4, fill = Cluster4)) +
+    geom_point() + 
+    geom_polygon(data = hulls, alpha = 0.5) +
+    labs(x = "Dim.1 (61.4%)", y = "Dim.2 (26.0%)") +
+    scale_fill_manual(name = "Hunting Mode",
+                      values = c("#1b9e77", "#d95f02", "#7570b3"),
+                      labels = c("Coursing", "Sit-and-wait", "Stalking")) +
+    scale_color_manual(name = "Hunting Mode",
+                       values = c("#1b9e77", "#d95f02", "#7570b3"),
+                       labels = c("Coursing", "Sit-and-wait", "Stalking")) +
+    theme_bw())
+ggsave("Figures/hunting-mode-cluster-pca.pdf", width = 6, height = 4)
+
+plot_grid(cluster_biplot, boxplot_behavior, 
+          align = "v",
+          ncol = 1)
