@@ -23,9 +23,17 @@ ggplot(data = hunter_percentages_4state,
     geom_point() + 
     geom_polygon(data = hulls, alpha = 0.5) +
     labs(x = "Dim.1 (61.4%)", y = "Dim.2 (26.0%)") +
-    scale_fill_manual(values = c("#1b9e77", "#d95f02", "#7570b3")) +
-    scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3")) +
+    scale_fill_manual(name = "Hunting Mode",
+                      values = c("#1b9e77", "#d95f02", "#7570b3"),
+                      labels = c("Coursing", "Sit-and-wait", "Stalking")) +
+    scale_color_manual(name = "Hunting Mode",
+                       values = c("#1b9e77", "#d95f02", "#7570b3"),
+                       labels = c("Coursing", "Sit-and-wait", "Stalking")) +
     theme_bw()
+ggsave("Figures/hunting-mode-cluster-pca.pdf", width = 6, height = 4)
+
+
+# Exploring successful & unsuccessful hunters -----------------------------
 
 # With different shapes for harvest
 ggplot(data = hunter_percentages_4state, 
@@ -37,14 +45,6 @@ ggplot(data = hunter_percentages_4state,
     scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3")) +
     theme_bw()
 
-ggplot(data = hunter_percentages_4state, 
-       aes(x = Dim.1, y = Dim.2, colour = Cluster4, fill = Cluster4)) +
-    geom_point(aes(shape = Harvest)) + 
-    geom_polygon(data = hulls, alpha = 0.5) +
-    labs(x = "Dim.1 (61.4%)", y = "Dim.2 (26.0%)") +
-    scale_fill_manual(values = c("#1b9e77", "#d95f02", "#7570b3")) +
-    scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3")) +
-    theme_bw()
 
 # two panels
 a <- hunter_percentages_4state %>% 
