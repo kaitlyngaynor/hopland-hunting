@@ -133,12 +133,17 @@ ind.coord$cluster <- factor(k3_4state$cluster)
 # Data inspection
 head(ind.coord)
 
-hunter_percentages_4state <- cbind(hunter_percentages_4state, ind.coord)
+hunter_percentages_4state <- cbind(hunter_percentages_4state, ind.coord) %>% 
+    dplyr::left_join(hunter_success)
 
 # Percentage of variance explained by dimensions
 eigenvalue <- round(get_eigenvalue(percentages.pca), 1)
 variance.percent <- eigenvalue$variance.percent
 head(eigenvalue)
+
+# loading
+pca.var <- get_pca_var(percentages.pca)
+pca.var$contrib
 
 # Export ------------------------------------------------------------------
 
