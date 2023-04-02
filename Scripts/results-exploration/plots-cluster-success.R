@@ -119,4 +119,7 @@ ggsave("Figures/hunting-mode-cluster-pca.pdf", width = 6, height = 4)
 
 plot_grid(cluster_biplot, boxplot_behavior, 
           align = "v",
-          ncol = 1)
+          ncol = 1, 
+          labels = "AUTO")
+ggsave("Figures/hunting-mode-cluster-behavior-multipanel.pdf",
+       height = 6, width = 6)
