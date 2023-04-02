@@ -49,10 +49,10 @@ ggsave("Figures/time-of-harvest.pdf", width = 3, height = 5)
 
 library(kSamples)
 
-drivers <- dplyr::filter(success, Cluster4 == "Drivers", Harvest == "Y")
-walkers <- dplyr::filter(success, Cluster4 == "Walkers", Harvest == "Y")
-waiters <- dplyr::filter(success, Cluster4 == "Waiters", Harvest == "Y")
+coursing <- dplyr::filter(success, Cluster4 == "Coursing", Harvest == "Y")
+stalking <- dplyr::filter(success, Cluster4 == "Stalking", Harvest == "Y")
+sitandwait <- dplyr::filter(success, Cluster4 == "Sit-and-wait", Harvest == "Y")
 
 set.seed(12)
-ad.test(drivers$Sunrise_elapsed_min, walkers$Sunrise_elapsed_min, waiters$Sunrise_elapsed_min,
+ad.test(coursing$Sunrise_elapsed_min, stalking$Sunrise_elapsed_min, sitandwait$Sunrise_elapsed_min,
         method = "exact", dist = FALSE, Nsim = 1000)
