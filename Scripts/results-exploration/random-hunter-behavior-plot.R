@@ -1,4 +1,4 @@
-# Makes the plot of the 3 behavioral states for each successful hunter
+# Makes the plot of the 3 behavioral states for 50 random hunters in each mode
 
 library(ggplot2)
 library(dplyr)
@@ -13,19 +13,28 @@ n_indiv <- data_hmm %>%
 
 # Add up total time in each state
 summary_state <- data_hmm %>% 
-    count(ID, state_2stationary)
+    count(ID, state_2stationary) %>% 
+    tidyr::pivot_wider(values_from = n,
+                       names_from = state_2stationary) %>% 
+    tidyr::pivot_longer(cols = c(Driving, Stationary_offroad, Stationary_road, Walking),
+                        values_to = "n",
+                        names_to = "state_2stationary")
+summary_state$n <- replace_na(summary_state$n, 0)
 
-# Join with cluster associated with each hunter and filter to success
-successful <- read.csv("Results/hunter_cluster_success_long.csv") %>% 
-    filter(Harvest == "Y") %>% 
+# Join with cluster associated with each hunter
+set.seed(123)
+random_sample <- read.csv("Results/hunter_cluster_success_long.csv") %>% 
     dplyr::select(ID, Cluster4) %>%
-    unique()
+    unique() %>% 
+    dplyr::group_by(Cluster4) %>% 
+    sample_n(size = 75)
+
 
 # Join in the times in state
-successful <- left_join(successful, summary_state)
+random_sample <- left_join(random_sample, summary_state)
 
 # Format for plotting
-successful_long <- successful %>% 
+random_sample_long <- random_sample %>% 
     tidyr::pivot_wider(names_from = "state_2stationary", values_from = "n") %>% 
     mutate(Total = Driving + Stationary_offroad + Stationary_road + Walking,
            Driving_pct = Driving/Total,
@@ -37,9 +46,9 @@ successful_long <- successful %>%
                  names_to = "State", values_to = "Percent")
 
 # Make plot
-ggplot(data = successful_long, aes(x = ID, y = Percent, fill = State)) +
+ggplot(data = random_sample_long, aes(x = ID, y = Percent, fill = State)) +
     geom_bar(position = "stack", stat = "identity") +
-    facet_grid(~Cluster4, scales = "free", space = "free") +
+    facet_wrap(~Cluster4, scales = "free", ncol = 1) +
     theme_minimal() +
     ylab("Percent of Time") +
     xlab("Successful Hunters") +
@@ -48,6 +57,6 @@ ggplot(data = successful_long, aes(x = ID, y = Percent, fill = State)) +
           panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
           strip.text.x = element_text(size = 12)) +
-    scale_fill_manual(values = c("#614124", "gray", "#CC704B", "#E8C07D"),
+    scale_fill_manual(values = c("#614124", "#E8C07D", "gray", "#CC704B"),
                       labels = c("Driving", "Stationary (Off-road)", "Stationary (On-road)", "Walking")) 
-ggsave("Figures/successful-behavior.pdf", width = 7, height = 3.5)
+ggsave("Figures/random-75-cluster-behavior.pdf", width = 7, height = 3.5)
