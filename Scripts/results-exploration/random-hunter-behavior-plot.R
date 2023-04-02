@@ -48,15 +48,17 @@ random_sample_long <- random_sample %>%
 # Make plot
 ggplot(data = random_sample_long, aes(x = ID, y = Percent, fill = State)) +
     geom_bar(position = "stack", stat = "identity") +
-    facet_wrap(~Cluster4, scales = "free", ncol = 1) +
+    facet_wrap(~Cluster4, scales = "free", ncol = 2) +
     theme_minimal() +
     ylab("Percent of Time") +
-    xlab("Successful Hunters") +
+    xlab("") +
     theme(axis.text.x=element_blank(),
           axis.ticks.x=element_blank(),
           panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
-          strip.text.x = element_text(size = 12)) +
+          strip.text.x = element_text(size = 12),
+          legend.position = c(1, 0),
+          legend.justification = c(1, 0)) +
     scale_fill_manual(values = c("#614124", "#E8C07D", "gray", "#CC704B"),
                       labels = c("Driving", "Stationary (Off-road)", "Stationary (On-road)", "Walking")) 
-ggsave("Figures/random-75-cluster-behavior.pdf", width = 7, height = 3.5)
+ggsave("Figures/random-75-cluster-behavior.pdf", width = 6, height = 6)
