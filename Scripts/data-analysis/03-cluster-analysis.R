@@ -88,13 +88,13 @@ k3_4state
 # 
 # Cluster means:
 #     Stationary_offroad_pct Stationary_road_pct Walking_pct Driving_pct
-# 1              0.1429111           0.1137739   0.4226213   0.3206938 # WALKERS
-# 2              0.3919537           0.1629287   0.2093264   0.2357912 # WAITERS
-# 3              0.0889380           0.1486706   0.1705093   0.5918820 # DRIVERS
+# 1              0.1429111           0.1137739   0.4226213   0.3206938 # WALKERS/STALKING
+# 2              0.3919537           0.1629287   0.2093264   0.2357912 # WAITERS/SIT-AND-WAIT
+# 3              0.0889380           0.1486706   0.1705093   0.5918820 # DRIVERS/COURSING
 
 
 hunter_percentages_4state$Cluster4 = factor(k3_4state$cluster)
-levels(hunter_percentages_4state$Cluster4) <- c("Walkers", "Waiters", "Drivers") # change factor level names
+levels(hunter_percentages_4state$Cluster4) <- c("Stalking", "Sit-and-wait", "Coursing") # change factor level names
 
 # Join assigned clusters with long data also
 hunter_percentages_long_4state <- dplyr::left_join(hunter_percentages_long_4state,
