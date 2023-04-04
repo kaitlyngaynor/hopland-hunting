@@ -2,6 +2,7 @@ library(dplyr)
 library(ggplot2)
 library(overlap)
 library(kSamples)
+library(cowplot)
 `%notin%` <- Negate(`%in%`)
 
 success <- read.csv("Results/hunter_cluster_success_long.csv") %>%
@@ -40,7 +41,7 @@ success %>%
     scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3"))
 
 # Density plot with jittered points
-success %>% 
+(a <- success %>% 
     ggplot(aes(x = Time_Sun, fill = Cluster4)) +
     geom_density(alpha = 0.75) +
     theme_bw() +
@@ -48,12 +49,16 @@ success %>%
     ylab("Density") +
     xlab("Time of Day") +
     theme(legend.position = "none") +
-    geom_jitter(data = success, aes(x = Time_Sun, y = -0.0125, col = Cluster4), width = 0.25, height = 0, alpha = 0.5, size = 2) +
+          #axis.title.x = element_blank(),
+          #axis.ticks.x = element_blank(),
+          #axis.text.x = element_blank()) +
+    #geom_jitter(data = success, aes(x = Time_Sun, y = -0.0125, col = Cluster4), width = 0.25, height = 0, alpha = 0.5, size = 2) +
     scale_fill_manual(values = c("#1b9e77", "#d95f02", "#7570b3")) +
-    scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3")) +
+    scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3"))  +
     scale_x_continuous(breaks = c(pi/2, pi, (3*pi)/2),
                        labels = c("Sunrise", "Noon", "Sunset"))
-ggsave("Figures/time-of-harvest.pdf", width = 3, height = 5)
+    )
+#ggsave("Figures/time-of-harvest.pdf", width = 3, height = 5)
 
 # See if time of day varies by hunting mode - Anderson-Darling test
 
@@ -64,3 +69,35 @@ sitandwait <- dplyr::filter(success, Cluster4 == "Sit-and-wait")
 set.seed(12)
 ad.test(coursing$Time_Sun, stalking$Time_Sun, sitandwait$Time_Sun,
         method = "exact", dist = FALSE, Nsim = 1000)
+
+
+# Add buck plot -----------------------------------------------------------
+
+buck_records <- read.csv("Data/legal-buck-during-hunting.csv")
+
+# Plot diel activity
+bwA <- getBandWidth(buck_records$Time_Sun, kmax = 3)
+diel_data <- data.frame(matrix(ncol = 0, nrow = 128))
+diel_data$xxRad <- seq(0, 2 * pi, length = 128)
+diel_data$densA <- densityFit(buck_records$Time_Sun, diel_data$xxRad, bwA)/(24/(2 * pi))
+diel_data$Species <- "Male Deer"
+
+(b <- ggplot(diel_data, aes(x = xxRad, y = densA)) +
+    geom_line() +
+    geom_ribbon(aes(x = xxRad, ymax = densA), ymin=0, alpha=0.5) +
+    theme_bw() +
+    facet_wrap(~Species) +
+    scale_x_continuous(limits = c(pi/2, (3*pi)/2),
+                       breaks = c(pi/2, pi, (3*pi)/2),
+                       labels = c("Sunrise", "Noon", "Sunset")) +
+    ylim(c(0, 0.075)) +
+    ylab("Density") +
+    xlab("Time of Day"))
+#ggsave("Figures/time-of-buck-activity.pdf", width = 3, height = 1)
+
+plot_grid(a, b,
+          labels = "AUTO",
+          rel_heights = c(2.5, 1),
+          ncol = 1,
+          align = "v")
+ggsave("Figures/time-of-harvest-and-buck-activity.pdf", width = 3, height = 6)
