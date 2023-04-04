@@ -71,24 +71,3 @@ polygon(c(c(2 * pi, 0), xx,24), c(0, 0, densA,0), border = NA,
 lines(xx, densA, lty = 1, col = "black")
 
 
-# Using density approach --------------------------------------------------
-
-
-# Calculate time from sunrise (06:00) to record
-buck_records$Sunrise_elapsed_min <- as.numeric(difftime(as.POSIXct(buck_records$Time, format = "%H:%M:%S"), 
-                                                        as.POSIXct("06:00", format = "%H:%M"),
-                                                        units = "mins"))
-
-# Make plot
-ggplot(buck_records, aes(x = Sunrise_elapsed_min/60)) +
-    geom_density(alpha = 0.75) +
-    # xlim(0, 15) +
-    theme_bw() +
-    ylab("Density") +
-    xlab("Time From Sunrise (hours)") +
-    theme(legend.position = "none") +
-    geom_jitter(data = buck_records, aes(x = Sunrise_elapsed_min/60, y = -0.0125), width = 0.25, height = 0, alpha = 0.5, size = 2) 
-
-
-
-
