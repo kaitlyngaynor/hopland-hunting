@@ -17,11 +17,6 @@ metadata <- bind_rows(metadata1, metadata2) %>%
 success <- left_join(success, metadata)  %>%
     dplyr::filter(ID %notin% c("082419_06", "082419_13")) # missing harvest times
 
-# Calculate time from sunrise (06:00) to harvest
-success$Sunrise_elapsed_min <- as.numeric(difftime(as.POSIXct(success$Harvest_time, format = "%H:%M"), 
-                                                   as.POSIXct("06:00", format = "%H:%M"),
-                                                   units = "mins"))
-
 # Scale times
 success$Date <- as.POSIXct(success$Date, format = "%m/%d/%y")
 success$Time_HM <- lubridate::hm(success$Harvest_time)
