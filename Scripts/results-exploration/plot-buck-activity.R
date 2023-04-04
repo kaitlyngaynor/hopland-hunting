@@ -1,7 +1,6 @@
 library(overlap)
 library(dplyr)
 library(lubridate)
-library(ggplot2)
 
 cam_file_names <- list.files("Data/all-hopland-ct-data", full.names = TRUE)
 buck_records_all <- lapply(cam_file_names, read.csv) %>% 
@@ -52,18 +51,7 @@ buck_records$Time_Scaled <- buck_records$Time_Decimal / 24
 buck_records$Time_Radians <- buck_records$Time_Scaled * 2 * pi
 buck_records$Time_Sun <- overlap::sunTime(buck_records$Time_Radians, buck_records$Date, Coords)
 
-# Plot diel activity
-bwA <- getBandWidth(buck_records$Time_Sun, kmax = 3)
-diel_data <- data.frame(matrix(ncol = 0, nrow = 128))
-diel_data$xxRad <- seq(0, 2 * pi, length = 128)
-diel_data$densA <- densityFit(buck_records$Time_Sun, diel_data$xxRad, bwA)/(24/(2 * pi))
+# Export
+write.csv(buck_records, "Data/legal-buck-during-hunting.csv", row.names = FALSE)
 
-ggplot(diel_data, aes(x = xxRad, y = densA)) +
-    geom_line() +
-    geom_ribbon(aes(x = xxRad, ymax = densA), ymin=0, alpha=0.5) +
-    theme_bw() +
-    scale_x_continuous(limits = c(pi/2, (3*pi)/2),
-                       breaks = c(pi/2, pi, (3*pi)/2),
-                       labels = c("Sunrise", "Noon", "Sunset")) +
-    ylim(c(0, 0.06))
 
