@@ -14,6 +14,10 @@ metadata2 <- read.csv("Data/Hunting/igotu_metadata_2019_2022_29Jan2023.csv")
 metadata <- bind_rows(metadata1, metadata2)
 success <- left_join(success, metadata)
 
+# bring in weather data
+weather <- read.csv("Data/hopland_daily_weather.csv")
+success <- left_join(success, weather)
+
 # Take quick look at cluster vs multiday
 success %>% 
     count(Cluster4, Hunt_type) %>% 
@@ -45,29 +49,45 @@ success$Year_factor <- as.factor(success$Year)
 fit2.1 <- glm(Harvest01 ~ Year_factor, data = success, family = binomial) # AIC = 374.52
 summary(fit2.1)
 
-# Single vs multiday - BEST PREDICTOR
+# Single vs multiday
 fit3 <- glm(Harvest01 ~ Hunt_type, data = success, family = binomial) # AIC = 365.65
 summary(fit3)
 
-# Single vs multiday * cluster
-fit4 <- glm(Harvest01 ~ Hunt_type * Cluster4, data = success, family = binomial) # AIC = 369.05
+# Temperature - BEST PREDICTOR
+fit4 <- glm(Harvest01 ~ max_temp_f, data = success, family = binomial) # AIC = 344.64
 summary(fit4)
 
-# Single vs multiday + cluster - BETTER THAN INTERACTION
-fit5 <- glm(Harvest01 ~ Hunt_type + Cluster4, data = success, family = binomial) # AIC = 365.64
+# Single vs multiday * cluster
+fit5 <- glm(Harvest01 ~ Hunt_type * Cluster4, data = success, family = binomial) # AIC = 369.05
 summary(fit5)
 
-# Year * cluster
-fit6 <- glm(Harvest01 ~ Year * Cluster4, data = success, family = binomial) # AIC = 372.99
+# Single vs multiday + cluster - BETTER THAN INTERACTION
+fit6 <- glm(Harvest01 ~ Hunt_type + Cluster4, data = success, family = binomial) # AIC = 365.64
 summary(fit6)
 
-# Year + cluster - BETTER THAN INTERACTION
-fit7 <- glm(Harvest01 ~ Year + Cluster4, data = success, family = binomial) # AIC = 369.56
+# Year * cluster
+fit7 <- glm(Harvest01 ~ Year * Cluster4, data = success, family = binomial) # AIC = 372.99
 summary(fit7)
 
-# Cluster + Year + Single vs multiday
-fit8 <- glm(Harvest01 ~ Hunt_type + Cluster4 + Year, data = success, family = binomial) # AIC = 366.91
+# Year + cluster - BETTER THAN INTERACTION
+fit8 <- glm(Harvest01 ~ Year + Cluster4, data = success, family = binomial) # AIC = 369.56
 summary(fit8)
+
+# Temperature * cluster
+fit9 <- glm(Harvest01 ~ Cluster4 * max_temp_f, data = success, family = binomial) # AIC = 343.73
+summary(fit9)
+
+# Temperature + cluster - BETTER THAN INTERACTION
+fit10 <- glm(Harvest01 ~ Cluster4 + max_temp_f, data = success, family = binomial) # AIC = 342.91
+summary(fit10)
+
+# Temperature + cluster + single vs. multiday
+fit11 <- glm(Harvest01 ~ Cluster4 + max_temp_f + Hunt_type, data = success, family = binomial) # AIC = 340.48
+summary(fit11)
+
+# Temperature + cluster + single vs. multiday + year
+fit12 <- glm(Harvest01 ~ Hunt_type + Cluster4 + max_temp_f + Year, data = success, family = binomial) # AIC = 342.35
+summary(fit12)
 
 # FIT5 IS BEST MODEL (CLUSTER + SINGLE/MULTIDAY)
 
@@ -75,7 +95,7 @@ summary(fit8)
 # Plot model predictions --------------------------------------------------
 
 # Cluster
-(cluster_fig <- effects::predictorEffect("Cluster4", fit5) %>% 
+(cluster_fig <- effects::predictorEffect("Cluster4", fit11) %>% 
     as_tibble() %>% 
     ggplot(aes(x = Cluster4, y = fit))+
     geom_point(aes(colour = Cluster4), 
@@ -94,7 +114,7 @@ summary(fit8)
     ylim(c(0, 0.5)))
 
 # Hunt type (single vs multi-day)
-(hunt_type_fig <- effects::predictorEffect("Hunt_type", fit5) %>% 
+(hunt_type_fig <- effects::predictorEffect("Hunt_type", fit11) %>% 
     as_tibble() %>% 
     ggplot(aes(x = Hunt_type, y = fit))+
     geom_point(position = position_dodge(width = 0.5),
@@ -111,8 +131,21 @@ summary(fit8)
           axis.ticks.y=element_blank()) +
     ylim(c(0, 0.5)))
 
+# Temperature
+(temp_fig <- effects::predictorEffect("max_temp_f", fit11) %>% 
+        as_tibble() %>% 
+        ggplot(aes(x = max_temp_f, y = fit))+
+        geom_line()+
+        geom_ribbon(aes(ymin = lower, ymax = upper), 
+                    alpha = 0.2) +
+        labs(y = "Harvest Probability", x = "Maximum Temperature (F)") +
+        theme_bw() +
+        #theme(axis.text.y=element_blank(),
+        #      axis.ticks.y=element_blank()) +
+        ylim(c(0, 0.3)))
+
 # Year
-(year_fig <- effects::predictorEffect("Year", fit8) %>% 
+(year_fig <- effects::predictorEffect("Year", fit12) %>% 
     as_tibble() %>% 
     ggplot(aes(x = Year, y = fit))+
     geom_line()+
@@ -124,6 +157,7 @@ summary(fit8)
           axis.ticks.y=element_blank()) +
     ylim(c(0, 0.5)))
 
+
 # Tile together
 library(cowplot)
 plot_grid(cluster_fig, hunt_type_fig, year_fig,
@@ -131,4 +165,6 @@ plot_grid(cluster_fig, hunt_type_fig, year_fig,
           nrow = 1,
           align = "h")
 ggsave("Figures/harvest-success-model.pdf", width = 6.5, height = 3)
+
+
 
