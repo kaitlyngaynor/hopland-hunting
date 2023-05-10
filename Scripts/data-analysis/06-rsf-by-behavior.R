@@ -59,22 +59,22 @@ used_avail_coursing_unsuccess <- used_avail_coursing %>% dplyr::filter(Harvest =
 used_avail_stalking_unsuccess <- used_avail_stalking %>% dplyr::filter(Harvest == "N")
 used_avail_sitandwait_unsuccess <- used_avail_sitandwait %>% dplyr::filter(Harvest == "N")
 
-fit_coursing_success <- glmer(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale + (1|ID),
+fit_coursing_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
                    data = used_avail_coursing_success,
                    family = binomial) 
-fit_stalking_success <- glmer(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale + (1|ID),
+fit_stalking_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
                    data = used_avail_stalking_success,
                    family = binomial) 
-fit_sitandwait_success <- glmer(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale + (1|ID),
+fit_sitandwait_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
                    data = used_avail_sitandwait_success,
                    family = binomial) 
-fit_coursing_unsuccess <- glmer(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale + (1|ID),
+fit_coursing_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
                            data = used_avail_coursing_unsuccess,
                            family = binomial) 
-fit_stalking_unsuccess <- glmer(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale + (1|ID),
+fit_stalking_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
                            data = used_avail_stalking_unsuccess,
                            family = binomial) 
-fit_sitandwait_unsuccess <- glmer(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale + (1|ID),
+fit_sitandwait_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
                            data = used_avail_sitandwait_unsuccess,
                            family = binomial) 
 
