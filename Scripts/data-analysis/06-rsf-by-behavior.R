@@ -1,19 +1,34 @@
 library(dplyr)
 library(jtools)
+library(lme4)
 
 # Bring in datasets
 available <- read.csv("Data/all-available-point-cov.csv")
 available$Used <- 0
-used <- read.csv("Results/hmm-data-with-model-predictions-annotated-2023-03-04.csv")
+
+# Bring in used points (30 min)
+used <- read.csv("Data/igotu_data_30min_covariates.csv")
 used$Used <- 1
 
 head(available)
 head(used)
 
+# Randomly select 100 points for each available point
+counts <- count(used, ID)
+counts$n100 <- counts$n * 100
+
+available_dfs <- list()
+for(i in 1:nrow(counts)) {
+    available100 <- dplyr::sample_n(available, counts$n100[i]) 
+    available100$ID <- counts$ID[i]
+    available_dfs[[i]] <- available100
+}
+available_100 <- dplyr::bind_rows(available_dfs)
+
 # Join into single dataframe and scale covariates
-used_avail <- dplyr::bind_rows(used, available) %>% 
+used_avail <- dplyr::bind_rows(used, available_100) %>% 
     dplyr::select(ID, Ruggedness, Viewshed, Road_Distance, Chaparral_120m, Woodland_120m, HQ_Distance,
-                  Used, Harvest, state, state_2stationary) %>% 
+                  Used) %>% 
     dplyr::mutate(Ruggedness_scale = scale(Ruggedness),
                   Viewshed_scale = scale(Viewshed),
                   Road_Distance_scale = scale(Road_Distance),
@@ -24,41 +39,42 @@ used_avail <- dplyr::bind_rows(used, available) %>%
 # bring in clusters
 clusters <- read.csv("Results/hunter_cluster_success_long.csv") %>%
     tidyr::pivot_wider(names_from = "State_4state", values_from = "Percentage") %>% 
-    dplyr::select(ID, Cluster4)
+    dplyr::select(ID, Cluster4, Harvest)
 used_avail <- dplyr::left_join(used_avail, clusters)
+used_avail$ID <- as.character(used_avail$ID)
 
 # Split by cluster
 used_avail_coursing <- used_avail %>% 
-    dplyr::filter((Cluster4 != "Stalking" & Cluster4 != "Sit-and-wait") | Used == 0)
+    dplyr::filter((Cluster4 != "Stalking" & Cluster4 != "Sit-and-wait"))
 used_avail_stalking <- used_avail %>% 
-    dplyr::filter((Cluster4 != "Coursing" & Cluster4 != "Sit-and-wait") | Used == 0)
+    dplyr::filter((Cluster4 != "Coursing" & Cluster4 != "Sit-and-wait"))
 used_avail_sitandwait <- used_avail %>% 
-    dplyr::filter((Cluster4 != "Stalking" & Cluster4 != "Coursing") | Used == 0)
+    dplyr::filter((Cluster4 != "Stalking" & Cluster4 != "Coursing"))
 
 # Filter by cluster & success
-used_avail_coursing_success <- used_avail_coursing %>% dplyr::filter(Harvest == "Y" | Used == 0)
-used_avail_stalking_success <- used_avail_stalking %>% dplyr::filter(Harvest == "Y" | Used == 0)
-used_avail_sitandwait_success <- used_avail_sitandwait %>% dplyr::filter(Harvest == "Y" | Used == 0)
-used_avail_coursing_unsuccess <- used_avail_coursing %>% dplyr::filter(Harvest == "N" | Used == 0)
-used_avail_stalking_unsuccess <- used_avail_stalking %>% dplyr::filter(Harvest == "N" | Used == 0)
-used_avail_sitandwait_unsuccess <- used_avail_sitandwait %>% dplyr::filter(Harvest == "N" | Used == 0)
+used_avail_coursing_success <- used_avail_coursing %>% dplyr::filter(Harvest == "Y")
+used_avail_stalking_success <- used_avail_stalking %>% dplyr::filter(Harvest == "Y")
+used_avail_sitandwait_success <- used_avail_sitandwait %>% dplyr::filter(Harvest == "Y")
+used_avail_coursing_unsuccess <- used_avail_coursing %>% dplyr::filter(Harvest == "N")
+used_avail_stalking_unsuccess <- used_avail_stalking %>% dplyr::filter(Harvest == "N")
+used_avail_sitandwait_unsuccess <- used_avail_sitandwait %>% dplyr::filter(Harvest == "N")
 
-fit_coursing_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+fit_coursing_success <- glmer(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale + (1|ID),
                    data = used_avail_coursing_success,
                    family = binomial) 
-fit_stalking_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+fit_stalking_success <- glmer(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale + (1|ID),
                    data = used_avail_stalking_success,
                    family = binomial) 
-fit_sitandwait_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+fit_sitandwait_success <- glmer(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale + (1|ID),
                    data = used_avail_sitandwait_success,
                    family = binomial) 
-fit_coursing_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+fit_coursing_unsuccess <- glmer(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale + (1|ID),
                            data = used_avail_coursing_unsuccess,
                            family = binomial) 
-fit_stalking_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+fit_stalking_unsuccess <- glmer(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale + (1|ID),
                            data = used_avail_stalking_unsuccess,
                            family = binomial) 
-fit_sitandwait_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
+fit_sitandwait_unsuccess <- glmer(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale + (1|ID),
                            data = used_avail_sitandwait_unsuccess,
                            family = binomial) 
 
@@ -167,4 +183,5 @@ sitandwait_unsuccess_results <- dplyr::left_join(sitandwait_unsuccess_coef, sita
 all_rsf_results <- dplyr::bind_rows(coursing_success_results, coursing_unsuccess_results,
                                     stalking_success_results, stalking_unsuccess_results,
                                     sitandwait_success_results, sitandwait_unsuccess_results)
-write.csv(all_rsf_results, "Results/rsf-results-by-mode-success.csv", row.names = F)
+write.csv(all_rsf_results, "Results/rsf-results-by-mode-success-30min.csv", row.names = F)
+    
