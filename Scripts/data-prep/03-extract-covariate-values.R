@@ -8,6 +8,7 @@ library(rgdal)
 
 # Bring in points
 igotu_data <- read.csv("Data/igotu_data_3min.csv")
+#igotu_data <- read.csv("Data/igotu_data_30min.csv")
 
 # convert coordinates to spatial object
 igotu_data <- st_as_sf(igotu_data, 
@@ -59,4 +60,6 @@ igotu_data_fewer <- igotu_data_covariates %>%
                   HQ_Distance = hq_dist)
 
 # Export
-write.csv(igotu_data_fewer, "Data/igotu_data_3min_covariates.csv", row.names = F)
+#write.csv(igotu_data_fewer, "Data/igotu_data_3min_covariates.csv", row.names = F)
+write.csv(igotu_data_fewer, "Data/igotu_data_30min_covariates.csv", row.names = F)
+

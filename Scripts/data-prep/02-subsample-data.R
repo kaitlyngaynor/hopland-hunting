@@ -24,7 +24,7 @@ resample_hunt_tracks <- function(minutes_resample) {
         mutate(resampled_data = map(data, function(x)
             x %>% track_resample(rate = minutes(minutes_resample),
                                  tolerance = seconds(0)))) %>%
-        select(id, resampled_data) %>%
+        dplyr::select(id, resampled_data) %>%
         unnest(cols = resampled_data) %>%
         
         # change column names to match originals
@@ -46,3 +46,4 @@ resample_hunt_tracks <- function(minutes_resample) {
 }
 
 resample_hunt_tracks(3)
+resample_hunt_tracks(30)
