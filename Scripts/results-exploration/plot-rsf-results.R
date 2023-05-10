@@ -4,7 +4,7 @@ library(viridis)
 library(gtable)
 library(lemon)
 
-all_rsf_results <- read.csv("Results/rsf-results-by-mode-success.csv") %>% 
+all_rsf_results <- read.csv("Results/rsf-results-by-mode-success-30min.csv") %>% 
     dplyr::filter(Predictor != "Intercept") %>% 
     dplyr::rename("Hunting Mode" = "Hunting.Mode")
 head(all_rsf_results)
@@ -27,14 +27,14 @@ all_rsf_results %>%
           panel.border = element_rect(color = "black", fill = NA, size = .5),
           legend.text=element_text(size=rel(1))
     ) +
+    scale_y_continuous(breaks=c(-1, -.75, -.5, -.25, 0, .25)) +
     coord_flip() + # switch x and y coordinates
     ylab("Coefficient") +
-    ylim(-0.75, 0.3) +
     scale_shape_manual(values=c(1, 19))+
     scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3"),
                        guide = guide_legend(reverse = TRUE)) +
     facet_grid(Predictor~., scales = "free")
-ggsave("Figures/rsf-coefficients-1.pdf", width = 8, height = 4)
+ggsave("Figures/rsf-coefficients-1-30min.pdf", width = 8, height = 4)
 
 # only road distance
 all_rsf_results %>% 
@@ -56,9 +56,9 @@ all_rsf_results %>%
     ) +
     coord_flip() + # switch x and y coordinates
     ylab("Coefficient") +
-    ylim(-4, 0.5) +
+    ylim(-5, 0.5) +
     scale_shape_manual(values=c(1, 19))+
     scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3"),
                        guide = guide_legend(reverse = TRUE)) +
     facet_grid(Predictor~., scales = "free") 
-ggsave("Figures/rsf-coefficients-2.pdf", width = 8.15, height = 1.3)
+ggsave("Figures/rsf-coefficients-2-30min.pdf", width = 8.15, height = 1.3)
