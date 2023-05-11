@@ -144,6 +144,18 @@ summary(fit12)
         #      axis.ticks.y=element_blank()) +
         ylim(c(0, 0.3)))
 
+(temp_fig_interaction <- effects::predictorEffect("max_temp_f", fit9) %>% 
+        as_tibble() %>% 
+        ggplot(aes(x = max_temp_f, y = fit))+
+        geom_line(aes(col = Cluster4))+
+        geom_ribbon(aes(ymin = lower, ymax = upper, fill = Cluster4), 
+                    alpha = 0.2) +
+        labs(y = "Harvest Probability", x = "Maximum Temperature (F)") +
+        theme_bw() +
+        #theme(axis.text.y=element_blank(),
+        #      axis.ticks.y=element_blank()) +
+        ylim(c(0, 0.3)))
+
 # Year
 (year_fig <- effects::predictorEffect("Year", fit12) %>% 
     as_tibble() %>% 
