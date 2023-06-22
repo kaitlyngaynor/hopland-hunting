@@ -12,10 +12,11 @@ head(all_rsf_results)
 # without road distance
 all_rsf_results %>% 
     dplyr::filter(Predictor != "Road Distance") %>% 
-    ggplot(aes(x = Predictor, y = Coefficient, col = `Hunting Mode`, shape = Harvest, group = `Hunting Mode`)) + 
+    #ggplot(aes(x = Predictor, y = Coefficient, col = `Hunting Mode`, shape = Harvest, group = `Hunting Mode`)) + 
+    ggplot(aes(x = Predictor, y = Coefficient, col = `Hunting Mode`, shape = Harvest)) + 
     geom_hline(aes(yintercept = 0), linetype="dashed", size = 0.5, color = "darkgrey") +
-    geom_errorbar(aes(ymin = LCI, ymax = UCI), width=0, position = position_dodge(width = 1), alpha=.8) +
-    geom_point(position = position_dodge(width = 1), size = 3, stroke = 1, alpha = .75) +
+    geom_errorbar(aes(ymin = LCI, ymax = UCI), width=0, position = position_dodge(width = 1), alpha=.5) +
+    geom_point(position = position_dodge(width = 1), size = 2, stroke = 1, alpha = .75) +
     theme(axis.title.y = element_blank(),
           legend.key = element_rect(fill = alpha("white", 0.0)),
           strip.background = element_blank(),
@@ -39,10 +40,11 @@ ggsave("Figures/rsf-coefficients-1-30min.pdf", width = 8, height = 4)
 # only road distance
 all_rsf_results %>% 
     dplyr::filter(Predictor == "Road Distance") %>% 
-    ggplot(aes(x = Predictor, y = Coefficient, col = `Hunting Mode`, shape = Harvest, group = `Hunting Mode`)) + 
+    #ggplot(aes(x = Predictor, y = Coefficient, col = `Hunting Mode`, shape = Harvest, group = `Hunting Mode`)) + 
+    ggplot(aes(x = Predictor, y = Coefficient, col = `Hunting Mode`, shape = Harvest)) + 
     geom_hline(aes(yintercept = 0), linetype="dashed", size = 0.5, color = "darkgrey") +
-    geom_errorbar(aes(ymin = LCI, ymax = UCI), width=0, position = position_dodge(width = 1), alpha=.8) +
-    geom_point(position = position_dodge(width = 1), size = 3, stroke = 1, alpha = .75) +
+    geom_errorbar(aes(ymin = LCI, ymax = UCI), width=0, position = position_dodge(width = 1), alpha=.5) +
+    geom_point(position = position_dodge(width = 1), size = 2, stroke = 1, alpha = .75) +
     theme(axis.title.y = element_blank(),
           legend.key = element_rect(fill = alpha("white", 0.0)),
           strip.background = element_blank(),
