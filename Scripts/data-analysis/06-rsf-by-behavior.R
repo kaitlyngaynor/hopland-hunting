@@ -8,6 +8,7 @@ available$Used <- 0
 
 # Bring in used points (30 min)
 used <- read.csv("Data/igotu_data_30min_covariates.csv")
+#used <- read.csv("Data/igotu_data_3min_covariates.csv")
 used$Used <- 1
 
 head(available)
@@ -91,6 +92,26 @@ fit_stalking_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparr
 fit_sitandwait_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
                            data = used_avail_sitandwait_unsuccess,
                            family = binomial) 
+
+# or - versions with random effect for individual (resulting in singular fit, 0 variance among individuals)
+fit_coursing_success <- glmer(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale + (1|ID),
+                              data = used_avail_coursing_success,
+                              family = binomial) 
+fit_stalking_success <- glmer(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale + (1|ID),
+                            data = used_avail_stalking_success,
+                            family = binomial) 
+fit_sitandwait_success <- glmer(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale + (1|ID),
+                              data = used_avail_sitandwait_success,
+                              family = binomial) 
+fit_coursing_unsuccess <- glmer(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale + (1|ID),
+                              data = used_avail_coursing_unsuccess,
+                              family = binomial) 
+fit_stalking_unsuccess <- glmer(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale + (1|ID),
+                              data = used_avail_stalking_unsuccess,
+                              family = binomial) 
+fit_sitandwait_unsuccess <- glmer(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale + (1|ID),
+                                data = used_avail_sitandwait_unsuccess,
+                                family = binomial) 
 
 # Plotting all model output together - takes quite a while to run
 # jtools::plot_summs(fit_coursing_success, fit_coursing_unsuccess, 
