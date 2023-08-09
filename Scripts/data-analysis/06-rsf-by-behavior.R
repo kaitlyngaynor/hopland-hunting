@@ -7,8 +7,8 @@ available <- read.csv("Data/all-available-point-cov.csv")
 available$Used <- 0
 
 # Bring in used points (30 min)
-used <- read.csv("Data/igotu_data_30min_covariates.csv")
-#used <- read.csv("Data/igotu_data_3min_covariates.csv")
+#used <- read.csv("Data/igotu_data_30min_covariates.csv")
+used <- read.csv("Data/igotu_data_3min_covariates.csv")
 used$Used <- 1
 
 head(available)
@@ -218,7 +218,8 @@ sitandwait_unsuccess_results <- dplyr::left_join(sitandwait_unsuccess_coef, sita
 all_rsf_results <- dplyr::bind_rows(coursing_success_results, coursing_unsuccess_results,
                                     stalking_success_results, stalking_unsuccess_results,
                                     sitandwait_success_results, sitandwait_unsuccess_results)
-write.csv(all_rsf_results, "Results/rsf-results-by-mode-success-30min.csv", row.names = F)
+#write.csv(all_rsf_results, "Results/rsf-results-by-mode-success-30min.csv", row.names = F)
+write.csv(all_rsf_results, "Results/rsf-results-by-mode-success-3min.csv", row.names = F)
 
 library(ggplot2)
 library(effects)
