@@ -46,6 +46,7 @@ Data/
 *.pptx
 *.pdf
 *.Rds
+*.csv
 
 results/
 Figures/
