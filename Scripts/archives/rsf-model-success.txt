@@ -1,0 +1,57 @@
+model {
+
+## Specify priors
+
+# Population-level priors for RSF intercept
+b0_grand ~ dnorm(0, 0.0001) # grand intercept comes from a normal
+sigma_individ_int ~ dunif(0, 100) # standard deviation
+tau_individ_int <- pow(sigma_individ_int, -2) # convert to precision
+
+# Separate cluster-level priors for the infrastructure coefficients
+for(j in 1:N_CLUSTER) {
+    
+    mu_ruggedness[j] ~ dnorm(0, 0.01)
+    mu_viewshed[j] ~ dnorm(0, 0.01)
+    mu_road[j] ~ dnorm(0, 0.01)
+    mu_chaparral[j] ~ dnorm(0, 0.01)
+    mu_woodland[j] ~ dnorm(0, 0.01)
+    
+    tau_ruggedness[j] ~ dunif(0, 25)
+    tau_viewshed[j] ~ dunif(0, 25)
+    tau_road[j] ~ dunif(0, 25)
+    tau_chaparral[j] ~ dunif(0, 25)
+    tau_woodland[j] ~ dunif(0, 25)
+    
+}
+
+# Draw individual intercept and beta coefficients
+for(i in 1:N_IND) {
+
+    # Draw a random intercept from grand intercept
+    b_intercept[i] ~ dnorm(b0_grand, tau_individ_int)
+    
+    # Draw separate beta coefficients
+    b_ruggedness[i] ~ dnorm(mu_ruggedness[CLUSTER_INDEX[i]], tau_ruggedness[CLUSTER_INDEX[i]])
+    b_viewshed[i] ~ dnorm(mu_viewshed[CLUSTER_INDEX[i]], tau_viewshed[CLUSTER_INDEX[i]])
+    b_road[i] ~ dnorm(mu_road[CLUSTER_INDEX[i]], tau_road[CLUSTER_INDEX[i]])
+    b_chaparral[i] ~ dnorm(mu_chaparral[CLUSTER_INDEX[i]], tau_chaparral[CLUSTER_INDEX[i]])
+    b_woodland[i] ~ dnorm(mu_woodland[CLUSTER_INDEX[i]], tau_woodland[CLUSTER_INDEX[i]])
+    
+}
+
+# Linear predictor
+for(n in 1:N_OBS) {
+    logit(p[n]) <- b_intercept[ID[n]] +
+        b_ruggedness[ID[n]] * RUGGEDNESS[n] +
+        b_viewshed[ID[n]] * VIEWSHED[n] +
+        b_road[ID[n]] * ROAD[n] +
+        b_chaparral[ID[n]] * CHAPARRAL[n] +
+        b_woodland[ID[n]] * WOODLAND[n]
+}
+
+# Likelihood
+for(n in 1:N_OBS) {
+    USED[n] ~ dbern(p[n])
+}
+
+}
