@@ -52,6 +52,22 @@ hunter_percentages_4state <- hunter_summary_4state %>%
     dplyr::select(-c(Stationary_offroad, Stationary_road, Walking, Driving, Total)) %>% 
     dplyr::ungroup()
 
+# Calculate mean and sd
+mean(hunter_percentages$Stationary_pct) # 0.3052403
+sd(hunter_percentages$Stationary_pct) # 0.1719628
+
+mean(hunter_percentages_4state$Stationary_offroad_pct) # 0.1645601
+sd(hunter_percentages_4state$Stationary_offroad_pct) # 0.143088
+
+mean(hunter_percentages_4state$Stationary_road_pct) # 0.1406802
+sd(hunter_percentages_4state$Stationary_road_pct) # 0.1000155
+
+mean(hunter_percentages_4state$Walking_pct) # 0.2558374
+sd(hunter_percentages_4state$Walking_pct) # 0.148707
+
+mean(hunter_percentages_4state$Driving_pct) # 0.4389222
+sd(hunter_percentages_4state$Driving_pct) # 0.1964256
+
 # Create long version of dataframe
 hunter_percentages_long_4state <- hunter_percentages_4state %>% 
     tidyr::pivot_longer(cols = c(Stationary_offroad_pct, Stationary_road_pct, Walking_pct, Driving_pct),
