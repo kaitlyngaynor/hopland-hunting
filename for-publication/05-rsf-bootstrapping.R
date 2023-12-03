@@ -102,13 +102,13 @@ write.csv(boot_coefs_sitandwait_success, "Results/rsf-bootstrap/boot_sitandwait_
 
 
 # Coursing unsuccessful
-set.seed(456)
+set.seed(123)
 boot_coursing_unsuccess <- boot(data = used_avail_coursing_unsuccess, 
-                              statistic = model_function, R = 100)
+                              statistic = model_function, R = 1000)
 boot_coefs_coursing_unsuccess <- boot_coursing_unsuccess$t %>% 
     as.data.frame()
 names(boot_coefs_coursing_unsuccess) <- c("Intercept", "Ruggedness", "Viewshed", "Chaparral", "Woodland", "Road_Distance")
-write.csv(boot_coefs_coursing_unsuccess, "Results/rsf-bootstrap/boot_coursing_unsuccess4.csv", row.names = FALSE)
+write.csv(boot_coefs_coursing_unsuccess, "Results/rsf-bootstrap/boot_coursing_unsuccess.csv", row.names = FALSE)
 
 
 # Stalking ununsuccessful
