@@ -13,6 +13,7 @@ used <- read.csv("igotu_data_3min_covariates.csv")
 used$Used <- 1
 
 # Randomly select 100 points for each available point
+set.seed(123)
 counts <- count(used, ID)
 counts$n100 <- counts$n * 100
 available_dfs <- list()
@@ -171,3 +172,5 @@ sitandwait_unsuccess_results <- dplyr::left_join(sitandwait_unsuccess_coef, sita
 all_rsf_results <- dplyr::bind_rows(coursing_success_results, coursing_unsuccess_results,
                                     stalking_success_results, stalking_unsuccess_results,
                                     sitandwait_success_results, sitandwait_unsuccess_results)
+
+write.csv(all_rsf_results, "Results/rsf-results-by-mode-success.csv", row.names = FALSE)
