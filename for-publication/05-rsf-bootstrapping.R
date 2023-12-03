@@ -135,6 +135,9 @@ write.csv(boot_coefs_sitandwait_unsuccess, "Results/rsf-bootstrap/boot_sitandwai
 boot_coefs_coursing_success <- read.csv("Results/rsf-bootstrap/boot_coursing_success.csv")
 boot_coefs_stalking_success <- read.csv("Results/rsf-bootstrap/boot_stalking_success.csv")
 boot_coefs_sitandwait_success <- read.csv("Results/rsf-bootstrap/boot_sitandwait_success.csv")
+boot_coefs_coursing_unsuccess <- read.csv("Results/rsf-bootstrap/boot_coursing_unsuccess.csv")
+boot_coefs_stalking_unsuccess <- read.csv("Results/rsf-bootstrap/boot_stalking_unsuccess.csv")
+boot_coefs_sitandwait_unsuccess <- read.csv("Results/rsf-bootstrap/boot_sitandwait_unsuccess.csv")
 
 coursing_success_mean <- boot_coefs_coursing_success %>% 
     apply(2, mean,  na.rm = TRUE) %>% 
@@ -184,7 +187,59 @@ sitandwait_success_CI <- boot_coefs_sitandwait_success %>%
                   Harvest = "Yes",
                   Model = paste(`Hunting Mode`, Harvest, sep = "_"))
 
+
+coursing_unsuccess_mean <- boot_coefs_coursing_unsuccess %>% 
+    apply(2, mean,  na.rm = TRUE) %>% 
+    as.data.frame %>% 
+    tibble::rownames_to_column("Predictor")
+names(coursing_unsuccess_mean) <- c("Predictor", "Coefficient")
+coursing_unsuccess_CI <- boot_coefs_coursing_unsuccess %>% 
+    apply(2, quantile, probs = c(0.025, 0.975),  na.rm = TRUE) %>% 
+    t() %>% 
+    as.data.frame %>% 
+    tibble::rownames_to_column("Predictor") %>% 
+    dplyr::rename(LCI = `2.5%`, UCI = `97.5%`) %>% 
+    dplyr::left_join(coursing_unsuccess_mean) %>% 
+    dplyr::mutate(`Hunting Mode` = "Coursing",
+                  Harvest = "Yes",
+                  Model = paste(`Hunting Mode`, Harvest, sep = "_")) 
+
+stalking_unsuccess_mean <- boot_coefs_stalking_unsuccess %>% 
+    apply(2, mean,  na.rm = TRUE) %>% 
+    as.data.frame %>% 
+    tibble::rownames_to_column("Predictor")
+names(stalking_unsuccess_mean) <- c("Predictor", "Coefficient")
+stalking_unsuccess_CI <- boot_coefs_stalking_unsuccess %>% 
+    apply(2, quantile, probs = c(0.025, 0.975),  na.rm = TRUE) %>% 
+    t() %>% 
+    as.data.frame %>% 
+    tibble::rownames_to_column("Predictor") %>% 
+    dplyr::rename(LCI = `2.5%`, UCI = `97.5%`) %>% 
+    dplyr::left_join(stalking_unsuccess_mean) %>% 
+    dplyr::mutate(`Hunting Mode` = "Stalking",
+                  Harvest = "Yes",
+                  Model = paste(`Hunting Mode`, Harvest, sep = "_"))
+
+sitandwait_unsuccess_mean <- boot_coefs_sitandwait_unsuccess %>% 
+    apply(2, mean,  na.rm = TRUE) %>% 
+    as.data.frame %>% 
+    tibble::rownames_to_column("Predictor")
+names(sitandwait_unsuccess_mean) <- c("Predictor", "Coefficient")
+sitandwait_unsuccess_CI <- boot_coefs_sitandwait_unsuccess %>% 
+    apply(2, quantile, probs = c(0.025, 0.975),  na.rm = TRUE) %>% 
+    t() %>% 
+    as.data.frame %>% 
+    tibble::rownames_to_column("Predictor") %>% 
+    dplyr::rename(LCI = `2.5%`, UCI = `97.5%`) %>% 
+    dplyr::left_join(sitandwait_unsuccess_mean) %>% 
+    dplyr::mutate(`Hunting Mode` = "Sit-and-wait",
+                  Harvest = "Yes",
+                  Model = paste(`Hunting Mode`, Harvest, sep = "_"))
+
 all_success_CI <- dplyr::bind_rows(coursing_success_CI, 
                                    stalking_success_CI, 
-                                   sitandwait_success_CI)
+                                   sitandwait_success_CI,
+                                   coursing_unsuccess_CI,
+                                   stalking_unsuccess_CI,
+                                   sitandwait_unsuccess_CI)
 write.csv(all_success_CI, "Results/rsf-bootstrapping-results.csv", row.names = FALSE)
