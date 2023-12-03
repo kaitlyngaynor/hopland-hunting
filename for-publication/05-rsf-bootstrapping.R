@@ -201,7 +201,7 @@ coursing_unsuccess_CI <- boot_coefs_coursing_unsuccess %>%
     dplyr::rename(LCI = `2.5%`, UCI = `97.5%`) %>% 
     dplyr::left_join(coursing_unsuccess_mean) %>% 
     dplyr::mutate(`Hunting Mode` = "Coursing",
-                  Harvest = "Yes",
+                  Harvest = "No",
                   Model = paste(`Hunting Mode`, Harvest, sep = "_")) 
 
 stalking_unsuccess_mean <- boot_coefs_stalking_unsuccess %>% 
@@ -217,7 +217,7 @@ stalking_unsuccess_CI <- boot_coefs_stalking_unsuccess %>%
     dplyr::rename(LCI = `2.5%`, UCI = `97.5%`) %>% 
     dplyr::left_join(stalking_unsuccess_mean) %>% 
     dplyr::mutate(`Hunting Mode` = "Stalking",
-                  Harvest = "Yes",
+                  Harvest = "No",
                   Model = paste(`Hunting Mode`, Harvest, sep = "_"))
 
 sitandwait_unsuccess_mean <- boot_coefs_sitandwait_unsuccess %>% 
@@ -233,7 +233,7 @@ sitandwait_unsuccess_CI <- boot_coefs_sitandwait_unsuccess %>%
     dplyr::rename(LCI = `2.5%`, UCI = `97.5%`) %>% 
     dplyr::left_join(sitandwait_unsuccess_mean) %>% 
     dplyr::mutate(`Hunting Mode` = "Sit-and-wait",
-                  Harvest = "Yes",
+                  Harvest = "No",
                   Model = paste(`Hunting Mode`, Harvest, sep = "_"))
 
 all_success_CI <- dplyr::bind_rows(coursing_success_CI, 
