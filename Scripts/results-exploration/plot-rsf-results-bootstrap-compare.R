@@ -4,11 +4,11 @@ library(viridis)
 library(gtable)
 library(lemon)
 
-all_rsf_results_boot <- read.csv("Results/rsf-bootstrapping-results.csv") %>% 
+all_rsf_results_boot <- read.csv("Results/rsf-bootstrapping-results2.csv") %>% 
     dplyr::filter(Predictor != "Intercept") %>% 
     dplyr::rename("Hunting Mode" = "Hunting.Mode") %>% 
     dplyr::mutate(Method = "Bootstrapped")
-all_rsf_results <- read.csv("Results/rsf-results-by-mode-success.csv") %>% 
+all_rsf_results <- read.csv("for-publication/rsf-results-by-mode-success-weighted.csv") %>% 
     dplyr::filter(Predictor != "Intercept") %>% 
     dplyr::rename("Hunting Mode" = "Hunting.Mode") %>% 
     dplyr::mutate(Method = "Original") 
