@@ -12,50 +12,45 @@ available$Used <- 0
 used <- read.csv("for-publication/igotu_data_3min_covariates.csv")
 used$Used <- 1
 
-# Randomly select 100 points for each available point
-set.seed(123)
-counts <- count(used, ID)
-counts$n100 <- counts$n * 100
-available_dfs <- list()
-for(i in 1:nrow(counts)) {
-    available100 <- dplyr::sample_n(available, counts$n100[i]) 
-    available100$ID <- counts$ID[i]
-    available_dfs[[i]] <- available100
-}
-available_100 <- dplyr::bind_rows(available_dfs)
+
+# Combine
+used_avail <- bind_rows(available, used)
+
+# Weight the available points more
+used_avail$w <- ifelse(used_avail$Used, 1, 5000)
 
 # Join into single dataframe and scale covariates
-used_avail <- dplyr::bind_rows(used, available_100) %>% 
-    dplyr::select(ID, Ruggedness, Viewshed, Road_Distance, Chaparral_120m, Woodland_120m,
-                  Used) %>% 
-    dplyr::mutate(Ruggedness_scale = scale(Ruggedness),
-                  Viewshed_scale = scale(Viewshed),
-                  Road_Distance_scale = scale(Road_Distance),
-                  Chaparral_120m_scale = scale(Chaparral_120m),
-                  Woodland_120m_scale = scale(Woodland_120m))
+used_avail <- used_avail %>% 
+  dplyr::select(ID, Ruggedness, Viewshed, Road_Distance, Chaparral_120m, Woodland_120m,
+                Used, w) %>% 
+  dplyr::mutate(Ruggedness_scale = scale(Ruggedness),
+                Viewshed_scale = scale(Viewshed),
+                Road_Distance_scale = scale(Road_Distance),
+                Chaparral_120m_scale = scale(Chaparral_120m),
+                Woodland_120m_scale = scale(Woodland_120m))
 
 # Bring in clusters
-clusters <- read.csv("for-publication/hunter_cluster_success_long_nocov.csv") %>%
-    tidyr::pivot_wider(names_from = "State", values_from = "Percentage") %>% 
-    dplyr::select(ID, Cluster, Harvest)
+clusters <- read.csv("for-publication/hunter_cluster_success_long.csv") %>%
+  tidyr::pivot_wider(names_from = "State", values_from = "Percentage") %>% 
+  dplyr::select(ID, Cluster, Harvest)
 used_avail <- dplyr::left_join(used_avail, clusters)
 used_avail$ID <- as.character(used_avail$ID)
 
 # Split by cluster
 used_avail_coursing <- used_avail %>% 
-    dplyr::filter((Cluster != "Stalking" & Cluster != "Sit-and-wait"))
+  dplyr::filter((Cluster != "Stalking" & Cluster != "Sit-and-wait") | Used == 0)
 used_avail_stalking <- used_avail %>% 
-    dplyr::filter((Cluster != "Coursing" & Cluster != "Sit-and-wait"))
+  dplyr::filter((Cluster != "Coursing" & Cluster != "Sit-and-wait") | Used == 0)
 used_avail_sitandwait <- used_avail %>% 
-    dplyr::filter((Cluster != "Stalking" & Cluster != "Coursing"))
+  dplyr::filter((Cluster != "Stalking" & Cluster != "Coursing") | Used == 0)
 
 # Filter by cluster & success
-used_avail_coursing_success <- used_avail_coursing %>% dplyr::filter(Harvest == "Y")
-used_avail_stalking_success <- used_avail_stalking %>% dplyr::filter(Harvest == "Y")
-used_avail_sitandwait_success <- used_avail_sitandwait %>% dplyr::filter(Harvest == "Y")
-used_avail_coursing_unsuccess <- used_avail_coursing %>% dplyr::filter(Harvest == "N")
-used_avail_stalking_unsuccess <- used_avail_stalking %>% dplyr::filter(Harvest == "N")
-used_avail_sitandwait_unsuccess <- used_avail_sitandwait %>% dplyr::filter(Harvest == "N")
+used_avail_coursing_success <- used_avail_coursing %>% dplyr::filter(Harvest == "Y" | Used == 0)
+used_avail_stalking_success <- used_avail_stalking %>% dplyr::filter(Harvest == "Y" | Used == 0)
+used_avail_sitandwait_success <- used_avail_sitandwait %>% dplyr::filter(Harvest == "Y" | Used == 0)
+used_avail_coursing_unsuccess <- used_avail_coursing %>% dplyr::filter(Harvest == "N" | Used == 0)
+used_avail_stalking_unsuccess <- used_avail_stalking %>% dplyr::filter(Harvest == "N" | Used == 0)
+used_avail_sitandwait_unsuccess <- used_avail_sitandwait %>% dplyr::filter(Harvest == "N" | Used == 0)
 
 # Define your model function
 model_function <- function(data, indices) {
@@ -64,8 +59,8 @@ model_function <- function(data, indices) {
     
     # Fit the logistic regression model
     model <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
-                 data = boot_data,
-                 family = binomial)
+                 data = boot_data, weight = w,
+                 family = binomial(link = "logit"))
     
     # Return the model coefficients
     return(coef(model))
@@ -78,7 +73,7 @@ boot_coursing_success <- boot(data = used_avail_coursing_success,
 boot_coefs_coursing_success <- boot_coursing_success$t %>% 
     as.data.frame()
 names(boot_coefs_coursing_success) <- c("Intercept", "Ruggedness", "Viewshed", "Chaparral", "Woodland", "Road_Distance")
-write.csv(boot_coefs_coursing_success, "Results/rsf-bootstrap/boot_coursing_success.csv", row.names = FALSE)
+write.csv(boot_coefs_coursing_success, "Results/rsf-bootstrap/boot_coursing_success2.csv", row.names = FALSE)
 
 
 # Stalking successful
@@ -88,7 +83,7 @@ boot_stalking_success <- boot(data = used_avail_stalking_success,
 boot_coefs_stalking_success <- boot_stalking_success$t %>% 
     as.data.frame()
 names(boot_coefs_stalking_success) <- c("Intercept", "Ruggedness", "Viewshed", "Chaparral", "Woodland", "Road_Distance")
-write.csv(boot_coefs_stalking_success, "Results/rsf-bootstrap/boot_stalking_success.csv", row.names = FALSE)
+write.csv(boot_coefs_stalking_success, "Results/rsf-bootstrap/boot_stalking_success2.csv", row.names = FALSE)
 
 
 # Sit and wait successful
@@ -98,7 +93,7 @@ boot_sitandwait_success <- boot(data = used_avail_sitandwait_success,
 boot_coefs_sitandwait_success <- boot_sitandwait_success$t %>% 
     as.data.frame()
 names(boot_coefs_sitandwait_success) <- c("Intercept", "Ruggedness", "Viewshed", "Chaparral", "Woodland", "Road_Distance")
-write.csv(boot_coefs_sitandwait_success, "Results/rsf-bootstrap/boot_sitandwait_success.csv", row.names = FALSE)
+write.csv(boot_coefs_sitandwait_success, "Results/rsf-bootstrap/boot_sitandwait_success2.csv", row.names = FALSE)
 
 
 # Coursing unsuccessful
@@ -108,7 +103,7 @@ boot_coursing_unsuccess <- boot(data = used_avail_coursing_unsuccess,
 boot_coefs_coursing_unsuccess <- boot_coursing_unsuccess$t %>% 
     as.data.frame()
 names(boot_coefs_coursing_unsuccess) <- c("Intercept", "Ruggedness", "Viewshed", "Chaparral", "Woodland", "Road_Distance")
-write.csv(boot_coefs_coursing_unsuccess, "Results/rsf-bootstrap/boot_coursing_unsuccess.csv", row.names = FALSE)
+write.csv(boot_coefs_coursing_unsuccess, "Results/rsf-bootstrap/boot_coursing_unsuccess2.csv", row.names = FALSE)
 
 
 # Stalking ununsuccessful
@@ -118,7 +113,7 @@ boot_stalking_unsuccess <- boot(data = used_avail_stalking_unsuccess,
 boot_coefs_stalking_unsuccess <- boot_stalking_unsuccess$t %>% 
     as.data.frame()
 names(boot_coefs_stalking_unsuccess) <- c("Intercept", "Ruggedness", "Viewshed", "Chaparral", "Woodland", "Road_Distance")
-write.csv(boot_coefs_stalking_unsuccess, "Results/rsf-bootstrap/boot_stalking_unsuccess.csv", row.names = FALSE)
+write.csv(boot_coefs_stalking_unsuccess, "Results/rsf-bootstrap/boot_stalking_unsuccess2.csv", row.names = FALSE)
 
 
 # Sit and wait ununsuccessful
@@ -128,16 +123,16 @@ boot_sitandwait_unsuccess <- boot(data = used_avail_sitandwait_unsuccess,
 boot_coefs_sitandwait_unsuccess <- boot_sitandwait_unsuccess$t %>% 
     as.data.frame()
 names(boot_coefs_sitandwait_unsuccess) <- c("Intercept", "Ruggedness", "Viewshed", "Chaparral", "Woodland", "Road_Distance")
-write.csv(boot_coefs_sitandwait_unsuccess, "Results/rsf-bootstrap/boot_sitandwait_unsuccess.csv", row.names = FALSE)
+write.csv(boot_coefs_sitandwait_unsuccess, "Results/rsf-bootstrap/boot_sitandwait_unsuccess2.csv", row.names = FALSE)
 
 
 # Bring results back in
-boot_coefs_coursing_success <- read.csv("Results/rsf-bootstrap/boot_coursing_success.csv")
-boot_coefs_stalking_success <- read.csv("Results/rsf-bootstrap/boot_stalking_success.csv")
-boot_coefs_sitandwait_success <- read.csv("Results/rsf-bootstrap/boot_sitandwait_success.csv")
-boot_coefs_coursing_unsuccess <- read.csv("Results/rsf-bootstrap/boot_coursing_unsuccess.csv")
-boot_coefs_stalking_unsuccess <- read.csv("Results/rsf-bootstrap/boot_stalking_unsuccess.csv")
-boot_coefs_sitandwait_unsuccess <- read.csv("Results/rsf-bootstrap/boot_sitandwait_unsuccess.csv")
+boot_coefs_coursing_success <- read.csv("Results/rsf-bootstrap/boot_coursing_success2.csv")
+boot_coefs_stalking_success <- read.csv("Results/rsf-bootstrap/boot_stalking_success2.csv")
+boot_coefs_sitandwait_success <- read.csv("Results/rsf-bootstrap/boot_sitandwait_success2.csv")
+boot_coefs_coursing_unsuccess <- read.csv("Results/rsf-bootstrap/boot_coursing_unsuccess2.csv")
+boot_coefs_stalking_unsuccess <- read.csv("Results/rsf-bootstrap/boot_stalking_unsuccess2.csv")
+boot_coefs_sitandwait_unsuccess <- read.csv("Results/rsf-bootstrap/boot_sitandwait_unsuccess2.csv")
 
 coursing_success_mean <- boot_coefs_coursing_success %>% 
     apply(2, mean,  na.rm = TRUE) %>% 
@@ -242,4 +237,4 @@ all_success_CI <- dplyr::bind_rows(coursing_success_CI,
                                    coursing_unsuccess_CI,
                                    stalking_unsuccess_CI,
                                    sitandwait_unsuccess_CI)
-write.csv(all_success_CI, "Results/rsf-bootstrapping-results.csv", row.names = FALSE)
+write.csv(all_success_CI, "Results/rsf-bootstrapping-results2.csv", row.names = FALSE)
