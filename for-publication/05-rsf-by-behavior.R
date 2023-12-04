@@ -13,30 +13,15 @@ used <- read.csv("igotu_data_3min_covariates.csv")
 used$Used <- 1
 
 # Combine
-used_available <- bind_rows(available, used)
+used_avail <- bind_rows(available, used)
 
 # Weight the available points more
-used_available$w <- ifelse(used_available$Used, 1, 5000)
-HSF.Lupe1 <- glm(case_ ~ elevation + popden + landuseC, 
-                 data = Lupe.dat, weight = w,
-                 family = binomial(link = "logit"))
-
-# # Randomly select 100 points for each available point
-# set.seed(123)
-# counts <- count(used, ID)
-# counts$n100 <- counts$n * 100
-# available_dfs <- list()
-# for(i in 1:nrow(counts)) {
-#     available100 <- dplyr::sample_n(available, counts$n100[i]) 
-#     available100$ID <- counts$ID[i]
-#     available_dfs[[i]] <- available100
-# }
-available_100 <- dplyr::bind_rows(available_dfs)
+used_avail$w <- ifelse(used_avail$Used, 1, 5000)
 
 # Join into single dataframe and scale covariates
-used_avail <- dplyr::bind_rows(used, available_100) %>% 
+used_avail <- used_avail %>% 
     dplyr::select(ID, Ruggedness, Viewshed, Road_Distance, Chaparral_120m, Woodland_120m,
-                  Used) %>% 
+                  Used, w) %>% 
     dplyr::mutate(Ruggedness_scale = scale(Ruggedness),
                   Viewshed_scale = scale(Viewshed),
                   Road_Distance_scale = scale(Road_Distance),
@@ -52,39 +37,43 @@ used_avail$ID <- as.character(used_avail$ID)
 
 # Split by cluster
 used_avail_coursing <- used_avail %>% 
-    dplyr::filter((Cluster != "Stalking" & Cluster != "Sit-and-wait"))
+    dplyr::filter((Cluster != "Stalking" & Cluster != "Sit-and-wait") | Used == 0)
 used_avail_stalking <- used_avail %>% 
-    dplyr::filter((Cluster != "Coursing" & Cluster != "Sit-and-wait"))
+    dplyr::filter((Cluster != "Coursing" & Cluster != "Sit-and-wait") | Used == 0)
 used_avail_sitandwait <- used_avail %>% 
-    dplyr::filter((Cluster != "Stalking" & Cluster != "Coursing"))
+    dplyr::filter((Cluster != "Stalking" & Cluster != "Coursing") | Used == 0)
 
 # Filter by cluster & success
-used_avail_coursing_success <- used_avail_coursing %>% dplyr::filter(Harvest == "Y")
-used_avail_stalking_success <- used_avail_stalking %>% dplyr::filter(Harvest == "Y")
-used_avail_sitandwait_success <- used_avail_sitandwait %>% dplyr::filter(Harvest == "Y")
-used_avail_coursing_unsuccess <- used_avail_coursing %>% dplyr::filter(Harvest == "N")
-used_avail_stalking_unsuccess <- used_avail_stalking %>% dplyr::filter(Harvest == "N")
-used_avail_sitandwait_unsuccess <- used_avail_sitandwait %>% dplyr::filter(Harvest == "N")
+used_avail_coursing_success <- used_avail_coursing %>% dplyr::filter(Harvest == "Y" | Used == 0)
+used_avail_stalking_success <- used_avail_stalking %>% dplyr::filter(Harvest == "Y" | Used == 0)
+used_avail_sitandwait_success <- used_avail_sitandwait %>% dplyr::filter(Harvest == "Y" | Used == 0)
+used_avail_coursing_unsuccess <- used_avail_coursing %>% dplyr::filter(Harvest == "N" | Used == 0)
+used_avail_stalking_unsuccess <- used_avail_stalking %>% dplyr::filter(Harvest == "N" | Used == 0)
+used_avail_sitandwait_unsuccess <- used_avail_sitandwait %>% dplyr::filter(Harvest == "N" | Used == 0)
 
 fit_coursing_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
                    data = used_avail_coursing_success, weight = w,
                    family = binomial(link = "logit"))
 
 fit_stalking_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
-                   data = used_avail_stalking_success,
-                   family = binomial) 
+                   data = used_avail_stalking_success, weight = w,
+                   family = binomial(link = "logit"))
+
 fit_sitandwait_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
-                   data = used_avail_sitandwait_success,
-                   family = binomial) 
+                   data = used_avail_sitandwait_success, weight = w,
+                   family = binomial(link = "logit"))
+
 fit_coursing_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
-                           data = used_avail_coursing_unsuccess,
-                           family = binomial) 
+                           data = used_avail_coursing_unsuccess, weight = w,
+                           family = binomial(link = "logit"))
+
 fit_stalking_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
-                           data = used_avail_stalking_unsuccess,
-                           family = binomial) 
+                           data = used_avail_stalking_unsuccess, weight = w,
+                           family = binomial(link = "logit"))
+
 fit_sitandwait_unsuccess <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
-                           data = used_avail_sitandwait_unsuccess,
-                           family = binomial) 
+                           data = used_avail_sitandwait_unsuccess, weight = w,
+                           family = binomial(link = "logit"))
 
 # Export results
 
@@ -183,4 +172,4 @@ all_rsf_results <- dplyr::bind_rows(coursing_success_results, coursing_unsuccess
                                     stalking_success_results, stalking_unsuccess_results,
                                     sitandwait_success_results, sitandwait_unsuccess_results)
 
-write.csv(all_rsf_results, "Results/rsf-results-by-mode-success.csv", row.names = FALSE)
+write.csv(all_rsf_results, "rsf-results-by-mode-success-weighted.csv", row.names = F)
