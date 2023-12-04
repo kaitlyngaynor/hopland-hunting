@@ -12,16 +12,25 @@ available$Used <- 0
 used <- read.csv("igotu_data_3min_covariates.csv")
 used$Used <- 1
 
-# Randomly select 100 points for each available point
-set.seed(123)
-counts <- count(used, ID)
-counts$n100 <- counts$n * 100
-available_dfs <- list()
-for(i in 1:nrow(counts)) {
-    available100 <- dplyr::sample_n(available, counts$n100[i]) 
-    available100$ID <- counts$ID[i]
-    available_dfs[[i]] <- available100
-}
+# Combine
+used_available <- bind_rows(available, used)
+
+# Weight the available points more
+used_available$w <- ifelse(used_available$Used, 1, 5000)
+HSF.Lupe1 <- glm(case_ ~ elevation + popden + landuseC, 
+                 data = Lupe.dat, weight = w,
+                 family = binomial(link = "logit"))
+
+# # Randomly select 100 points for each available point
+# set.seed(123)
+# counts <- count(used, ID)
+# counts$n100 <- counts$n * 100
+# available_dfs <- list()
+# for(i in 1:nrow(counts)) {
+#     available100 <- dplyr::sample_n(available, counts$n100[i]) 
+#     available100$ID <- counts$ID[i]
+#     available_dfs[[i]] <- available100
+# }
 available_100 <- dplyr::bind_rows(available_dfs)
 
 # Join into single dataframe and scale covariates
@@ -58,8 +67,9 @@ used_avail_stalking_unsuccess <- used_avail_stalking %>% dplyr::filter(Harvest =
 used_avail_sitandwait_unsuccess <- used_avail_sitandwait %>% dplyr::filter(Harvest == "N")
 
 fit_coursing_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
-                   data = used_avail_coursing_success,
-                   family = binomial) 
+                   data = used_avail_coursing_success, weight = w,
+                   family = binomial(link = "logit"))
+
 fit_stalking_success <- glm(Used ~ Ruggedness_scale + Viewshed_scale + Chaparral_120m_scale + Woodland_120m_scale + Road_Distance_scale,
                    data = used_avail_stalking_success,
                    family = binomial) 
