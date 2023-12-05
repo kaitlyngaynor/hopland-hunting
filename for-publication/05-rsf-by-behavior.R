@@ -171,5 +171,3 @@ sitandwait_unsuccess_results <- dplyr::left_join(sitandwait_unsuccess_coef, sita
 all_rsf_results <- dplyr::bind_rows(coursing_success_results, coursing_unsuccess_results,
                                     stalking_success_results, stalking_unsuccess_results,
                                     sitandwait_success_results, sitandwait_unsuccess_results)
-
-write.csv(all_rsf_results, "rsf-results-by-mode-success-weighted.csv", row.names = F)
