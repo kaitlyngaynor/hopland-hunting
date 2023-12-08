@@ -21,6 +21,8 @@ Movement trajectories of hunters, subsampled to a 3 minute fix interval. Used as
 * Viewshed: calculated with Viewshed 2 tool in ArcGIS; measure of relative amount of visible area in 400m buffer from point
 * Road_Distance: distance to nearest road, in meters, Chaparral_120m: density of chaparral habitat around point, in 120 meter window
 * Woodland_120m: density of woodland habitat around point, in 120 meter window
+* Elapsed_Time_Sunrise: time (in hours) from sunrise on the day of data collection
+* Harvest: Y = yes, N = no
 
 ##### **igotu_metadata.csv**
 
@@ -30,7 +32,7 @@ Metadata associated with iGotU movement trajectories. Each row corresponds to a 
 * Date: YYYY-MM-DD
 * Year
 * Harvest: Y = yes, N = no
-* Harvest_time: time of deer harvest, HH:MM
+* Harvest_time: time of deer harvest, HH:MM (empty if hunter did not harvest deer)
 * Hunt_type: Single_day or Multi_day
 
 ##### **all-available-point-cov.csv**
